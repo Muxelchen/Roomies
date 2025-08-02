@@ -1,0 +1,2 @@
+# Hamburgir
+infinite money glitch 
