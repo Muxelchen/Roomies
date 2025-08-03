@@ -1,183 +1,196 @@
-# 🏗️ NSManagedObjectContext Architektur-Strategie
+# 🏗️ HouseHero Architektur-Strategie
 
-## 🎯 **ZIEL: Fehlerfreie, skalierbare Core Data Architektur**
+## 🎯 **NEUE ARCHITEKTUR: Frontend/Backend Trennung**
+
+### **📱 Frontend Layer (UI & User Interaction)**
+```
+HouseholdApp/Frontend/
+├── Views/                    # SwiftUI Views (UI-Komponenten)
+│   ├── Authentication/       # Login/Register UI
+│   ├── Dashboard/           # Main UI
+│   ├── Tasks/              # Task Management UI
+│   ├── Store/              # Reward Store UI
+│   ├── Challenges/         # Gamification UI
+│   ├── Leaderboard/        # Rankings UI
+│   ├── Profile/            # Settings UI
+│   └── Shared/             # Reusable UI Components
+├── Widgets/                # iOS Widgets
+├── Assets.xcassets/        # UI Resources
+├── Preview Content/        # Xcode Preview Assets
+└── ContentView.swift       # Main Content View
+```
+
+### **🔧 Backend Layer (Business Logic & Data)**
+```
+HouseholdApp/Backend/
+├── Services/               # Business Logic Managers
+│   ├── AuthenticationManager.swift
+│   ├── BiometricAuthManager.swift
+│   ├── NotificationManager.swift
+│   ├── PhotoManager.swift
+│   ├── CalendarManager.swift
+│   ├── AnalyticsManager.swift
+│   ├── PerformanceManager.swift
+│   ├── GameificationManager.swift
+│   ├── SampleDataManager.swift
+│   └── LoggingManager.swift
+├── Models/                 # Data Layer
+│   ├── PersistenceController.swift  # Core Data Stack
+│   ├── AuthenticationManager.swift  # Auth Logic
+│   └── LocalizationManager.swift    # Localization
+└── HouseholdModel.xcdatamodeld/     # Core Data Schema
+```
+
+### **⚙️ Configuration Layer (App Setup)**
+```
+HouseholdApp/Configuration/
+├── HouseHeroApp.swift      # App Entry Point
+├── Info.plist             # App Configuration
+└── HouseholdApp.entitlements # App Permissions
+```
+
+---
+
+## 🎯 **ZIEL: Klare Trennung der Verantwortlichkeiten**
 
 ### **1. GOLDENE REGELN (NIEMALS VERLETZEN)**
 
-#### **A) Context-Typen niemals verwechseln**
+#### **A) Frontend Layer - Nur UI-Logik**
 ```swift
-// ✅ RICHTIG: Klare Trennung
-let coreDataContext = viewContext              // Für Datenbank
-let biometricContext = LAContext()            // Für Authentifizierung
-
-// ❌ FALSCH: Verwechslung führt zu Compiler-Fehlern
-// SomeEntity(context: LAContext())           // NICHT MÖGLICH!
-```
-
-#### **B) Environment Pattern in Views**
-```swift
-// ✅ RICHTIG: Jede View verwendet Environment
-struct MyView: View {
+// ✅ RICHTIG: Views nur für UI
+struct TaskView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var taskManager = TaskManager()
     
-    private func saveData() {
-        let entity = MyEntity(context: viewContext)  // ✅ KORREKT
-        try? viewContext.save()
+    var body: some View {
+        // Nur UI-Code hier
     }
+}
+
+// ❌ FALSCH: Business Logic in Views
+struct TaskView: View {
+    func complexBusinessLogic() { /* NICHT HIER! */ }
 }
 ```
 
-#### **C) Manager verwalten eigene Contexts**
+#### **B) Backend Layer - Nur Business Logic**
 ```swift
-// ✅ RICHTIG: Manager erstellt eigene Background Contexts
-class MyManager {
-    func backgroundOperation() {
-        let context = PersistenceController.shared.newBackgroundContext()
-        context.perform {
-            // Arbeit mit context
+// ✅ RICHTIG: Services für Business Logic
+class TaskManager: ObservableObject {
+    func createTask() { /* Business Logic hier */ }
+    func validateTask() { /* Validation hier */ }
+}
+
+// ❌ FALSCH: UI-Code in Services
+class TaskManager: ObservableObject {
+    func createUI() { /* NICHT HIER! */ }
+}
+```
+
+#### **C) Configuration Layer - Nur Setup**
+```swift
+// ✅ RICHTIG: App-Konfiguration
+@main
+struct HouseHeroApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
         }
     }
 }
 ```
 
-### **2. FEHLER-LOOP VERMEIDUNGSMATRIX**
+### **2. ARCHITEKTUR-PRINZIPIEN**
 
-| ❌ **FEHLERHAFTE MUSTER** | ✅ **KORREKTE MUSTER** |
-|-------------------------|----------------------|
-| `func process(_ closure: @escaping () -> NSManagedObjectContext)` | `func process(context: NSManagedObjectContext)` |
-| `MyView(context: { return viewContext })` | `MyView().environment(\.managedObjectContext, viewContext)` |
-| `SomeEntity(context: LAContext())` | `SomeEntity(context: viewContext)` |
-| Context zwischen Threads teilen | Jeden Thread eigenen Context geben |
+| **Layer** | **Verantwortlichkeit** | **Darf enthalten** | **Darf NICHT enthalten** |
+|-----------|----------------------|-------------------|-------------------------|
+| **Frontend** | UI & User Interaction | SwiftUI Views, UI Logic, State Management | Business Logic, Data Access |
+| **Backend** | Business Logic & Data | Services, Models, Core Data, Validation | UI Components, View Logic |
+| **Configuration** | App Setup | App Entry Point, Config Files | Business Logic, UI |
 
-### **3. COMPILER-ERROR DEBUGGING PROZESS**
+### **3. KOMMUNIKATION ZWISCHEN LAYERN**
 
-#### **Schritt 1: Error Message dekodieren**
-```
-"trailing closure passed to parameter of type NSManagedObjectContext that does not accept a closure"
-
-BEDEUTUNG: Sie übergeben { } statt einem direkten Context
-```
-
-#### **Schritt 2: Suche nach problematischen Patterns**
-```bash
-# Suchen Sie nach:
-grep -r "context:" . --include="*.swift"
-grep -r "LAContext" . --include="*.swift"
-grep -r "@escaping.*NSManagedObjectContext" . --include="*.swift"
-```
-
-#### **Schritt 3: Systematische Korrektur**
-1. **Views**: Alle müssen `@Environment(\.managedObjectContext)` verwenden
-2. **Managers**: Eigene Contexts erstellen mit `newBackgroundContext()`
-3. **Services**: Context als direkten Parameter erwarten
-
-### **4. BAUBARE-PROJEKT CHECKLISTE**
-
-#### **Pre-Build Check (vor jedem Build):**
-- [ ] Alle Views haben `@Environment(\.managedObjectContext) private var viewContext`
-- [ ] Keine `LAContext` wo `NSManagedObjectContext` erwartet wird
-- [ ] Manager-Funktionen haben `context: NSManagedObjectContext` Parameter
-- [ ] Keine trailing closures bei Context-Parametern
-
-#### **Post-Error Recovery:**
-1. **Identifiziere den fehlerhaften View/Manager**
-2. **Prüfe Context-Typ (LA vs NSManaged)**
-3. **Wende Goldene Regeln an**
-4. **Teste mit Minimalbeispiel**
-
-### **5. TEAM-ENTWICKLUNG GUIDELINES**
-
-#### **Code Review Checklist:**
+#### **Frontend → Backend**
 ```swift
-// ❌ ABLEHNEN bei:
-- LAContext in Core Data Operations
-- Trailing closures für Contexts
-- Context-Sharing zwischen Threads
-- Missing @Environment in Views
-
-// ✅ AKZEPTIEREN bei:
-- Environment Pattern
-- Direct Context Parameters
-- Background Context Creation
-- Clear Context Ownership
-```
-
-#### **Naming Conventions:**
-```swift
-// ✅ KLAR: Typ ist erkennbar
-let coreDataContext: NSManagedObjectContext
-let authContext: LAContext
-let backgroundContext: NSManagedObjectContext
-
-// ❌ VERWIRREND: Typ unklar
-let context        // Welcher Typ?
-let ctx           // Abkürzung unverständlich
-```
-
-### **6. EMERGENCY RECOVERY PLAN**
-
-#### **Bei kompletter Fehler-Schleife:**
-
-1. **STOPP**: Keine weiteren Änderungen
-2. **BACKUP**: Git commit current state
-3. **MINIMAL**: Kopiere das Minimalbeispiel
-4. **REBUILD**: Feature für Feature migrieren
-5. **TEST**: Nach jedem Feature kompilieren
-
-#### **Schrittweise Migration:**
-```
-Tag 1: PersistenceController + 1 View
-Tag 2: + 1 Manager (z.B. AuthenticationManager)
-Tag 3: + 1 Service (z.B. NotificationManager)
-...
-Tag N: Komplettes Projekt funktional
-```
-
-### **7. LANGFRISTIGE ARCHITEKTUR**
-
-#### **Skalierbare Struktur:**
-```
-HouseholdApp/
-├── CoreData/
-│   ├── PersistenceController.swift     # Single Source of Truth
-│   ├── CoreDataExtensions.swift       # Helper Extensions
-│   └── Models/                         # Generated Classes
-├── Views/
-│   └── *.swift                        # Alle mit @Environment
-├── Managers/
-│   └── *.swift                        # Eigene Background Contexts
-└── Services/
-    └── *.swift                        # Context als Parameter
-```
-
-#### **Testing Strategy:**
-```swift
-// Unit Tests für Context Management
-func testContextPatterns() {
-    let context = PersistenceController.preview.container.viewContext
+// ✅ RICHTIG: Dependency Injection
+struct TaskView: View {
+    @StateObject private var taskManager = TaskManager()
     
-    // Test View Environment
-    let view = MyView().environment(\.managedObjectContext, context)
-    
-    // Test Manager Operations  
-    let manager = MyManager()
-    manager.process(context: context)
-    
-    // Assertions...
+    private func createTask() {
+        taskManager.createTask(name: "New Task")
+    }
 }
 ```
 
-## 🚀 **SOFORT-AKTIONEN FÜR IHR PROJEKT**
+#### **Backend → Frontend**
+```swift
+// ✅ RICHTIG: ObservableObject Pattern
+class TaskManager: ObservableObject {
+    @Published var tasks: [Task] = []
+    
+    func loadTasks() {
+        // Load from Core Data
+        // Updates @Published automatically
+    }
+}
+```
 
-1. **Kopieren Sie das Minimalbeispiel** in ein neues Xcode-Projekt
-2. **Testen Sie, dass es kompiliert** 
-3. **Migrieren Sie schrittweise** Ihre Features
-4. **Verwenden Sie die CoreDataArchitectureGuide.swift** als Referenz
-5. **Implementieren Sie die Emergency Recovery** bei Problemen
+---
 
-## ⚡ **ERFOLGS-METRIKEN**
+## 🚀 **VORTEILE DER NEUEN ARCHITEKTUR**
 
-- **100% Build Success Rate**: Projekt kompiliert immer
-- **0 Context-Type Verwechslungen**: Klare Trennung LA/Core Data
-- **Einheitliche Patterns**: Alle Views/Managers folgen Standards
-- **Fehler-Resistenz**: Team kann sicher entwickeln ohne Loops
+### **Frontend Layer:**
+- ✅ **UI-Fokussiert**: Nur SwiftUI Views und UI-Logik
+- ✅ **Wiederverwendbar**: Shared Components
+- ✅ **Testbar**: UI-Tests isoliert möglich
+- ✅ **Wartbar**: UI-Änderungen ohne Backend-Berührung
+
+### **Backend Layer:**
+- ✅ **Business Logic**: Alle Geschäftsregeln zentral
+- ✅ **Data Management**: Core Data und Persistierung
+- ✅ **Services**: Externe Integrationen (Calendar, Notifications)
+- ✅ **Testbar**: Unit Tests für Business Logic
+
+### **Configuration Layer:**
+- ✅ **Zentralisiert**: Alle App-Konfiguration an einem Ort
+- ✅ **Übersichtlich**: Klare Trennung von Code und Config
+- ✅ **Wartbar**: Einfache Konfigurationsänderungen
+
+---
+
+## 🔧 **IMPLEMENTIERUNG**
+
+### **Schritt 1: Xcode-Projekt aktualisieren**
+1. Öffnen Sie das Projekt in Xcode
+2. Aktualisieren Sie die Datei-Referenzen für die neuen Pfade
+3. Stellen Sie sicher, dass alle Imports korrekt sind
+
+### **Schritt 2: Code-Review**
+1. **Frontend**: Prüfen Sie, dass Views nur UI-Logik enthalten
+2. **Backend**: Prüfen Sie, dass Services nur Business Logic enthalten
+3. **Configuration**: Prüfen Sie, dass nur Setup-Code vorhanden ist
+
+### **Schritt 3: Testing**
+1. **Unit Tests**: Für Backend Services
+2. **UI Tests**: Für Frontend Views
+3. **Integration Tests**: Für Layer-Kommunikation
+
+---
+
+## 📊 **QUALITÄTS-METRIKEN**
+
+- **100% Layer-Trennung**: Keine UI-Code im Backend, keine Business Logic im Frontend
+- **Klare Verantwortlichkeiten**: Jede Datei hat eine eindeutige Rolle
+- **Einfache Wartung**: Änderungen in einem Layer beeinflussen andere nicht
+- **Bessere Testbarkeit**: Isolierte Tests für jeden Layer
+
+---
+
+## 🎯 **NÄCHSTE SCHRITTE**
+
+1. **Xcode-Projekt aktualisieren** mit neuen Pfaden
+2. **Code-Review** durchführen für Layer-Trennung
+3. **Tests schreiben** für isolierte Layer
+4. **Dokumentation aktualisieren** für Team-Mitglieder
+
+**Diese Architektur macht HouseHero wartbarer, testbarer und professioneller!** 🚀
