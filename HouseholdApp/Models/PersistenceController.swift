@@ -143,7 +143,7 @@ class PersistenceController: ObservableObject {
                 ("Küche aufräumen", "Die Küche sauber machen und abwischen", 15),
                 ("Müll rausbringen", "Den Hausmüll zur Straße bringen", 10),
                 ("Wäsche waschen", "Eine Ladung Wäsche waschen und aufhängen", 20),
-                ("Staubsaugen", "Das Wohnzimmer staubsaugen", 12)
+                ("english", "Das Wohnzimmer test", 12)
             ]
             
             for (title, description, points) in demoTasks {
@@ -177,5 +177,31 @@ class PersistenceController: ObservableObject {
         let context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         return context
+    }
+    
+    // MARK: - Reset Demo Data
+    func resetDemoData() {
+        let context = container.viewContext
+        
+        // Delete existing demo admin user and related data
+        let userRequest: NSFetchRequest<User> = User.fetchRequest()
+        userRequest.predicate = NSPredicate(format: "email == %@", "admin@demo.com")
+        
+        do {
+            let existingUsers = try context.fetch(userRequest)
+            for user in existingUsers {
+                context.delete(user)
+            }
+            
+            // Save the deletion
+            try context.save()
+            
+            // Recreate demo data
+            createDemoAdminUserIfNeeded()
+            
+            LoggingManager.shared.info("Demo data reset successfully", category: LoggingManager.Category.coreData.rawValue)
+        } catch {
+            LoggingManager.shared.error("Failed to reset demo data", category: LoggingManager.Category.coreData.rawValue, error: error)
+        }
     }
 }

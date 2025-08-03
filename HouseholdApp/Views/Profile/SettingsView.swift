@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("leaderboardUpdates") private var leaderboardUpdates = false
     @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("hapticFeedback") private var hapticFeedback = true
+    @State private var showingResetAlert = false
     
     var body: some View {
         NavigationView {
@@ -51,6 +52,11 @@ struct SettingsView: View {
                         exportData()
                     }
                     
+                    Button("Demo-Daten zurücksetzen") {
+                        showingResetAlert = true
+                    }
+                    .foregroundColor(.orange)
+                    
                     Button("Alle Daten löschen") {
                         // TODO: Show confirmation alert
                     }
@@ -87,6 +93,14 @@ struct SettingsView: View {
                     }
                 }
             }
+            .alert("Demo-Daten zurücksetzen", isPresented: $showingResetAlert) {
+                Button("Abbrechen", role: .cancel) { }
+                Button("Zurücksetzen", role: .destructive) {
+                    resetDemoData()
+                }
+            } message: {
+                Text("Möchten Sie wirklich alle Demo-Daten zurücksetzen? Dies wird den Demo-Admin-User und alle zugehörigen Aufgaben löschen und neu erstellen.")
+            }
         }
     }
     
@@ -117,6 +131,10 @@ struct SettingsView: View {
         if let url = URL(string: "mailto:support@householdapp.com?subject=Feedback%20zur%20Household%20Manager%20App") {
             UIApplication.shared.open(url)
         }
+    }
+    
+    private func resetDemoData() {
+        PersistenceController.shared.resetDemoData()
     }
 }
 

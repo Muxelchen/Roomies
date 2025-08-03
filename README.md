@@ -290,9 +290,22 @@ PerformanceManager.shared.startPerformanceMonitoring()
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 📚 Documentation
+
+Complete project documentation is available in the `docs/` directory:
+
+- **[Architecture Strategy](docs/ARCHITECTURE_STRATEGY.md)** - Technical architecture and design decisions
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference and integration guide
+- **[Build Guide](docs/BUILD_READY_CHECKLIST.md)** - Step-by-step build and deployment instructions
+- **[Changelog](docs/CHANGELOG.md)** - Version history and feature updates
+- **[Project Summary](docs/PROJECT_SUMMARY.md)** - Comprehensive project overview
+- **[Privacy Policy](docs/PRIVACY.md)** - Complete privacy policy and data handling
+- **[Security](docs/SECURITY.md)** - Security guidelines and best practices
+- **[Final Audit Report](docs/FINAL_PROJECT_AUDIT_REPORT.md)** - Complete project audit results
+
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBUTING.md) for details.
 
 ## 📞 Support
 
