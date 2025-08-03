@@ -153,7 +153,6 @@
 				B1000000000000000000007 /* LocalizationManager.swift */,
 				B1000000000000000000008 /* PersistenceController.swift */,
 			);
-			path = Models;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000005 /* Views */ = {
@@ -171,7 +170,6 @@
 				D0000000000000000000018 /* Main */,
 				D0000000000000000000019 /* Shared */,
 			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000006 /* Services */ = {
@@ -187,7 +185,6 @@
 				B1000000000000000000018 /* GameificationManager.swift */,
 				B1000000000000000000019 /* SampleDataManager.swift */,
 			);
-			path = Services;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000007 /* Widgets */ = {
@@ -195,7 +192,6 @@
 			children = (
 				B1000000000000000000039 /* HouseHeroWidget.swift */,
 			);
-			path = Widgets;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000008 /* Preview Content */ = {
@@ -211,7 +207,6 @@
 			children = (
 				B1000000000000000000020 /* DashboardView.swift */,
 			);
-			path = Dashboard;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000010 /* Tasks */ = {
@@ -221,7 +216,6 @@
 				B1000000000000000000022 /* AddTaskView.swift */,
 				B1000000000000000000023 /* TaskPhotoView.swift */,
 			);
-			path = Tasks;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000011 /* Store */ = {
@@ -230,7 +224,6 @@
 				B1000000000000000000024 /* StoreView.swift */,
 				B1000000000000000000025 /* AddRewardView.swift */,
 			);
-			path = Store;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000012 /* Challenges */ = {
@@ -239,7 +232,6 @@
 				B1000000000000000000026 /* ChallengesView.swift */,
 				B1000000000000000000027 /* AddChallengeView.swift */,
 			);
-			path = Challenges;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000013 /* Leaderboard */ = {
@@ -247,7 +239,6 @@
 			children = (
 				B1000000000000000000028 /* LeaderboardView.swift */,
 			);
-			path = Leaderboard;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000014 /* Profile */ = {
@@ -263,7 +254,6 @@
 				B1000000000000000000052 /* CalendarSettingsView.swift */,
 				B1000000000000000000053 /* PerformanceMonitorView.swift */,
 			);
-			path = Profile;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000015 /* Analytics */ = {
@@ -271,7 +261,6 @@
 			children = (
 				B1000000000000000000035 /* AnalyticsView.swift */,
 			);
-			path = Analytics;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000016 /* Authentication */ = {
@@ -279,7 +268,6 @@
 			children = (
 				B1000000000000000000011 /* AuthenticationView.swift */,
 			);
-			path = Authentication;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000017 /* Onboarding */ = {
@@ -287,7 +275,6 @@
 			children = (
 				B1000000000000000000009 /* OnboardingView.swift */,
 			);
-			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000018 /* Main */ = {
@@ -295,7 +282,6 @@
 			children = (
 				B1000000000000000000010 /* MainTabView.swift */,
 			);
-			path = Main;
 			sourceTree = "<group>";
 		};
 		D0000000000000000000019 /* Shared */ = {
@@ -305,7 +291,6 @@
 				B1000000000000000000037 /* QRCodeView.swift */,
 				B1000000000000000000038 /* InviteMemberView.swift */,
 			);
-			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
