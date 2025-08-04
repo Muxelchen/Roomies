@@ -1,84 +1,83 @@
-# Roomies - "Not Boring" iOS Household Management App
+# Roomies - iOS Household Management App
 
-A vibrant, gamified iOS app for household organization that makes chores feel like a game, featuring stunning 3D animations, spring-based interactions, and a playful "Not Boring Apps" design philosophy.
+A gamified iOS app for household organization that makes managing tasks fun and engaging.
 
 ## 🏠 About the App
 
-Roomies transforms household management into an exciting, living experience. With its "Not Boring Apps" approach featuring 3D effects, fluid animations, and delightful micro-interactions, it's the most engaging way to organize your home.
+Roomies transforms household management into an engaging experience with gamification elements, task management, and reward systems to motivate household members.
 
 ## 🏗️ Architecture Overview
 
-Roomies follows a **clean architecture pattern** with clear separation of concerns:
+The app follows a clean architecture pattern with clear separation of concerns:
 
 ```
-Roomies/
-├── 📱 Frontend Layer (3D UI & Animations)
-│   ├── Views/                    # SwiftUI Views with 3D Effects
-│   ├── Widgets/                  # Animated iOS Widgets
-│   ├── Assets.xcassets/         # Visual Resources
-│   └── ContentView.swift        # Main Content View
-├── 🔧 Backend Layer (Business Logic & Data)
-│   ├── Services/                # Business Logic Managers
-│   ├── Models/                  # Data Layer & Core Data
-│   └── HouseholdModel.xcdatamodeld/ # Core Data Schema
-└── ⚙️ Configuration Layer (App Setup)
+HouseholdApp/
+├── 📱 Views/                     # SwiftUI Views & UI Components
+│   ├── Authentication/          # Login/Register Views
+│   ├── Dashboard/              # Main Dashboard
+│   ├── Tasks/                  # Task Management
+│   ├── Store/                  # Reward Store
+│   ├── Challenges/             # Challenge System
+│   ├── Leaderboard/            # User Rankings
+│   ├── Profile/                # User Settings
+│   ├── Analytics/              # Analytics Dashboard
+│   └── Shared/                 # Reusable Components
+├── 🔧 Services/                 # Business Logic & Managers
+│   ├── AuthenticationManager.swift
+│   ├── AnalyticsManager.swift
+│   ├── CalendarManager.swift
+│   ├── GameificationManager.swift
+│   ├── NotificationManager.swift
+│   ├── PerformanceManager.swift
+│   └── UserDefaultsManager.swift
+├── 🗄️ Models/                   # Data Layer
+│   └── PersistenceController.swift
+├── 📱 Widgets/                  # iOS Widgets
+│   └── RoomiesWidget.swift
+└── ⚙️ Configuration/
     ├── RoomiesApp.swift         # App Entry Point
     ├── Info.plist              # App Configuration
     └── HouseholdApp.entitlements # App Permissions
 ```
 
-### **Architecture Benefits:**
-- ✅ **Clear Separation**: UI logic separated from business logic
-- ✅ **Maintainable**: Changes in one layer don't affect others
-- ✅ **Testable**: Isolated testing for each layer
-- ✅ **Scalable**: Easy to add new features and services
-- ✅ **Performant**: Optimized for 60 FPS animations
-
 ## ✨ Core Features
 
 ### 👥 Multi-User Households
-- Create and manage multiple households with animated onboarding
-- Invite members via invitation code or animated QR-Code
-- User profiles with colorful avatars and performance tracking
-- **Multiple household support**: Users can join and manage several households
-- Role-based permissions with smooth transitions
+- Create and manage multiple households
+- User profiles with performance tracking
+- Multiple household support
+- Role-based permissions
 
-### 📋 Simplified Task Management
-- Create, edit, schedule, and assign tasks with gamified point values
-- **No Photo Verification**: Simplified completion system focused on trust
-- Recurring tasks (daily, weekly, monthly, custom) with visual indicators
-- Task priorities with animated priority colors
-- **iOS Calendar Integration**: Tasks sync automatically with Calendar app
-- Spring-based animations for task completion celebrations
+### 📋 Task Management
+- Create, edit, schedule, and assign tasks
+- Task priorities and point values
+- Recurring tasks (daily, weekly, monthly)
+- **iOS Calendar Integration**: Tasks sync with Calendar app
 
-### 🔐 Simple & Secure
-- **No Biometric Complexity**: Clean email/password authentication
-- Secure credential storage with Keychain integration
-- **Streamlined Security**: Focus on usability over complexity
-- GDPR-compliant data handling and privacy controls
+### 🎮 Gamification System
+- Point system for completed tasks
+- Reward store to spend earned points
+- Achievement system and badges
+- Leaderboards and competitive rankings
+- Time-limited challenges
+- Streak tracking and celebrations
+
+### 🔐 Authentication & Security
+- Email/password authentication
+- Secure credential storage with Keychain
+- Privacy-focused data handling
 
 ### 📱 Native iOS Integration
-- **Animated iOS Widgets**: Small, Medium, and Large home screen widgets with live data
-- **Calendar Sync**: Automatic task scheduling in iOS Calendar
-- **Smart Notifications**: Engaging alerts for tasks and achievements
-- **Background Processing**: Optimized performance for smooth animations
-- **Deep Linking**: Seamless app-to-app navigation
+- **iOS Widgets**: Home screen widgets with live task data
+- **Calendar Sync**: Automatic task scheduling
+- **Smart Notifications**: Task reminders and achievements
+- **Background Processing**: Optimized performance
 
-### 📊 Beautiful Analytics Dashboard
-- **Visual Productivity Trends**: 30-day completion rate with animated charts
-- **User Performance Metrics**: Individual member analytics with celebrations
-- **Task Distribution Visualization**: Animated category breakdowns
-- **Time Analysis**: Peak productivity insights with smooth transitions
-- **Gamified Insights**: Fun recommendations and progress tracking
-- **Performance Monitoring**: Real-time app optimization
-
-### 🎮 "Not Boring" Gamification
-- **3D Point System**: Floating numbers and particle effects for completed tasks
-- **Animated Reward Store**: Spend points on rewards with satisfying interactions
-- **3D Achievement System**: Spinning medallions and badge ceremonies
-- **Dynamic Leaderboards**: Competitive rankings with live animations
-- **Epic Challenges**: Time-limited competitions with countdown timers
-- **Streak Celebrations**: Confetti explosions and success animations
+### 📊 Analytics Dashboard
+- Productivity trends and completion rates
+- User performance metrics
+- Task distribution visualization
+- Time analysis and insights
 
 ## 🚀 Getting Started
 
@@ -102,83 +101,55 @@ Roomies/
 
 3. **Configure signing**
    - Select your development team in project settings
-   - Update bundle identifier to `com.roomies.app`
+   - Update bundle identifier if needed
 
 4. **Build and run**
    - Select target device/simulator
    - Press ⌘+R to build and run
 
-### Project Structure
-```
-HouseholdApp/
-├── 📱 Frontend/
-│   ├── Views/                    # SwiftUI Views with 3D Effects
-│   │   ├── Authentication/       # Animated Login/Register
-│   │   ├── Dashboard/           # 3D Dashboard
-│   │   ├── Tasks/              # Interactive Task Management
-│   │   ├── Store/              # Animated Reward Store
-│   │   ├── Challenges/         # Gamified Challenges
-│   │   ├── Leaderboard/        # Dynamic Rankings
-│   │   ├── Profile/            # Settings & Profile
-│   │   └── Shared/             # Reusable 3D Components
-│   ├── Widgets/                # Animated iOS Widgets
-│   ├── Assets.xcassets/        # Visual Resources
-│   └── ContentView.swift       # Main content view
-├── 🔧 Backend/
-│   ├── Services/               # Business Logic
-│   │   ├── AuthenticationManager.swift
-│   │   ├── NotificationManager.swift
-│   │   ├── CalendarManager.swift
-│   │   ├── AnalyticsManager.swift
-│   │   ├── PerformanceManager.swift
-│   │   ├── GameificationManager.swift
-│   │   ├── SampleDataManager.swift
-│   │   └── LoggingManager.swift
-│   ├── Models/                 # Data Layer
-│   │   ├── PersistenceController.swift
-│   │   ├── AuthenticationManager.swift
-│   │   └── LocalizationManager.swift
-│   └── HouseholdModel.xcdatamodeld/ # Core Data
-└── ⚙️ Configuration/
-    ├── RoomiesApp.swift        # App entry point
-    ├── Info.plist             # App configuration
-    └── HouseholdApp.entitlements # Permissions
-```
+## 🛠️ Current Status
 
-## 🎨 "Not Boring" Design Philosophy
+### ✅ Completed Features
+- Multi-household support with proper assignment
+- Task management system
+- Reward store with point deduction
+- Gamification elements
+- iOS widgets and calendar integration
+- Performance optimizations
+- Core Data persistence
 
-Roomies follows the "Not Boring Apps" design philosophy:
-
-- **3D-First Design**: Everything has depth, shadows, and physical presence
-- **Fluid Animations**: Spring-based interactions that feel alive
-- **Micro-Interactions**: Every tap, swipe, and gesture has delightful feedback
-- **Vibrant Colors**: Energetic oranges, electric blues, and magic purples
-- **Playful Typography**: Rounded fonts and animated text effects
-- **Gamification**: Points, particles, and celebrations make everything fun
-
-For complete design guidelines, see our [UI/UX Guidelines](docs/UI_UX_GUIDELINES.md).
+### 🔧 In Progress (See TODO.md)
+- Task synchronization improvements
+- Settings stability fixes
+- Filter functionality
+- Task completion checkbox
+- Point awarding system
 
 ## 📚 Documentation
 
-Complete project documentation is available in the `docs/` directory:
+Available documentation:
 
-- **[UI/UX Guidelines](docs/UI_UX_GUIDELINES.md)** - Complete "Not Boring" design system
-- **[Architecture Strategy](docs/ARCHITECTURE_STRATEGY.md)** - Technical architecture decisions
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference
-- **[Build Guide](docs/BUILD_READY_CHECKLIST.md)** - Build and deployment instructions
+- **[UI/UX Guidelines](docs/UI_UX_GUIDELINES.md)** - Complete design system and guidelines
 - **[Changelog](docs/CHANGELOG.md)** - Version history and updates
-- **[Project Summary](docs/PROJECT_SUMMARY.md)** - Comprehensive overview
-- **[Privacy Policy](docs/PRIVACY.md)** - Privacy policy and data handling
 - **[Security](docs/SECURITY.md)** - Security guidelines and practices
+- **[TODO.md](TODO.md)** - Current bugs, features, and development roadmap
 
-## 🤝 Contributing
+## 🐛 Bug Reports & Issues
 
-We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBUTING.md) for details.
+Current known issues are tracked in [TODO.md](TODO.md). For new bugs or feature requests, please create an issue.
 
-## 📞 Support
+## 📱 Technology Stack
 
-For support and feature requests, please open an issue on GitHub or contact us at support@roomies.app
+- **SwiftUI** - Modern declarative UI framework
+- **Core Data** - Local data persistence
+- **Combine** - Reactive programming
+- **WidgetKit** - iOS home screen widgets
+- **EventKit** - Calendar integration
+- **LocalAuthentication** - Secure authentication
+- **UserNotifications** - Push notifications
 
 ---
 
-**Roomies** - Making household management fun, animated, and delightfully "not boring"! 🏠✨🎮
+**Roomies** - Making household management organized and fun! 🏠✨
+
+*Last updated: August 5, 2025*
