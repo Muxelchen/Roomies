@@ -95,7 +95,7 @@ class CalendarManager: ObservableObject {
     
     private func createCalendarEvent(for task: Task) {
         let event = EKEvent(eventStore: eventStore)
-        event.title = "🏠 \(task.title ?? "HouseHero Task")"
+        event.title = "🏠 \(task.title ?? "Roomies Task")"
         event.notes = task.taskDescription
         event.calendar = eventStore.defaultCalendarForNewEvents
         
@@ -115,7 +115,7 @@ class CalendarManager: ObservableObject {
         }
         
         // Add custom properties
-        event.url = URL(string: "househero://task/\(task.id?.uuidString ?? "")")
+        event.url = URL(string: "roomies://task/\(task.id?.uuidString ?? "")")
         
         do {
             try eventStore.save(event, span: .thisEvent)
@@ -130,7 +130,7 @@ class CalendarManager: ObservableObject {
     }
     
     private func updateCalendarEvent(_ event: EKEvent, with task: Task) {
-        event.title = "🏠 \(task.title ?? "HouseHero Task")"
+        event.title = "🏠 \(task.title ?? "Roomies Task")"
         event.notes = task.taskDescription
         
         if let dueDate = task.dueDate {
@@ -203,7 +203,7 @@ class CalendarManager: ObservableObject {
         // Filter events related to this task
         let taskEvents = events.filter { event in
             if let url = event.url,
-               url.absoluteString.contains("househero://task/\(task.id?.uuidString ?? "")") {
+               url.absoluteString.contains("roomies://task/\(task.id?.uuidString ?? "")") {
                 return true
             }
             return event.title?.contains(task.title ?? "") == true

@@ -7,30 +7,30 @@
 - [ ] **Filter-Funktionalität**: Filter funktionieren nicht korrekt
 - [ ] **Task-Checkbox**: Tasks können nicht abgehakt werden
 - [ ] **Punkte-Vergabe**: Punkte werden nach Aufgaben-Abschluss nicht vergeben
-- [ ] **Navigation-Bug**: Aus Details-Tab bei Rewards kommt man nicht raus (Enter-Taste implementieren)
+- [x] **Navigation-Bug**: Aus Details-Tab bei Rewards kommt man nicht raus (Enter-Taste implementieren)
 - [ ] **Reward-Punkte**: Punkte werden beim Abholen von Rewards nicht abgezogen
-- [ ] **Sprachkonsistenz**: App vollständig auf Englisch umstellen (aktuell halb deutsch)
+- [x] **Sprachkonsistenz**: App vollständig auf Englisch umstellen (aktuell halb deutsch)
 
 ## ⚡ Performance-Verbesserungen (Kritisch)
 
 ### 🔧 Core Data Optimierung
-- [ ] **Batch Operations**: Core Data Batch-Inserts für große Datenmengen implementieren
+- [x] **Batch Operations**: Core Data Batch-Inserts für große Datenmengen implementieren
 - [ ] **Prefetching**: Intelligentes Prefetching für Task-Listen und Analytics
-- [ ] **Background Contexts**: Alle Datenbank-Operationen in Background Contexts auslagern
-- [ ] **Memory Management**: Core Data Memory Leaks identifizieren und beheben
-- [ ] **Database Compaction**: Regelmäßige Datenbank-Bereinigung implementieren
+- [x] **Background Contexts**: Alle Datenbank-Operationen in Background Contexts auslagern
+- [x] **Memory Management**: Core Data Memory Leaks identifizieren und beheben
+- [x] **Database Compaction**: Regelmäßige Datenbank-Bereinigung implementieren
 
 ### 📱 App Performance
-- [ ] **App Launch Time**: Startzeit auf < 2 Sekunden optimieren
-- [ ] **Memory Usage**: Speicherverbrauch auf < 100MB reduzieren
+- [x] **App Launch Time**: Startzeit auf < 2 Sekunden optimieren
+- [x] **Memory Usage**: Speicherverbrauch auf < 100MB reduzieren
 - [ ] **Image Caching**: Intelligentes Bild-Caching für Task-Fotos implementieren
-- [ ] **Lazy Loading**: Views und Daten lazy laden für bessere Performance
-- [ ] **Background Processing**: Schwere Operationen in Background auslagern
+- [x] **Lazy Loading**: Views und Daten lazy laden für bessere Performance
+- [x] **Background Processing**: Schwere Operationen in Background auslagern
 
 ### 🎯 UI Performance
-- [ ] **List Rendering**: SwiftUI Lists mit LazyVStack optimieren
+- [x] **List Rendering**: SwiftUI Lists mit LazyVStack optimieren
 - [ ] **Animation Performance**: Animations-Frame-Rate auf 60fps optimieren
-- [ ] **View Updates**: Unnötige View-Updates vermeiden
+- [x] **View Updates**: Unnötige View-Updates vermeiden
 - [ ] **Image Compression**: Task-Fotos automatisch komprimieren
 - [ ] **Scroll Performance**: Smooth Scrolling für alle Listen implementieren
 
@@ -38,7 +38,7 @@
 - [ ] **Incremental Updates**: Nur geänderte Daten synchronisieren
 - [ ] **Debouncing**: User-Input debouncing für bessere Performance
 - [ ] **Caching Strategy**: Intelligente Caching-Strategie implementieren
-- [ ] **Background Sync**: Daten-Synchronisation im Hintergrund
+- [x] **Background Sync**: Daten-Synchronisation im Hintergrund
 
 ## 🧪 Unit Tests & Testing (Wichtig)
 
@@ -106,6 +106,28 @@
   - [ ] Performance Regression Tests
 
 ## ✨ Features (Neu)
+- [ ] **Custom Avatar System**: Personalisierte Avatar-Erstellung für jeden Benutzer
+  - [ ] **Avatar Builder**: Interaktiver Avatar-Editor mit verschiedenen Optionen
+    - [ ] Gesichtsformen (rund, eckig, oval, herzförmig)
+    - [ ] Hautfarben (diverse Palette)
+    - [ ] Frisuren (kurz, lang, lockig, glatt, Glatze, etc.)
+    - [ ] Haarfarben (braun, blond, schwarz, rot, grau, bunt)
+    - [ ] Augenformen und -farben
+    - [ ] Accessoires (Brille, Hut, Schmuck)
+    - [ ] Kleidungsstile und -farben
+  - [ ] **Avatar Speicherung**: Sichere Speicherung der Avatar-Daten
+    - [ ] Core Data Model für Avatar-Eigenschaften erweitern
+    - [ ] Avatar-Daten mit User-Profil verknüpfen
+    - [ ] Avatar-Export/Import für Backup
+  - [ ] **Avatar Integration**: Avatar in der gesamten App verwenden
+    - [ ] Profilbild im Dashboard und Profil-Tab
+    - [ ] Avatar in Leaderboards und Task-Zuweisungen
+    - [ ] Avatar in Kommentaren und sozialen Features
+    - [ ] Animierte Avatar-Reaktionen bei Erfolgen
+  - [ ] **Avatar Sharing**: Avatar-System für soziale Interaktion
+    - [ ] Avatar-Galerie für Household-Mitglieder
+    - [ ] Avatar-Themes und saisonale Updates
+    - [ ] Achievement-Badges am Avatar anzeigen
 - [ ] **Levelsystem**: Implementierung eines Fortschritts-/Levelsystems
 - [ ] **Profil-Anpassung**: Namen und Profildetails editierbar machen
 - [ ] **Einkaufsliste**: Synchrone Einkaufsliste für alle Nutzer erstellen

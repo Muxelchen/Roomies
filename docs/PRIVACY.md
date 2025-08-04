@@ -4,7 +4,7 @@
 
 ## Introduction
 
-HouseHero ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our iOS household management application.
+Roomies ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our iOS household management application.
 
 ## Information We Collect
 
@@ -146,7 +146,7 @@ HouseHero ("we," "our," or "us") is committed to protecting your privacy. This P
 
 ### Incident Detection
 - **Automated Monitoring**: Continuous security monitoring
-- **User Reporting**: Report security issues to security@househero.app
+- **User Reporting**: Report security issues to security@roomies.app
 - **Regular Audits**: Quarterly security assessments
 - **Vulnerability Scanning**: Continuous vulnerability detection
 
@@ -195,18 +195,18 @@ HouseHero ("we," "our," or "us") is committed to protecting your privacy. This P
 ## Contact Information
 
 ### Privacy Team
-- **Email**: privacy@househero.app
+- **Email**: privacy@roomies.app
 - **Address**: [Your Business Address]
 - **Phone**: [Your Phone Number]
 - **Response Time**: 48 hours for privacy inquiries
 
 ### Data Protection Officer (EU)
-- **Email**: dpo@househero.app
+- **Email**: dpo@roomies.app
 - **Address**: [EU Representative Address]
 - **Response Time**: 30 days for GDPR requests
 
 ### Legal Team
-- **Email**: legal@househero.app
+- **Email**: legal@roomies.app
 - **Address**: [Legal Department Address]
 - **Response Time**: 5 business days for legal inquiries
 
@@ -240,6 +240,6 @@ HouseHero ("we," "our," or "us") is committed to protecting your privacy. This P
 
 ---
 
-**HouseHero Privacy Team** - Protecting your privacy with transparency and control! 🔒📱
+**Roomies Privacy Team** - Protecting your privacy with transparency and control! 🔒📱
 
-*This privacy policy is effective as of August 3, 2025, and will remain in effect except with respect to any changes in its provisions in the future, which will be in effect immediately after being posted on this page.* 
+*This privacy policy is effective as of August 3, 2025, and will remain in effect except with respect to any changes in its provisions in the future, which will be in effect immediately after being posted on this page.*

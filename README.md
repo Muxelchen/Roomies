@@ -1,28 +1,28 @@
-# HouseHero - Advanced iOS Household Management App
+# Roomies - "Not Boring" iOS Household Management App
 
-A comprehensive, production-ready iOS app for gamified household organization in families and shared living spaces, featuring advanced security, analytics, and system integration.
+A vibrant, gamified iOS app for household organization that makes chores feel like a game, featuring stunning 3D animations, spring-based interactions, and a playful "Not Boring Apps" design philosophy.
 
 ## 🏠 About the App
 
-HouseHero transforms household management into an engaging, gamified experience. With advanced features like photo verification, biometric security, iOS widgets, calendar integration, and comprehensive analytics, it's the ultimate solution for modern households.
+Roomies transforms household management into an exciting, living experience. With its "Not Boring Apps" approach featuring 3D effects, fluid animations, and delightful micro-interactions, it's the most engaging way to organize your home.
 
 ## 🏗️ Architecture Overview
 
-HouseHero follows a **clean architecture pattern** with clear separation of concerns:
+Roomies follows a **clean architecture pattern** with clear separation of concerns:
 
 ```
-HouseHero/
-├── 📱 Frontend Layer (UI & User Interaction)
-│   ├── Views/                    # SwiftUI Views
-│   ├── Widgets/                  # iOS Widgets
-│   ├── Assets.xcassets/         # UI Resources
+Roomies/
+├── 📱 Frontend Layer (3D UI & Animations)
+│   ├── Views/                    # SwiftUI Views with 3D Effects
+│   ├── Widgets/                  # Animated iOS Widgets
+│   ├── Assets.xcassets/         # Visual Resources
 │   └── ContentView.swift        # Main Content View
 ├── 🔧 Backend Layer (Business Logic & Data)
 │   ├── Services/                # Business Logic Managers
 │   ├── Models/                  # Data Layer & Core Data
 │   └── HouseholdModel.xcdatamodeld/ # Core Data Schema
 └── ⚙️ Configuration Layer (App Setup)
-    ├── HouseHeroApp.swift       # App Entry Point
+    ├── RoomiesApp.swift         # App Entry Point
     ├── Info.plist              # App Configuration
     └── HouseholdApp.entitlements # App Permissions
 ```
@@ -32,53 +32,53 @@ HouseHero/
 - ✅ **Maintainable**: Changes in one layer don't affect others
 - ✅ **Testable**: Isolated testing for each layer
 - ✅ **Scalable**: Easy to add new features and services
+- ✅ **Performant**: Optimized for 60 FPS animations
 
 ## ✨ Core Features
 
 ### 👥 Multi-User Households
-- Create and manage multiple households
-- Invite members via invitation code or QR-Code
-- User profiles with individual avatars and performance tracking
-- **Multiple household support**: Users can join and manage several households simultaneously
-- Role-based permissions and household switching
+- Create and manage multiple households with animated onboarding
+- Invite members via invitation code or animated QR-Code
+- User profiles with colorful avatars and performance tracking
+- **Multiple household support**: Users can join and manage several households
+- Role-based permissions with smooth transitions
 
-### 📋 Advanced Task Management
-- Create, edit, schedule, and assign tasks with custom point values
-- **Photo Verification System**: Take before/after photos for task completion
-- Recurring tasks (daily, weekly, monthly, custom)
-- Task priorities, due dates, and location tracking
+### 📋 Simplified Task Management
+- Create, edit, schedule, and assign tasks with gamified point values
+- **No Photo Verification**: Simplified completion system focused on trust
+- Recurring tasks (daily, weekly, monthly, custom) with visual indicators
+- Task priorities with animated priority colors
 - **iOS Calendar Integration**: Tasks sync automatically with Calendar app
-- Visual indicators for photo requirements and completion status
+- Spring-based animations for task completion celebrations
 
-### 🔐 Enterprise-Grade Security
-- **Biometric Authentication**: Face ID/Touch ID support
-- **Auto-Lock System**: App locks after 5 minutes of inactivity
-- Email/password authentication with secure storage
-- **Keychain Integration**: Secure credential management
+### 🔐 Simple & Secure
+- **No Biometric Complexity**: Clean email/password authentication
+- Secure credential storage with Keychain integration
+- **Streamlined Security**: Focus on usability over complexity
 - GDPR-compliant data handling and privacy controls
 
 ### 📱 Native iOS Integration
-- **iOS Widgets**: Small, Medium, and Large home screen widgets
+- **Animated iOS Widgets**: Small, Medium, and Large home screen widgets with live data
 - **Calendar Sync**: Automatic task scheduling in iOS Calendar
-- **Push Notifications**: Smart alerts for tasks, challenges, and rewards
-- **Background Processing**: Optimized performance and data management
+- **Smart Notifications**: Engaging alerts for tasks and achievements
+- **Background Processing**: Optimized performance for smooth animations
 - **Deep Linking**: Seamless app-to-app navigation
 
-### 📊 Advanced Analytics Dashboard
-- **Productivity Trends**: 30-day completion rate analysis
-- **User Performance Metrics**: Individual member analytics and streaks
-- **Task Distribution Analysis**: By category, priority, and type
-- **Time Analysis**: Peak productivity hours and optimal scheduling
-- **Predictive Insights**: AI-powered recommendations and forecasting
-- **Performance Monitoring**: Real-time app optimization metrics
+### 📊 Beautiful Analytics Dashboard
+- **Visual Productivity Trends**: 30-day completion rate with animated charts
+- **User Performance Metrics**: Individual member analytics with celebrations
+- **Task Distribution Visualization**: Animated category breakdowns
+- **Time Analysis**: Peak productivity insights with smooth transitions
+- **Gamified Insights**: Fun recommendations and progress tracking
+- **Performance Monitoring**: Real-time app optimization
 
-### 🎮 Comprehensive Gamification
-- **Point System**: Earn points for completed tasks with photo verification
-- **Reward Store**: Spend points on customizable household rewards
-- **Achievement System**: Unlock badges and milestones
-- **Leaderboards**: Competitive rankings within households
-- **Challenges**: Time-limited competitions and goals
-- **Streak Tracking**: Maintain daily task completion streaks
+### 🎮 "Not Boring" Gamification
+- **3D Point System**: Floating numbers and particle effects for completed tasks
+- **Animated Reward Store**: Spend points on rewards with satisfying interactions
+- **3D Achievement System**: Spinning medallions and badge ceremonies
+- **Dynamic Leaderboards**: Competitive rankings with live animations
+- **Epic Challenges**: Time-limited competitions with countdown timers
+- **Streak Celebrations**: Confetti explosions and success animations
 
 ## 🚀 Getting Started
 
@@ -91,8 +91,8 @@ HouseHero/
 ### Installation
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/HouseHero.git
-   cd HouseHero
+   git clone https://github.com/your-username/Roomies.git
+   cd Roomies
    ```
 
 2. **Open in Xcode**
@@ -102,7 +102,7 @@ HouseHero/
 
 3. **Configure signing**
    - Select your development team in project settings
-   - Update bundle identifier if needed
+   - Update bundle identifier to `com.roomies.app`
 
 4. **Build and run**
    - Select target device/simulator
@@ -112,24 +112,22 @@ HouseHero/
 ```
 HouseholdApp/
 ├── 📱 Frontend/
-│   ├── Views/                    # SwiftUI Views
-│   │   ├── Authentication/       # Login/Register UI
-│   │   ├── Dashboard/           # Main dashboard
-│   │   ├── Tasks/              # Task management
-│   │   ├── Store/              # Reward store
-│   │   ├── Challenges/         # Gamification
-│   │   ├── Leaderboard/        # Rankings
-│   │   ├── Profile/            # Settings & profile
-│   │   └── Shared/             # Reusable components
-│   ├── Widgets/                # iOS Widgets
-│   ├── Assets.xcassets/        # UI Resources
+│   ├── Views/                    # SwiftUI Views with 3D Effects
+│   │   ├── Authentication/       # Animated Login/Register
+│   │   ├── Dashboard/           # 3D Dashboard
+│   │   ├── Tasks/              # Interactive Task Management
+│   │   ├── Store/              # Animated Reward Store
+│   │   ├── Challenges/         # Gamified Challenges
+│   │   ├── Leaderboard/        # Dynamic Rankings
+│   │   ├── Profile/            # Settings & Profile
+│   │   └── Shared/             # Reusable 3D Components
+│   ├── Widgets/                # Animated iOS Widgets
+│   ├── Assets.xcassets/        # Visual Resources
 │   └── ContentView.swift       # Main content view
 ├── 🔧 Backend/
 │   ├── Services/               # Business Logic
 │   │   ├── AuthenticationManager.swift
-│   │   ├── BiometricAuthManager.swift
 │   │   ├── NotificationManager.swift
-│   │   ├── PhotoManager.swift
 │   │   ├── CalendarManager.swift
 │   │   ├── AnalyticsManager.swift
 │   │   ├── PerformanceManager.swift
@@ -142,23 +140,36 @@ HouseholdApp/
 │   │   └── LocalizationManager.swift
 │   └── HouseholdModel.xcdatamodeld/ # Core Data
 └── ⚙️ Configuration/
-    ├── HouseHeroApp.swift      # App entry point
+    ├── RoomiesApp.swift        # App entry point
     ├── Info.plist             # App configuration
     └── HouseholdApp.entitlements # Permissions
 ```
+
+## 🎨 "Not Boring" Design Philosophy
+
+Roomies follows the "Not Boring Apps" design philosophy:
+
+- **3D-First Design**: Everything has depth, shadows, and physical presence
+- **Fluid Animations**: Spring-based interactions that feel alive
+- **Micro-Interactions**: Every tap, swipe, and gesture has delightful feedback
+- **Vibrant Colors**: Energetic oranges, electric blues, and magic purples
+- **Playful Typography**: Rounded fonts and animated text effects
+- **Gamification**: Points, particles, and celebrations make everything fun
+
+For complete design guidelines, see our [UI/UX Guidelines](docs/UI_UX_GUIDELINES.md).
 
 ## 📚 Documentation
 
 Complete project documentation is available in the `docs/` directory:
 
-- **[Architecture Strategy](docs/ARCHITECTURE_STRATEGY.md)** - Technical architecture and design decisions
-- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference and integration guide
-- **[Build Guide](docs/BUILD_READY_CHECKLIST.md)** - Step-by-step build and deployment instructions
-- **[Changelog](docs/CHANGELOG.md)** - Version history and feature updates
-- **[Project Summary](docs/PROJECT_SUMMARY.md)** - Comprehensive project overview
-- **[Privacy Policy](docs/PRIVACY.md)** - Complete privacy policy and data handling
-- **[Security](docs/SECURITY.md)** - Security guidelines and best practices
-- **[Final Audit Report](docs/FINAL_PROJECT_AUDIT_REPORT.md)** - Complete project audit results
+- **[UI/UX Guidelines](docs/UI_UX_GUIDELINES.md)** - Complete "Not Boring" design system
+- **[Architecture Strategy](docs/ARCHITECTURE_STRATEGY.md)** - Technical architecture decisions
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[Build Guide](docs/BUILD_READY_CHECKLIST.md)** - Build and deployment instructions
+- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
+- **[Project Summary](docs/PROJECT_SUMMARY.md)** - Comprehensive overview
+- **[Privacy Policy](docs/PRIVACY.md)** - Privacy policy and data handling
+- **[Security](docs/SECURITY.md)** - Security guidelines and practices
 
 ## 🤝 Contributing
 
@@ -166,8 +177,8 @@ We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBU
 
 ## 📞 Support
 
-For support and feature requests, please open an issue on GitHub or contact us at support@househero.app
+For support and feature requests, please open an issue on GitHub or contact us at support@roomies.app
 
 ---
 
-**HouseHero** - Making household management fun, secure, and efficient! 🏠✨
+**Roomies** - Making household management fun, animated, and delightfully "not boring"! 🏠✨🎮

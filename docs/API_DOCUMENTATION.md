@@ -1,8 +1,8 @@
-# HouseHero API Documentation
+# Roomies API Documentation
 
 ## Overview
 
-This document provides comprehensive API documentation for HouseHero's core services and managers. All APIs are designed with SwiftUI and follow modern iOS development patterns.
+This document provides comprehensive API documentation for Roomies's core services and managers. All APIs are designed with SwiftUI and follow modern iOS development patterns.
 
 ## Table of Contents
 
@@ -136,7 +136,7 @@ Authenticates user using biometrics.
 
 ```swift
 func authenticateWithBiometrics(
-    reason: String = "Authenticate to access HouseHero",
+    reason: String = "Authenticate to access Roomies",
     completion: @escaping (Bool, Error?) -> Void
 )
 ```
@@ -773,10 +773,10 @@ if !calendarManager.authorizationStatus == .authorized {
 ## Support
 
 For API support and questions:
-- **Email**: api-support@househero.app
-- **Documentation**: [HouseHero Docs](https://docs.househero.app)
-- **GitHub Issues**: [Report Issues](https://github.com/househero/issues)
+- **Email**: api-support@roomies.app
+- **Documentation**: [Roomies Docs](https://docs.roomies.app)
+- **GitHub Issues**: [Report Issues](https://github.com/roomies/issues)
 
 ---
 
-**HouseHero API Team** - Building powerful, secure, and efficient APIs! 🚀📱 
+**Roomies API Team** - Building powerful, secure, and efficient APIs! 🚀📱

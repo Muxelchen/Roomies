@@ -65,7 +65,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 3. **DO NOT** attempt to exploit the vulnerability further
 
 ### 📧 Reporting Process
-1. **Email Security Team**: security@househero.app
+1. **Email Security Team**: security@roomies.app
 2. **Include Details**:
    - Description of the vulnerability
    - Steps to reproduce
@@ -80,7 +80,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 - **Public Disclosure**: After fix is deployed
 
 ### 🏆 Security Hall of Fame
-We recognize security researchers who help improve HouseHero's security:
+We recognize security researchers who help improve Roomies's security:
 
 | Researcher | Contribution | Date |
 |------------|-------------|------|
@@ -93,7 +93,7 @@ We recognize security researchers who help improve HouseHero's security:
 - **Enable Biometrics**: Use Face ID/Touch ID for app access
 - **Regular Backups**: Backup your data regularly
 - **Strong Passwords**: Use unique, strong passwords
-- **App Updates**: Keep HouseHero updated to latest version
+- **App Updates**: Keep Roomies updated to latest version
 
 ### For Developers
 - **Code Review**: All code changes require security review
@@ -180,15 +180,15 @@ App → HTTPS → Certificate Validation → API → Encrypted Response → App
 ## Contact Information
 
 ### Security Team
-- **Email**: security@househero.app
-- **PGP Key**: [Download PGP Key](https://househero.app/security/pgp-key.asc)
+- **Email**: security@roomies.app
+- **PGP Key**: [Download PGP Key](https://roomies.app/security/pgp-key.asc)
 - **Response Time**: 24 hours for initial response
 
 ### Emergency Contact
-- **Critical Issues**: security-emergency@househero.app
+- **Critical Issues**: security-emergency@roomies.app
 - **Response Time**: 4 hours for critical issues
 - **Escalation**: On-call security team
 
 ---
 
-**HouseHero Security Team** - Protecting your household data with enterprise-grade security! 🔒🛡️ 
+**Roomies Security Team** - Protecting your household data with enterprise-grade security! 🔒🛡️

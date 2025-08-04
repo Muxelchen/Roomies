@@ -1,8 +1,8 @@
-# 🚀 Build Ready Checklist - HouseHero
+# 🚀 Build Ready Checklist - Roomies
 
-## 🎯 **PROJEKT-STATUS: Neue Architektur implementiert**
+Eine umfassende Checkliste für den erfolgreichen Build der Roomies iOS App.
 
-HouseHero wurde erfolgreich auf eine **Frontend/Backend-Architektur** umgestellt für bessere Wartbarkeit und Skalierbarkeit.
+Roomies wurde erfolgreich auf eine **Frontend/Backend-Architektur** umgestellt für bessere Wartbarkeit und Skalierbarkeit.
 
 ---
 
@@ -36,7 +36,7 @@ open HouseholdApp.xcodeproj
 └── HouseholdModel.xcdatamodeld/ # Core Data
 
 ⚙️ Configuration/
-├── HouseHeroApp.swift       # App Entry Point
+├── RoomiesApp.swift       # App Entry Point
 ├── Info.plist              # App Configuration
 └── HouseholdApp.entitlements # App Permissions
 ```
@@ -90,7 +90,7 @@ open HouseholdApp.xcodeproj
 - [ ] **HouseholdModel.xcdatamodeld/** enthält Core Data Schema
 
 ### **Configuration Layer (App Setup)**
-- [ ] **HouseHeroApp.swift** ist App Entry Point
+- [ ] **RoomiesApp.swift** ist App Entry Point
 - [ ] **Info.plist** enthält App Configuration
 - [ ] **HouseholdApp.entitlements** enthält App Permissions
 
@@ -206,4 +206,4 @@ open HouseholdApp.xcodeproj
 
 ---
 
-**HouseHero ist bereit für den nächsten Build!** 🚀✨
+**Roomies ist bereit für den nächsten Build!** 🚀✨

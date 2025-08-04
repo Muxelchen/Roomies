@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>HouseHero</string>
+	<string>Roomies</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,10 +22,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>household-app</string>
+			<string>roomies-app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>househero</string>
+				<string>roomies</string>
 			</array>
 		</dict>
 	</array>
@@ -44,8 +44,6 @@
 				<dict>
 					<key>UISceneConfigurationName</key>
 					<string>Default Configuration</string>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 				</dict>
 			</array>
 		</dict>
@@ -74,12 +72,27 @@
 	<key>UIUserInterfaceStyle</key>
 	<string>Automatic</string>
 	<key>NSCameraUsageDescription</key>
-	<string>HouseHero needs camera access to take photos of completed tasks for verification and progress tracking.</string>
+	<string>Roomies needs camera access to take photos of completed tasks for verification and progress tracking.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>HouseHero needs photo library access to select task completion photos and manage household memories.</string>
+	<string>Roomies needs photo library access to select task completion photos and manage household memories.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>HouseHero uses location to help organize tasks by room and provide location-based reminders.</string>
+	<string>Roomies uses location to help organize tasks by room and provide location-based reminders.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>HouseHero uses Face ID to secure your household data and provide quick authentication.</string>
+	<string>Roomies uses Face ID to secure your household data and provide quick authentication.</string>
+	<key>NSCalendarUsageDescription</key>
+	<string>Roomies needs calendar access to sync household tasks with your calendar and set reminders for due dates.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Roomies needs access to reminders to create and manage task notifications and deadlines.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Roomies sends notifications to remind you about task deadlines, completed tasks, and household activities.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Roomies needs contacts access to easily invite family members and friends to join your household.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Roomies needs microphone access for voice notes and task instructions.</string>
+	<!-- ✅ FIX: Add Metal Performance Shaders flag to prevent RenderBox framework issues -->
+	<key>MTLCaptureEnabled</key>
+	<false/>
+	<key>MTLGPUFamilyApple1</key>
+	<false/>
 </dict>
 </plist>

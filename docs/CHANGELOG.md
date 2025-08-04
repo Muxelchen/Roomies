@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to HouseHero will be documented in this file.
+All notable changes to Roomies will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -209,9 +209,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 For support with version updates or migration issues, please:
 - Check our [Documentation](README.md)
-- Open an issue on [GitHub](https://github.com/househero/issues)
-- Contact support at support@househero.app
+- Open an issue on [GitHub](https://github.com/roomies/issues)
+- Contact support at support@roomies.app
 
 ---
 
-**HouseHero** - Making household management fun, secure, and efficient! 🏠✨ 
+**Roomies** - Making household management fun, animated, and delightfully "not boring"! 🏠✨🎮

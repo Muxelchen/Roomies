@@ -1,4 +1,4 @@
-# 🏗️ HouseHero Architektur-Strategie
+# 🏗️ Roomies Architektur-Strategie
 
 ## 🎯 **NEUE ARCHITEKTUR: Frontend/Backend Trennung**
 
@@ -44,7 +44,7 @@ HouseholdApp/Backend/
 ### **⚙️ Configuration Layer (App Setup)**
 ```
 HouseholdApp/Configuration/
-├── HouseHeroApp.swift      # App Entry Point
+├── RoomiesApp.swift      # App Entry Point
 ├── Info.plist             # App Configuration
 └── HouseholdApp.entitlements # App Permissions
 ```
@@ -91,7 +91,7 @@ class TaskManager: ObservableObject {
 ```swift
 // ✅ RICHTIG: App-Konfiguration
 @main
-struct HouseHeroApp: App {
+struct RoomiesApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -130,7 +130,7 @@ class TaskManager: ObservableObject {
     
     func loadTasks() {
         // Load from Core Data
-        // Updates @Published automatically
+        // Updates @Published automatisch
     }
 }
 ```
@@ -193,4 +193,4 @@ class TaskManager: ObservableObject {
 3. **Tests schreiben** für isolierte Layer
 4. **Dokumentation aktualisieren** für Team-Mitglieder
 
-**Diese Architektur macht HouseHero wartbarer, testbarer und professioneller!** 🚀
+**Diese Architektur macht Roomies wartbarer, testbarer und professioneller!** 🚀

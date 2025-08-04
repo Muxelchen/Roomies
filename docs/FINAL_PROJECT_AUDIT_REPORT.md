@@ -112,7 +112,7 @@
 
 ### 🔒 **Sicherheitsfeatures**
 ```
-✅ Keychain: com.househero.app Service
+✅ Keychain: com.roomies.app Service
 ✅ Password Hashing: SHA256 with CryptoKit
 ✅ Biometric Auth: LocalAuthentication implementiert
 ✅ Data Protection: NSFileProtectionComplete

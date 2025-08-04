@@ -1,10 +1,10 @@
-# Contributing to HouseHero
+# Contributing to Roomies
 
-Thank you for your interest in contributing to HouseHero! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Roomies! This document provides guidelines and information for contributors.
 
-## 🎯 Project Overview
+## About Roomies
 
-HouseHero is a comprehensive iOS household management app built with SwiftUI and Core Data. We welcome contributions that improve functionality, performance, security, and user experience.
+Roomies is a vibrant, gamified iOS household management app featuring "Not Boring Apps" design with 3D effects, fluid animations, and delightful micro-interactions. We welcome contributions that improve functionality, performance, user experience, and visual appeal.
 
 ## 🚀 Getting Started
 
@@ -18,8 +18,8 @@ HouseHero is a comprehensive iOS household management app built with SwiftUI and
 1. **Fork the repository**
 2. **Clone your fork**
    ```bash
-   git clone https://github.com/your-username/HouseHero.git
-   cd HouseHero
+   git clone https://github.com/your-username/Roomies.git
+   cd Roomies
    ```
 3. **Open in Xcode**
    ```bash
@@ -239,9 +239,9 @@ HouseholdApp/
 - **Wiki**: For detailed guides and tutorials
 
 ### Contact
-- **Email**: contributors@househero.app
-- **Discord**: [HouseHero Community](https://discord.gg/househero)
-- **Twitter**: [@HouseHeroApp](https://twitter.com/HouseHeroApp)
+- **Email**: contributors@roomies.app
+- **Discord**: [Roomies Community](https://discord.gg/roomies)
+- **Twitter**: [@RoomiesApp](https://twitter.com/RoomiesApp)
 
 ## 🎉 Recognition
 
@@ -260,4 +260,4 @@ HouseholdApp/
 
 ---
 
-Thank you for contributing to HouseHero! Together, we're making household management better for everyone. 🏠✨ 
+Thank you for contributing to Roomies! Together, we're making household management fun, animated, and delightfully "not boring"! 🏠✨🎮

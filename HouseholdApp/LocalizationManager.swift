@@ -46,10 +46,11 @@ class LocalizationManager: ObservableObject {
         // English localizations
         localizations["en"] = [
             // App Name
-            "app.name": "HouseHero",
+            "app.name": "Roomies",
+            "app.tagline": "Making household management fun and animated",
             
             // Onboarding
-            "onboarding.welcome.title": "Welcome to HouseHero",
+            "onboarding.welcome.title": "Welcome to Roomies",
             "onboarding.welcome.description": "Organize your household playfully and efficiently with your family or roommates",
             "onboarding.tasks.title": "Tasks & Rewards",
             "onboarding.tasks.description": "Earn points for completed tasks and redeem them for custom rewards",
@@ -138,16 +139,22 @@ class LocalizationManager: ObservableObject {
             "common.done": "Done",
             "common.close": "Close",
             "common.yes": "Yes",
-            "common.no": "No"
+            "common.no": "No",
+            
+            // ✅ FIX: Add missing store localization keys
+            "store.insufficient_points_title": "Not Enough Points",
+            "store.insufficient_points_message": "You need %d points to redeem this reward, but you only have %d points.",
+            "store.redeem_confirmation": "Are you sure you want to redeem this reward?",
+            "store.reward_unavailable": "This reward is currently unavailable"
         ]
         
         // German localizations
         localizations["de"] = [
             // App Name
-            "app.name": "HouseHero",
+            "app.name": "Roomies",
             
             // Onboarding
-            "onboarding.welcome.title": "Willkommen bei HouseHero",
+            "onboarding.welcome.title": "Willkommen bei Roomies",
             "onboarding.welcome.description": "Organisiere deinen Haushalt spielerisch und effizient mit deiner Familie oder WG",
             "onboarding.tasks.title": "Aufgaben & Belohnungen",
             "onboarding.tasks.description": "Sammle Punkte für erledigte Aufgaben und löse sie für individuelle Belohnungen ein",
@@ -305,7 +312,13 @@ class LocalizationManager: ObservableObject {
             "common.close": "Schließen",
             "common.days": "Tage",
             "common.yes": "Ja",
-            "common.no": "Nein"
+            "common.no": "Nein",
+            
+            // ✅ FIX: Add missing German store localization keys
+            "store.insufficient_points_title": "Nicht genug Punkte",
+            "store.insufficient_points_message": "Du benötigst %d Punkte für diese Belohnung, hast aber nur %d Punkte.",
+            "store.redeem_confirmation": "Bist du sicher, dass du diese Belohnung einlösen möchtest?",
+            "store.reward_unavailable": "Diese Belohnung ist derzeit nicht verfügbar"
         ]
     }
     
