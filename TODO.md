@@ -8,8 +8,9 @@
 - [ ] **Task-Checkbox**: Tasks können nicht abgehakt werden
 - [ ] **Punkte-Vergabe**: Punkte werden nach Aufgaben-Abschluss nicht vergeben
 - [x] **Navigation-Bug**: Aus Details-Tab bei Rewards kommt man nicht raus (Enter-Taste implementieren)
-- [ ] **Reward-Punkte**: Punkte werden beim Abholen von Rewards nicht abgezogen
+- [x] **Reward-Punkte**: Punkte werden beim Abholen von Rewards nicht abgezogen ✅ FIXED
 - [x] **Sprachkonsistenz**: App vollständig auf Englisch umstellen (aktuell halb deutsch)
+- [x] **Household-Assignment**: Tasks, Rewards und Challenges werden korrekt zu Households zugeordnet ✅ FIXED
 
 ## ⚡ Performance-Verbesserungen (Kritisch)
 
@@ -107,27 +108,6 @@
 
 ## ✨ Features (Neu)
 - [ ] **Custom Avatar System**: Personalisierte Avatar-Erstellung für jeden Benutzer
-  - [ ] **Avatar Builder**: Interaktiver Avatar-Editor mit verschiedenen Optionen
-    - [ ] Gesichtsformen (rund, eckig, oval, herzförmig)
-    - [ ] Hautfarben (diverse Palette)
-    - [ ] Frisuren (kurz, lang, lockig, glatt, Glatze, etc.)
-    - [ ] Haarfarben (braun, blond, schwarz, rot, grau, bunt)
-    - [ ] Augenformen und -farben
-    - [ ] Accessoires (Brille, Hut, Schmuck)
-    - [ ] Kleidungsstile und -farben
-  - [ ] **Avatar Speicherung**: Sichere Speicherung der Avatar-Daten
-    - [ ] Core Data Model für Avatar-Eigenschaften erweitern
-    - [ ] Avatar-Daten mit User-Profil verknüpfen
-    - [ ] Avatar-Export/Import für Backup
-  - [ ] **Avatar Integration**: Avatar in der gesamten App verwenden
-    - [ ] Profilbild im Dashboard und Profil-Tab
-    - [ ] Avatar in Leaderboards und Task-Zuweisungen
-    - [ ] Avatar in Kommentaren und sozialen Features
-    - [ ] Animierte Avatar-Reaktionen bei Erfolgen
-  - [ ] **Avatar Sharing**: Avatar-System für soziale Interaktion
-    - [ ] Avatar-Galerie für Household-Mitglieder
-    - [ ] Avatar-Themes und saisonale Updates
-    - [ ] Achievement-Badges am Avatar anzeigen
 - [ ] **Levelsystem**: Implementierung eines Fortschritts-/Levelsystems
 - [ ] **Profil-Anpassung**: Namen und Profildetails editierbar machen
 - [ ] **Einkaufsliste**: Synchrone Einkaufsliste für alle Nutzer erstellen
