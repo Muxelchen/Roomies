@@ -1,0 +1,22 @@
+{
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "git.autofetch": true,
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false
+    },
+    "terminal.integrated.autoReplies": {},
+    "github.copilot.chat.agent.terminal.autoApprove": true,
+    "chat.tools.autoApprove": true,
+    "chat.maxRequestsPerSession": 50,
+    "github.copilot.chat.agent.autoFix": true,
+    "github.copilot.chat.agent.autoAcceptDelay": 15,
+    "github.copilot.chat.agent.autoContinue": true,
+    "github.copilot.chat.agent.continuationDelay": 2,
+    "github.copilot.chat.agent.autoFollowUp": true,
+    "github.copilot.chat.followUpPrompts": [
+        "Analyze ALL code for logical bugs and fix them immediately. Check: logic errors, state management, data flow, async operations, error handling, edge cases, performance issues. Work methodically through every code file, one at a time and systematically. Take your time. Continue iterating until completely bug-free. Fix, don't just report."
+    ]
+}
