@@ -205,28 +205,57 @@ struct AuthenticationView: View {
     }
     
     private var isFormValid: Bool {
+        // ✅ CRITICAL SECURITY FIX: Use proper validation methods from AuthenticationManager
         if isSignUp {
-            return !email.isEmpty && !password.isEmpty && !name.isEmpty && 
-                   password.count >= 6 && password == confirmPassword
+            return authManager.isValidEmail(email) && 
+                   authManager.isValidPassword(password) && 
+                   authManager.isValidName(name) && 
+                   password == confirmPassword && 
+                   !confirmPassword.isEmpty
         } else {
-            return !email.isEmpty && !password.isEmpty
+            return authManager.isValidEmail(email) && !password.isEmpty
         }
     }
     
     private func performAuthentication() {
+        // ✅ SECURITY FIX: Add input validation before authentication
+        guard authManager.isValidEmail(email) else {
+            authManager.errorMessage = "Please enter a valid email address"
+            return
+        }
+        
+        if isSignUp {
+            guard authManager.isValidName(name) else {
+                authManager.errorMessage = "Name must be between 2-50 characters"
+                return
+            }
+            
+            guard authManager.isValidPassword(password) else {
+                authManager.errorMessage = "Password must be at least 8 characters with uppercase, lowercase, and number"
+                return
+            }
+            
+            guard password == confirmPassword else {
+                authManager.errorMessage = "Passwords do not match"
+                return
+            }
+        }
+        
         isLoading = true
         authManager.errorMessage = ""
         
-        let task = _Concurrency.Task { @MainActor in
-            try? await _Concurrency.Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            if isSignUp {
-                authManager.signUp(email: email, password: password, name: name)
+        // ✅ FIX: Remove incorrect Task usage that could cause crashes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if self.isSignUp {
+                self.authManager.signUp(email: self.email.trimmingCharacters(in: .whitespacesAndNewlines), 
+                                       password: self.password, 
+                                       name: self.name.trimmingCharacters(in: .whitespacesAndNewlines))
             } else {
-                authManager.signIn(email: email, password: password)
+                self.authManager.signIn(email: self.email.trimmingCharacters(in: .whitespacesAndNewlines), 
+                                       password: self.password)
             }
-            isLoading = false
+            self.isLoading = false
         }
-        _ = task
     }
     
     private func quickDemoLogin() {
@@ -237,11 +266,11 @@ struct AuthenticationView: View {
         email = "admin@demo.com"
         password = "demo123"
         
-        let task = _Concurrency.Task { @MainActor in
-            authManager.signIn(email: "admin@demo.com", password: "demo123")
-            isLoading = false
+        // ✅ FIX: Remove incorrect Task usage that could cause crashes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.authManager.signIn(email: "admin@demo.com", password: "demo123")
+            self.isLoading = false
         }
-        _ = task
     }
 }
 

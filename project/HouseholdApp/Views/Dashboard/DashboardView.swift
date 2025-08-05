@@ -246,15 +246,8 @@ struct EnhancedHeaderView: View {
             }
             
             // Start points pulse animation
-            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                    pointsPulse = 1.1
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        pointsPulse = 1.0
-                    }
-                }
+            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+                pointsPulse = 1.1
             }
         }
     }

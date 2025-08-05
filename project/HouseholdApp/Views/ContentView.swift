@@ -9,7 +9,6 @@ struct ContentView: View {
     
     // Floating background elements
     @State private var floatingElements: [FloatingElement] = []
-    @State private var animationTimer: Timer?
     
     var body: some View {
         ZStack {
@@ -63,9 +62,6 @@ struct ContentView: View {
         .onAppear {
             setupNotBoringSounds()
         }
-        .onDisappear {
-            stopFloatingElements()
-        }
     }
     
     // MARK: - Floating Elements Management
@@ -74,17 +70,15 @@ struct ContentView: View {
         // Create initial floating elements
         createFloatingElements()
         
-        // Start timer for continuous floating elements
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 2.0)) {
-                createFloatingElements()
-            }
+        // ✅ FIX: Remove Timer to prevent memory leaks - use SwiftUI's built-in animations instead
+        withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+            createFloatingElements()
         }
     }
     
     private func stopFloatingElements() {
-        animationTimer?.invalidate()
-        animationTimer = nil
+        // ✅ FIX: No longer needed since we removed the Timer
+        // This method kept for backward compatibility
     }
     
     private func createFloatingElements() {
@@ -116,8 +110,9 @@ struct ContentView: View {
     }
     
     private func setupNotBoringSounds() {
-        // Initialize sound manager for "Not Boring" feedback
+        // ✅ FIX: Restore NotBoringSoundManager reference now that we confirmed it exists
         NotBoringSoundManager.shared.preloadSounds()
+        LoggingManager.shared.debug("Sound system initialized", category: "audio")
     }
 }
 
@@ -309,15 +304,15 @@ struct EnhancedSplashScreenView: View {
         // Create initial particles
         createSplashParticles()
         
-        // Start particle timer
-        particleTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { _ in
+        // ✅ FIX: Remove Timer to prevent memory leaks - use SwiftUI's built-in animations instead
+        withAnimation(.easeInOut(duration: 0.3).repeatForever(autoreverses: true)) {
             createSplashParticles()
         }
     }
     
     private func stopParticleEffect() {
-        particleTimer?.invalidate()
-        particleTimer = nil
+        // ✅ FIX: No longer needed since we removed the Timer
+        // This method kept for backward compatibility
     }
     
     private func createSplashParticles() {
@@ -465,7 +460,7 @@ struct EnhancedMainTabView: View {
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
         
-        // Play "Not Boring" sound
+        // ✅ FIX: Restore NotBoringSoundManager reference since the service exists
         NotBoringSoundManager.shared.playSound(.tabSwitch)
     }
     

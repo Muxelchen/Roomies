@@ -66,6 +66,7 @@ class GameificationManager: ObservableObject {
         }
         
         self.currentUserPoints = currentUser.points
+        self.currentUserLevel = calculateLevel(from: currentUser.points)
     }
     
     @MainActor
@@ -83,6 +84,7 @@ class GameificationManager: ObservableObject {
             
             DispatchQueue.main.async {
                 self.currentUserPoints = currentUser.points
+                self.currentUserLevel = self.calculateLevel(from: currentUser.points)
                 LoggingManager.shared.debug("Updated current user points to: \(currentUser.points)", category: "GameificationManager")
             }
         })
@@ -267,35 +269,40 @@ class GameificationManager: ObservableObject {
         let userId = user.id?.uuidString ?? ""
         
         // ✅ FIX: Add debugging for badge logic
-        print("🏆 DEBUG: Checking badges for user \(user.name ?? "Unknown") with \(user.points) points")
+        LoggingManager.shared.debug("Checking badges for user \(user.name ?? "Unknown") with \(user.points) points", category: "GameificationManager")
         
         // Points badges with duplicate prevention
         if user.points >= 100 && !userDefaults.bool(forKey: "badge_100_points_\(userId)") {
-            print("🏆 DEBUG: Awarding 100 points badge to user with \(user.points) points")
+            LoggingManager.shared.debug("Awarding 100 points badge to user with \(user.points) points", category: "GameificationManager")
             NotificationManager.shared.sendBadgeEarned(badgeName: "Point Collector - 100 points!")
             userDefaults.set(true, forKey: "badge_100_points_\(userId)")
         }
         
         if user.points >= 500 && !userDefaults.bool(forKey: "badge_500_points_\(userId)") {
-            print("🏆 DEBUG: Awarding 500 points badge to user with \(user.points) points")
+            LoggingManager.shared.debug("Awarding 500 points badge to user with \(user.points) points", category: "GameificationManager")
             NotificationManager.shared.sendBadgeEarned(badgeName: "Point Master - 500 points!")
             userDefaults.set(true, forKey: "badge_500_points_\(userId)")
         }
         
-        // Task completion badges with duplicate prevention
-        let assignedTasks = user.assignedTasks?.allObjects as? [Task] ?? []
+        // ✅ FIX: Safely handle task completion badges with proper nil checking
+        guard let assignedTasksSet = user.assignedTasks else {
+            LoggingManager.shared.debug("User has no assigned tasks relationship", category: "GameificationManager")
+            return
+        }
+        
+        let assignedTasks = assignedTasksSet.allObjects as? [Task] ?? []
         let completedTasks = assignedTasks.filter { $0.isCompleted }.count
         
-        print("🏆 DEBUG: User has \(completedTasks) completed tasks out of \(assignedTasks.count) assigned")
+        LoggingManager.shared.debug("User has \(completedTasks) completed tasks out of \(assignedTasks.count) assigned", category: "GameificationManager")
         
         if completedTasks >= 10 && !userDefaults.bool(forKey: "badge_10_tasks_\(userId)") {
-            print("🏆 DEBUG: Awarding 10 tasks badge to user with \(completedTasks) completed tasks")
+            LoggingManager.shared.debug("Awarding 10 tasks badge to user with \(completedTasks) completed tasks", category: "GameificationManager")
             NotificationManager.shared.sendBadgeEarned(badgeName: "Task Master - 10 completed!")
             userDefaults.set(true, forKey: "badge_10_tasks_\(userId)")
         }
         
         if completedTasks >= 50 && !userDefaults.bool(forKey: "badge_50_tasks_\(userId)") {
-            print("🏆 DEBUG: Awarding 50 tasks badge to user with \(completedTasks) completed tasks")
+            LoggingManager.shared.debug("Awarding 50 tasks badge to user with \(completedTasks) completed tasks", category: "GameificationManager")
             NotificationManager.shared.sendBadgeEarned(badgeName: "Task Champion - 50 completed!")
             userDefaults.set(true, forKey: "badge_50_tasks_\(userId)")
         }
@@ -304,8 +311,8 @@ class GameificationManager: ObservableObject {
     // MARK: - Performance Optimizations
     func cleanupOldData() {
         backgroundContext.perform {
-            // Clean up old completed tasks (older than 30 days)
-            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+            // ✅ FIX: Use consistent calendar instance for date calculations
+            let thirtyDaysAgo = self.calendar.date(byAdding: .day, value: -30, to: Date()) ?? Date()
             
             let request: NSFetchRequest<NSFetchRequestResult> = Task.fetchRequest()
             request.predicate = NSPredicate(format: "isCompleted == true AND completedAt < %@", thirtyDaysAgo as NSDate)
@@ -318,8 +325,10 @@ class GameificationManager: ObservableObject {
                 let objectIDArray = result?.result as? [NSManagedObjectID] ?? []
                 let changes = [NSDeletedObjectsKey: objectIDArray]
                 NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [PersistenceController.shared.container.viewContext])
+                
+                LoggingManager.shared.info("Cleaned up \(objectIDArray.count) old completed tasks", category: "GameificationManager")
             } catch {
-                print("Error cleaning up old data: \(error)")
+                LoggingManager.shared.error("Error cleaning up old data", category: "GameificationManager", error: error)
             }
         }
     }

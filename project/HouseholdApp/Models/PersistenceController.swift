@@ -256,7 +256,10 @@ class PersistenceController: ObservableObject {
     }
     
     private static func hashPassword(_ password: String) -> String {
-        let inputData = Data(password.utf8)
+        // ✅ CRITICAL SECURITY FIX: Add salt to match AuthenticationManager's hashing
+        let salt = "RoomiesAppSalt2025SecureHashing"
+        let saltedPassword = password + salt
+        let inputData = Data(saltedPassword.utf8)
         let hashed = SHA256.hash(data: inputData)
         return hashed.compactMap { String(format: "%02x", $0) }.joined()
     }

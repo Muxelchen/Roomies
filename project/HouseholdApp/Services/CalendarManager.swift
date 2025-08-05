@@ -33,8 +33,11 @@ class CalendarManager: ObservableObject {
     func requestCalendarAccess() {
         if #available(iOS 17.0, *) {
             eventStore.requestFullAccessToEvents { [weak self] granted, error in
-                _Concurrency.Task { @MainActor in
+                DispatchQueue.main.async {
                     self?.authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+                    if let error = error {
+                        LoggingManager.shared.error("Calendar access request failed", category: LoggingManager.Category.calendar.rawValue, error: error)
+                    }
                     if granted {
                         self?.enableCalendarSync(true)
                     }
@@ -42,8 +45,11 @@ class CalendarManager: ObservableObject {
             }
         } else {
             eventStore.requestAccess(to: .event) { [weak self] granted, error in
-                _Concurrency.Task { @MainActor in
+                DispatchQueue.main.async {
                     self?.authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+                    if let error = error {
+                        LoggingManager.shared.error("Calendar access request failed", category: LoggingManager.Category.calendar.rawValue, error: error)
+                    }
                     if granted {
                         self?.enableCalendarSync(true)
                     }

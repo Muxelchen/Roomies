@@ -96,7 +96,8 @@ struct AnalyticsView: View {
         let household = selectedHousehold ?? households.first
         guard let household = household else { return }
         
-        _Concurrency.Task {
+        // ✅ FIX: Replace incorrect _Concurrency.Task with proper Task syntax
+        Task {
             await analyticsManager.generateAnalytics(for: household)
         }
     }

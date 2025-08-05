@@ -41,6 +41,9 @@ class AuthenticationManager: ObservableObject {
                     currentUser = user
                     isAuthenticated = true
                     
+                    // ✅ FIX: Update GameificationManager with current user points
+                    GameificationManager.shared.currentUserPoints = user.points
+                    
                     // Store credentials securely
                     keychain.savePassword(password, for: email)
                     UserDefaults.standard.set(email, forKey: "currentUserEmail")
@@ -153,9 +156,35 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Password Hashing
     func hashPassword(_ password: String) -> String {
-        let inputData = Data(password.utf8)
+        // ✅ CRITICAL SECURITY FIX: Add salt to prevent rainbow table attacks
+        let salt = "RoomiesAppSalt2025SecureHashing"
+        let saltedPassword = password + salt
+        let inputData = Data(saltedPassword.utf8)
         let hashed = SHA256.hash(data: inputData)
         return hashed.compactMap { String(format: "%02x", $0) }.joined()
+    }
+    
+    // ✅ FIX: Add validation methods to prevent security issues
+    func isValidEmail(_ email: String) -> Bool {
+        let emailRegex = "^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}$"
+        let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
+        return emailPredicate.evaluate(with: email) && email.count <= 254
+    }
+    
+    func isValidPassword(_ password: String) -> Bool {
+        // Password must be at least 8 characters, contain uppercase, lowercase, number
+        guard password.count >= 8 else { return false }
+        
+        let hasUppercase = password.rangeOfCharacter(from: .uppercaseLetters) != nil
+        let hasLowercase = password.rangeOfCharacter(from: .lowercaseLetters) != nil
+        let hasNumber = password.rangeOfCharacter(from: .decimalDigits) != nil
+        
+        return hasUppercase && hasLowercase && hasNumber
+    }
+    
+    func isValidName(_ name: String) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.count >= 2 && trimmedName.count <= 50
     }
 }
 

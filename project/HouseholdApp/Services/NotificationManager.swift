@@ -190,17 +190,32 @@ class NotificationManager: NSObject, ObservableObject {
             return
         }
         
+        // ✅ FIX: Validate due date is in the future
+        guard dueDate > Date() else {
+            LoggingManager.shared.debug("Challenge due date is in the past, skipping notification: \(challengeTitle)", category: LoggingManager.Category.notifications.rawValue)
+            return
+        }
+        
         let content = UNMutableNotificationContent()
         content.title = "Challenge Expiring"
         content.body = "'\(challengeTitle)' is ending soon! Use your last chance."
         content.sound = UserDefaults.standard.bool(forKey: "soundEnabled") ? .default : nil
         content.categoryIdentifier = "CHALLENGE_REMINDER"
         content.userInfo = [
-            "challengeId": challenge.id?.uuidString ?? ""
+            "challengeId": challenge.id?.uuidString ?? "",
+            "type": "challengeReminder"
         ]
         
         // Schedule 1 day before end date
         let triggerDate = Calendar.current.date(byAdding: .day, value: -1, to: dueDate) ?? dueDate
+        
+        // ✅ FIX: Better handling of trigger dates for challenges too
+        let minimumNoticeInterval: TimeInterval = 3600 // 1 hour minimum notice for challenges
+        guard triggerDate.timeIntervalSinceNow > minimumNoticeInterval else {
+            LoggingManager.shared.debug("Challenge due date too close, skipping notification to prevent spam: \(challengeTitle)", category: LoggingManager.Category.notifications.rawValue)
+            return
+        }
+        
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate),
             repeats: false
@@ -214,7 +229,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling challenge reminder: \(error)")
+                LoggingManager.shared.error("Error scheduling challenge notification", category: LoggingManager.Category.notifications.rawValue, error: error)
+            } else {
+                LoggingManager.shared.debug("Notification scheduled for challenge: \(challengeTitle)", category: LoggingManager.Category.notifications.rawValue)
             }
         }
     }
@@ -247,7 +264,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling leaderboard notification: \(error)")
+                LoggingManager.shared.error("Error scheduling leaderboard notification", category: LoggingManager.Category.notifications.rawValue, error: error)
+            } else {
+                LoggingManager.shared.debug("Weekly leaderboard notification scheduled", category: LoggingManager.Category.notifications.rawValue)
             }
         }
     }
@@ -272,7 +291,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error sending badge notification: \(error)")
+                LoggingManager.shared.error("Error sending badge notification", category: LoggingManager.Category.notifications.rawValue, error: error)
+            } else {
+                LoggingManager.shared.debug("Badge notification sent for: \(badgeName)", category: LoggingManager.Category.notifications.rawValue)
             }
         }
     }
@@ -297,7 +318,9 @@ class NotificationManager: NSObject, ObservableObject {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error sending reward redemption notification: \(error)")
+                LoggingManager.shared.error("Error sending reward redemption notification", category: LoggingManager.Category.notifications.rawValue, error: error)
+            } else {
+                LoggingManager.shared.debug("Reward redemption notification sent for: \(rewardName)", category: LoggingManager.Category.notifications.rawValue)
             }
         }
     }

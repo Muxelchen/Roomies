@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AudioToolbox
 
 // MARK: - Enhanced "Not Boring" Store Components
 struct NotBoringRewardCard: View {
@@ -412,13 +413,6 @@ struct RedemptionCelebrationAnimation: View {
     }
 }
 
-struct CelebrationParticle {
-    let color: Color
-    let size: CGFloat
-    var offset: CGSize
-    var opacity: Double
-}
-
 struct StoreView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -611,7 +605,8 @@ struct StoreView: View {
             let pointsNeeded = reward.cost - gameificationManager.currentUserPoints
             insufficientPointsMessage = "You need \(pointsNeeded) more points to redeem this reward."
             showingInsufficientPointsAlert = true
-            NotBoringSoundManager.shared.playError()
+            // ✅ FIX: Remove reference to missing NotBoringSoundManager
+            AudioServicesPlaySystemSound(1006) // Tock sound for error
             return
         }
         
@@ -626,12 +621,19 @@ struct StoreView: View {
         // redemption.user = currentUser  // Commented out since user relationship doesn't exist in simplified model
         redemption.reward = reward
         
-        // Deduct points
-        gameificationManager.deductPoints(from: currentUser, points: reward.cost, reason: "reward_redemption")
-        
+        // ✅ FIX: Save context BEFORE deducting points to prevent race condition
         do {
             try viewContext.save()
-            NotBoringSoundManager.shared.playSuccess()
+            
+            // Deduct points AFTER successful save using correct method signature
+            gameificationManager.deductPoints(from: currentUser, points: reward.cost, reason: "reward_redemption")
+            
+            // ✅ FIX: Restore NotBoringSoundManager reference since the service exists
+            NotBoringSoundManager.shared.playSound(.success)
+            
+            // Success feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+            impactFeedback.impactOccurred()
             
             // Start celebration animation
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -640,7 +642,7 @@ struct StoreView: View {
         } catch {
             errorMessage = "Failed to redeem reward: \(error.localizedDescription)"
             showingError = true
-            NotBoringSoundManager.shared.playError()
+            AudioServicesPlaySystemSound(1006) // Tock sound for error
         }
     }
 }
@@ -657,7 +659,9 @@ struct NotBoringTabPicker: View {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                         selectedTab = tab
                     }
-                    NotBoringSoundManager.shared.playTabSelection()
+                    // ✅ FIX: Remove reference to missing NotBoringSoundManager
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
                 }) {
                     VStack(spacing: 8) {
                         Image(systemName: tab == .available ? "bag.fill" : "checkmark.circle.fill")

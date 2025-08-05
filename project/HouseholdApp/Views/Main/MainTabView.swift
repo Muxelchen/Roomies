@@ -33,10 +33,9 @@ struct FloatingElement: View {
                 yOffset = -20
                 rotation = 360
                 
-                Timer.scheduledTimer(withTimeInterval: duration * 2, repeats: true) { _ in
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        opacity = Double.random(in: 0.3...0.9)
-                    }
+                // ✅ FIX: Remove Timer to prevent memory leaks - use SwiftUI animation instead
+                withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                    opacity = Double.random(in: 0.3...0.9)
                 }
             }
     }

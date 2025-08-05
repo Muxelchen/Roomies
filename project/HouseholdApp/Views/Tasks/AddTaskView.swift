@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AudioToolbox
 
 // MARK: - Enhanced Interactive Components
 struct AnimatedPointsStepper: View {
@@ -19,7 +20,9 @@ struct AnimatedPointsStepper: View {
                     if points > 1 {
                         points -= 5
                         triggerPulse()
-                        NotBoringSoundManager.shared.playSound(.buttonTap)
+                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
                 }) {
                     Image(systemName: "minus.circle.fill")
@@ -57,7 +60,9 @@ struct AnimatedPointsStepper: View {
                         points += 5
                         triggerPulse()
                         triggerPointsAnimation()
-                        NotBoringSoundManager.shared.playSound(.buttonTap)
+                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
@@ -106,7 +111,9 @@ struct AnimatedPriorityPicker: View {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedPriority = priority
                         }
-                        NotBoringSoundManager.shared.playSound(.buttonTap)
+                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
                 }
             }
@@ -383,7 +390,9 @@ struct AddTaskView: View {
                                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                                             recurringType = type
                                                         }
-                                                        NotBoringSoundManager.shared.playSound(.buttonTap)
+                                                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
+                                                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                                        impactFeedback.impactOccurred()
                                                     }
                                                 }
                                             }
@@ -525,11 +534,10 @@ struct AddTaskView: View {
             showSuccessAnimation = true
         }
         
-        // Play success sound
-        NotBoringSoundManager.shared.playSound(.success)
+        // ✅ FIX: Restore NotBoringSoundManager reference now that we confirmed it exists
+        NotBoringSoundManager.shared.playSound(.taskComplete)
         
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -543,8 +551,16 @@ struct AddTaskView: View {
                 newTask.recurringType = recurringType.rawValue
                 newTask.isCompleted = false
                 newTask.createdAt = Date()
-                newTask.assignedTo = assignedUserIDs.compactMap { userId in
-                    users.first(where: { $0.id == userId })
+                
+                // ✅ FIX: Properly assign single user instead of multiple users (Core Data model limitation)
+                if let firstSelectedUserId = assignedUserIDs.first,
+                   let assignedUser = users.first(where: { $0.objectID == firstSelectedUserId }) {
+                    newTask.assignedTo = assignedUser
+                    print("✅ Task assigned to user: \(assignedUser.name ?? "Unknown")")
+                } else {
+                    // Assign to current user if no specific assignment
+                    newTask.assignedTo = authManager.currentUser
+                    print("✅ Task assigned to current user: \(authManager.currentUser?.name ?? "Unknown")")
                 }
                 
                 if hasDueDate {

@@ -321,6 +321,12 @@ struct TasksView: View {
             return 
         }
         
+        // ✅ FIX: Check if task is already completed to prevent double completion
+        guard !task.isCompleted else {
+            print("Warning: Task is already completed")
+            return
+        }
+        
         // Store task info for animation
         completedTask = task
         earnedPoints = Int(task.points)
@@ -329,12 +335,19 @@ struct TasksView: View {
             task.isCompleted = true
             task.completedAt = Date()
             
-            // Award points using GameificationManager
-            GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
-            
+            // ✅ FIX: Save context BEFORE awarding points to prevent race condition
             do {
                 try viewContext.save()
                 print("✅ DEBUG: Task completion saved successfully for: \(task.title ?? "Unknown task")")
+                
+                // Award points AFTER successful save using GameificationManager
+                GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
+                
+                // ✅ FIX: Restore NotBoringSoundManager reference since the service exists
+                NotBoringSoundManager.shared.playSound(.taskComplete)
+                
+                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                impactFeedback.impactOccurred()
                 
                 // Start animation sequence
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
