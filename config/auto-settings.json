@@ -1,76 +1,30 @@
 {
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "git.autofetch": true,
     "github.copilot.enable": {
-        "*": true,
-        "plaintext": false,
-        "markdown": true,
-        "scminput": false,
-        "yaml": true,
-        "json": true
+    "*": true,
+    "plaintext": false,
+    "markdown": true,
+    "scminput": false
     },
     "github.copilot.editor.enableAutoCompletions": true,
-    "github.copilot.editor.enableCodeActions": true,
-    "github.copilot.editor.autoInlineCompletion": true,
     "github.copilot.chat.enableAutoSuggestions": true,
     "github.copilot.chat.autoAcceptSuggestions": true,
-    "github.copilot.chat.welcomeMessage": "🐛 SYSTEMATIC BUG HUNT: Analyze ALL code for logical bugs and fix them immediately. Check: logic errors, state management, data flow, async operations, error handling, edge cases, performance issues. Work methodically through every code file, one at a time and systematically. Take your time. Continue iterating until completely bug-free. Fix, don't just report.",
-    "chat.editor.autoAcceptInlineChat": true,
-    "chat.editor.autoReplies": {
-        "Continue to iterate?": "Yes, continue with the next systematic check",
-        "Do you want me to continue?": "Yes, keep going systematically",
-        "Should I proceed?": "Yes, proceed with the analysis",
-        "Apply these changes?": "Yes, apply the changes",
-        "Continue with bug hunting?": "Yes, continue the systematic bug hunt"
-    },
-    "terminal.integrated.autoReplies": {
-        "Proceed? (y/n)": "y",
-        "Continue? (y/n)": "y",
-        "Apply changes? (y/n)": "y"
-    },
-    "chat.maxRequestsPerSession": 100,
-    "chat.maxTokensPerRequest": 8000,
-    "github.copilot.advanced": {
-        "debug.overrideEngine": "gpt-4",
-        "debug.useNodeFetcher": true
-    },
-    "editor.acceptSuggestionOnEnter": "on",
-    "editor.acceptSuggestionOnCommitCharacter": true,
-    "editor.suggestOnTriggerCharacters": true,
-    "editor.quickSuggestions": {
-        "other": true,
-        "comments": true,
-        "strings": true
-    },
-    "editor.quickSuggestionsDelay": 0,
-    "editor.suggest.preview": true,
-    "editor.suggest.showInlineDetails": true,
-    "editor.inlineSuggest.enabled": true,
-    "editor.inlineSuggest.showToolbar": "always",
-    "git.autofetch": true,
-    "git.autoStash": true,
-    "files.autoSave": "afterDelay",
-    "files.autoSaveDelay": 1000,
-    "problems.autoReveal": true,
-    "problems.showCurrentInStatus": true,
-    "debug.autoExpandLazyVariables": true,
+    "terminal.integrated.autoReplies": {},
+    "github.copilot.chat.agent.terminal.autoApprove": true,
+    "chat.tools.autoApprove": true,
+    "chat.maxRequestsPerSession": 50,
+    "github.copilot.chat.agent.autoFix": true,
+    "github.copilot.chat.agent.autoAcceptDelay": 15,
+    "github.copilot.chat.agent.autoContinue": true,
+    "github.copilot.chat.agent.continuationDelay": 2,
+    "github.copilot.chat.agent.autoFollowUp": true,
+    "github.copilot.chat.agent.autoRepeat": true,
+    "github.copilot.chat.agent.repeatInterval": 30,
+    "github.copilot.chat.agent.repeatPrompt": "Analyze ALL code for logical bugs and fix them immediately. Check: logic errors, state management, data flow, async operations, error handling, edge cases, performance issues. Work methodically through every code file, one at a time and systematically. Take your time. Continue iterating until completely bug-free. Fix, don't just report.",
     "github.copilot.chat.followUpPrompts": [
-        "Continue analyzing the next file for bugs systematically",
-        "Check error handling and edge cases in this component",
-        "Verify async/await patterns and promise handling",
-        "Analyze state management for potential race conditions",
-        "Review data validation and sanitization",
-        "Check for memory leaks and performance issues"
+    "Analyze ALL code for logical bugs and fix them immediately. Check: logic errors, state management, data flow, async operations, error handling, edge cases, performance issues. Work methodically through every code file, one at a time and systematically. Take your time. Continue iterating until completely bug-free. Fix, don't just report."
     ],
-    "swift.suggest.completeFunctionCalls": true,
-    "swift.diagnostics.collection": "onType",
-    "[swift]": {
-        "editor.defaultFormatter": "swift-lang.swift",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true,
-            "source.fixAll": true
-        }
-    },
-    "workbench.statusBar.visible": true,
-    "notifications.showExtensionsInfos": true,
-    "chat.experimental.defaultAgent": "@workspace"
-}
+    "github.copilot.chat.agent.autoSubmit": true,
+    "github.copilot.chat.agent.continuousMode": true
+    }
