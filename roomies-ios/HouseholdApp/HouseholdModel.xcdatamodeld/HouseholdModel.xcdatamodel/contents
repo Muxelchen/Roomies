@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22522" systemVersion="23G93" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Activity" representedClassName="Activity" syncable="YES" codeGenerationType="class">
+        <attribute name="action" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="points" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="type" optional="YES" attributeType="String"/>
+        <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="activities" inverseEntity="Household"/>
+        <relationship name="user" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="activities" inverseEntity="User"/>
+    </entity>
+    <entity name="Badge" representedClassName="Badge" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="badgeDescription" optional="YES" attributeType="String"/>
+        <attribute name="iconName" optional="YES" attributeType="String"/>
+        <attribute name="color" optional="YES" attributeType="String"/>
+        <attribute name="requirement" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="earnedBy" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="User" inverseName="badges" inverseEntity="User"/>
+    </entity>
+    <entity name="Challenge" representedClassName="Challenge" syncable="YES" codeGenerationType="class">
+        <attribute name="challengeDescription" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="pointReward" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="challenges" inverseEntity="Household"/>
+        <relationship name="participants" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="User" inverseName="challenges" inverseEntity="User"/>
+    </entity>
+    <entity name="Comment" representedClassName="Comment" syncable="YES" codeGenerationType="class">
+        <attribute name="content" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="author" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="comments" inverseEntity="User"/>
+        <relationship name="task" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="HouseholdTask" inverseName="comments" inverseEntity="HouseholdTask"/>
+    </entity>
+    <entity name="Household" representedClassName="Household" syncable="YES" codeGenerationType="class">
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="inviteCode" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="activities" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Activity" inverseName="household" inverseEntity="Activity"/>
+        <relationship name="challenges" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Challenge" inverseName="household" inverseEntity="Challenge"/>
+        <relationship name="memberships" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="UserHouseholdMembership" inverseName="household" inverseEntity="UserHouseholdMembership"/>
+        <relationship name="rewards" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Reward" inverseName="household" inverseEntity="Reward"/>
+        <relationship name="tasks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="HouseholdTask" inverseName="household" inverseEntity="HouseholdTask"/>
+    </entity>
+    <entity name="Reward" representedClassName="Reward" syncable="YES" codeGenerationType="class">
+        <attribute name="cost" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isAvailable" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="rewardDescription" optional="YES" attributeType="String"/>
+        <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="rewards" inverseEntity="Household"/>
+        <relationship name="redemptions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RewardRedemption" inverseName="reward" inverseEntity="RewardRedemption"/>
+    </entity>
+    <entity name="RewardRedemption" representedClassName="RewardRedemption" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="redeemedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="redeemedBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="rewardRedemptions" inverseEntity="User"/>
+        <relationship name="reward" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Reward" inverseName="redemptions" inverseEntity="Reward"/>
+    </entity>
+    <entity name="HouseholdTask" representedClassName="HouseholdTask" syncable="YES" codeGenerationType="class">
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="points" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="priority" optional="YES" attributeType="String"/>
+        <attribute name="recurringType" optional="YES" attributeType="String"/>
+        <attribute name="taskDescription" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="assignedTo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="assignedTasks" inverseEntity="User"/>
+        <relationship name="comments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Comment" inverseName="task" inverseEntity="Comment"/>
+        <relationship name="completedBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="completedTasks" inverseEntity="User"/>
+        <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="tasks" inverseEntity="Household"/>
+    </entity>
+    <entity name="User" representedClassName="User" syncable="YES" codeGenerationType="class">
+        <attribute name="avatarColor" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="email" optional="YES" attributeType="String"/>
+        <attribute name="hashedPassword" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="points" optional="YES" attributeType="Integer 32" defaultValue="0" usesScalarValueType="YES"/>
+        <relationship name="activities" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Activity" inverseName="user" inverseEntity="Activity"/>
+        <relationship name="assignedTasks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="HouseholdTask" inverseName="assignedTo" inverseEntity="HouseholdTask"/>
+        <relationship name="badges" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Badge" inverseName="earnedBy" inverseEntity="Badge"/>
+        <relationship name="challenges" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Challenge" inverseName="participants" inverseEntity="Challenge"/>
+        <relationship name="comments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Comment" inverseName="author" inverseEntity="Comment"/>
+        <relationship name="completedTasks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="HouseholdTask" inverseName="completedBy" inverseEntity="HouseholdTask"/>
+        <relationship name="householdMemberships" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="UserHouseholdMembership" inverseName="user" inverseEntity="UserHouseholdMembership"/>
+        <relationship name="rewardRedemptions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RewardRedemption" inverseName="redeemedBy" inverseEntity="RewardRedemption"/>
+    </entity>
+    <entity name="UserHouseholdMembership" representedClassName="UserHouseholdMembership" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="joinedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="role" optional="YES" attributeType="String"/>
+        <relationship name="household" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Household" inverseName="memberships" inverseEntity="Household"/>
+        <relationship name="user" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="householdMemberships" inverseEntity="User"/>
+    </entity>
+</model>

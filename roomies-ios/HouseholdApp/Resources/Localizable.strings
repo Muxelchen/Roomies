@@ -1,0 +1,291 @@
+/* 
+  Localizable.strings
+  HouseholdApp
+  
+  Comprehensive localization for Roomies app
+*/
+
+// MARK: - App General
+"app.name" = "Roomies";
+"app.tagline" = "Make household management fun!";
+"app.version" = "Version %@";
+
+// MARK: - Authentication
+"auth.sign_in" = "Sign In";
+"auth.sign_up" = "Sign Up";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.confirm_password" = "Confirm Password";
+"auth.name" = "Name";
+"auth.have_account" = "Already have an account? Sign In";
+"auth.no_account" = "Don't have an account? Sign Up";
+"auth.forgot_password" = "Forgot Password?";
+"auth.demo_login" = "Demo Login";
+"auth.biometric_login" = "Login with %@";
+
+// MARK: - Error Messages
+"error.general" = "An error occurred. Please try again.";
+"error.network" = "Network connection failed. Please check your connection.";
+"error.invalid_email" = "Please enter a valid email address";
+"error.invalid_password" = "Password must be at least 8 characters with uppercase, lowercase, and number";
+"error.passwords_dont_match" = "Passwords do not match";
+"error.user_not_found" = "No account found with this email address";
+"error.user_exists" = "An account with this email already exists";
+"error.weak_password" = "Password is too weak";
+"error.empty_fields" = "Please fill in all required fields";
+"error.save_failed" = "Failed to save changes";
+"error.load_failed" = "Failed to load data";
+
+// MARK: - Success Messages
+"success.saved" = "Changes saved successfully";
+"success.task_completed" = "Task completed! +%d points";
+"success.challenge_completed" = "Challenge completed! +%d points";
+"success.reward_redeemed" = "Reward redeemed successfully";
+"success.member_added" = "New member added to household";
+"success.household_created" = "Household created successfully";
+"success.profile_updated" = "Profile updated successfully";
+
+// MARK: - Tab Bar
+"tab.dashboard" = "Dashboard";
+"tab.tasks" = "Tasks";
+"tab.challenges" = "Challenges";
+"tab.leaderboard" = "Leaderboard";
+"tab.store" = "Store";
+"tab.profile" = "Profile";
+
+// MARK: - Dashboard
+"dashboard.welcome" = "Welcome back, %@!";
+"dashboard.points" = "%d Points";
+"dashboard.level" = "Level %d";
+"dashboard.streak" = "%d Day Streak";
+"dashboard.pending_tasks" = "Pending Tasks";
+"dashboard.active_challenges" = "Active Challenges";
+"dashboard.household_activity" = "Household Activity";
+"dashboard.quick_actions" = "Quick Actions";
+"dashboard.no_activity" = "No recent activity";
+
+// MARK: - Tasks
+"tasks.title" = "Tasks";
+"tasks.add_task" = "Add Task";
+"tasks.edit_task" = "Edit Task";
+"tasks.delete_task" = "Delete Task";
+"tasks.task_title" = "Task Title";
+"tasks.task_description" = "Description";
+"tasks.points" = "Points";
+"tasks.due_date" = "Due Date";
+"tasks.priority" = "Priority";
+"tasks.assign_to" = "Assign To";
+"tasks.recurring" = "Recurring";
+"tasks.filter.all" = "All";
+"tasks.filter.pending" = "Pending";
+"tasks.filter.completed" = "Completed";
+"tasks.filter.overdue" = "Overdue";
+"tasks.filter.my_tasks" = "My Tasks";
+"tasks.empty.all" = "No tasks yet";
+"tasks.empty.pending" = "All tasks completed!";
+"tasks.empty.completed" = "No completed tasks";
+"tasks.empty.overdue" = "No overdue tasks";
+"tasks.empty.my_tasks" = "No tasks assigned to you";
+"tasks.priority.low" = "Low";
+"tasks.priority.medium" = "Medium";
+"tasks.priority.high" = "High";
+"tasks.recurring.none" = "None";
+"tasks.recurring.daily" = "Daily";
+"tasks.recurring.weekly" = "Weekly";
+"tasks.recurring.monthly" = "Monthly";
+
+// MARK: - Challenges
+"challenges.title" = "Challenges";
+"challenges.add_challenge" = "Add Challenge";
+"challenges.edit_challenge" = "Edit Challenge";
+"challenges.delete_challenge" = "Delete Challenge";
+"challenges.challenge_title" = "Challenge Title";
+"challenges.challenge_description" = "Description";
+"challenges.point_reward" = "Point Reward";
+"challenges.participants" = "Participants";
+"challenges.deadline" = "Deadline";
+"challenges.active" = "Active Challenges";
+"challenges.completed" = "Completed Challenges";
+"challenges.upcoming" = "Upcoming Challenges";
+"challenges.join" = "Join Challenge";
+"challenges.leave" = "Leave Challenge";
+"challenges.empty" = "No challenges available";
+
+// MARK: - Leaderboard
+"leaderboard.title" = "Leaderboard";
+"leaderboard.weekly" = "This Week";
+"leaderboard.monthly" = "This Month";
+"leaderboard.all_time" = "All Time";
+"leaderboard.rank" = "#%d";
+"leaderboard.points" = "%d pts";
+"leaderboard.tasks_completed" = "%d tasks";
+"leaderboard.streak" = "%d day streak";
+"leaderboard.you" = "You";
+"leaderboard.empty" = "No leaderboard data yet";
+
+// MARK: - Store/Rewards
+"store.title" = "Rewards Store";
+"store.available_points" = "Available: %d points";
+"store.redeem" = "Redeem";
+"store.cost" = "%d points";
+"store.out_of_stock" = "Out of Stock";
+"store.insufficient_points" = "Not enough points";
+"store.confirm_redeem" = "Redeem for %d points?";
+"store.add_reward" = "Add Reward";
+"store.edit_reward" = "Edit Reward";
+"store.reward_name" = "Reward Name";
+"store.reward_description" = "Description";
+"store.reward_cost" = "Cost (Points)";
+"store.empty" = "No rewards available";
+
+// MARK: - Profile
+"profile.title" = "Profile";
+"profile.settings" = "Settings";
+"profile.statistics" = "Statistics";
+"profile.household" = "Household";
+"profile.notifications" = "Notifications";
+"profile.privacy" = "Privacy";
+"profile.about" = "About";
+"profile.sign_out" = "Sign Out";
+"profile.edit_profile" = "Edit Profile";
+"profile.change_password" = "Change Password";
+"profile.delete_account" = "Delete Account";
+"profile.member_since" = "Member since %@";
+"profile.total_points" = "Total Points: %d";
+"profile.tasks_completed" = "Tasks Completed: %d";
+"profile.current_streak" = "Current Streak: %d days";
+"profile.badges_earned" = "Badges Earned: %d";
+
+// MARK: - Household
+"household.title" = "Household";
+"household.create" = "Create Household";
+"household.join" = "Join Household";
+"household.leave" = "Leave Household";
+"household.invite" = "Invite Members";
+"household.members" = "Members";
+"household.name" = "Household Name";
+"household.invite_code" = "Invite Code";
+"household.role.admin" = "Admin";
+"household.role.member" = "Member";
+"household.remove_member" = "Remove Member";
+"household.confirm_leave" = "Are you sure you want to leave this household?";
+"household.confirm_remove" = "Remove %@ from household?";
+"household.empty_members" = "No members yet";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.general" = "General";
+"settings.notifications" = "Notifications";
+"settings.privacy" = "Privacy";
+"settings.calendar" = "Calendar";
+"settings.appearance" = "Appearance";
+"settings.sound" = "Sound & Haptics";
+"settings.data" = "Data & Storage";
+"settings.help" = "Help & Support";
+"settings.notifications.enabled" = "Enable Notifications";
+"settings.notifications.tasks" = "Task Reminders";
+"settings.notifications.challenges" = "Challenge Updates";
+"settings.notifications.leaderboard" = "Leaderboard Changes";
+"settings.calendar.sync" = "Sync with Calendar";
+"settings.calendar.reminders" = "Calendar Reminders";
+"settings.sound.enabled" = "Sound Effects";
+"settings.haptic.enabled" = "Haptic Feedback";
+"settings.theme.system" = "System";
+"settings.theme.light" = "Light";
+"settings.theme.dark" = "Dark";
+"settings.biometric.enable" = "Enable %@";
+"settings.biometric.face_id" = "Face ID";
+"settings.biometric.touch_id" = "Touch ID";
+
+// MARK: - Actions
+"action.save" = "Save";
+"action.cancel" = "Cancel";
+"action.delete" = "Delete";
+"action.edit" = "Edit";
+"action.done" = "Done";
+"action.close" = "Close";
+"action.confirm" = "Confirm";
+"action.continue" = "Continue";
+"action.back" = "Back";
+"action.next" = "Next";
+"action.finish" = "Finish";
+"action.retry" = "Retry";
+"action.refresh" = "Refresh";
+"action.share" = "Share";
+"action.copy" = "Copy";
+"action.search" = "Search";
+"action.filter" = "Filter";
+"action.sort" = "Sort";
+"action.add" = "Add";
+"action.remove" = "Remove";
+"action.select_all" = "Select All";
+"action.deselect_all" = "Deselect All";
+
+// MARK: - Time
+"time.now" = "Now";
+"time.today" = "Today";
+"time.yesterday" = "Yesterday";
+"time.tomorrow" = "Tomorrow";
+"time.this_week" = "This Week";
+"time.last_week" = "Last Week";
+"time.next_week" = "Next Week";
+"time.this_month" = "This Month";
+"time.last_month" = "Last Month";
+"time.days_ago" = "%d days ago";
+"time.hours_ago" = "%d hours ago";
+"time.minutes_ago" = "%d minutes ago";
+"time.just_now" = "Just now";
+"time.in_days" = "In %d days";
+"time.in_hours" = "In %d hours";
+"time.overdue_by" = "Overdue by %d days";
+
+// MARK: - Badges
+"badge.point_collector" = "Point Collector";
+"badge.point_master" = "Point Master";
+"badge.task_master" = "Task Master";
+"badge.task_champion" = "Task Champion";
+"badge.week_warrior" = "Week Warrior";
+"badge.month_master" = "Month Master";
+"badge.early_bird" = "Early Bird";
+"badge.night_owl" = "Night Owl";
+"badge.team_player" = "Team Player";
+"badge.speed_demon" = "Speed Demon";
+
+// MARK: - Onboarding
+"onboarding.welcome" = "Welcome to Roomies";
+"onboarding.page1.title" = "Organize Your Household";
+"onboarding.page1.description" = "Manage tasks, track progress, and keep everyone accountable";
+"onboarding.page2.title" = "Earn Points & Rewards";
+"onboarding.page2.description" = "Complete tasks to earn points and redeem rewards";
+"onboarding.page3.title" = "Compete & Collaborate";
+"onboarding.page3.description" = "Join challenges and climb the leaderboard";
+"onboarding.get_started" = "Get Started";
+"onboarding.skip" = "Skip";
+
+// MARK: - Empty States
+"empty.tasks" = "No tasks yet. Add your first task!";
+"empty.challenges" = "No challenges available. Create one!";
+"empty.rewards" = "No rewards in the store. Add some!";
+"empty.activity" = "No recent activity to show";
+"empty.notifications" = "No notifications";
+"empty.search_results" = "No results found";
+
+// MARK: - Confirmation Dialogs
+"confirm.delete_task" = "Delete this task?";
+"confirm.delete_challenge" = "Delete this challenge?";
+"confirm.delete_reward" = "Delete this reward?";
+"confirm.complete_task" = "Mark task as complete?";
+"confirm.sign_out" = "Are you sure you want to sign out?";
+"confirm.reset_data" = "Reset all data? This cannot be undone.";
+
+// MARK: - Accessibility
+"accessibility.tab_bar" = "Tab Bar";
+"accessibility.back_button" = "Back";
+"accessibility.close_button" = "Close";
+"accessibility.menu_button" = "Menu";
+"accessibility.add_button" = "Add";
+"accessibility.delete_button" = "Delete";
+"accessibility.complete_task" = "Mark task as complete";
+"accessibility.user_avatar" = "User avatar";
+"accessibility.points_display" = "Points display";
+"accessibility.leaderboard_position" = "Leaderboard position %d";
