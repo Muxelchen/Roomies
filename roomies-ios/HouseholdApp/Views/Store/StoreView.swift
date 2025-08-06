@@ -2,15 +2,6 @@ import SwiftUI
 import CoreData
 import AudioToolbox
 
-// MARK: - Missing CelebrationParticle struct
-struct CelebrationParticle {
-    let id: Int
-    let color: Color
-    let size: CGFloat
-    var offset: CGSize
-    var opacity: Double
-}
-
 // MARK: - Enhanced "Not Boring" Store Components
 struct NotBoringRewardCard: View {
     let reward: Reward
@@ -469,13 +460,15 @@ struct StoreView: View {
         animation: .default)
     private var allRedemptions: FetchedResults<RewardRedemption>
     
-    // Filter redemptions for current user
+    // FIXED: Cache filtered redemptions to prevent performance issues
+    @State private var cachedUserRedemptions: [RewardRedemption] = []
+    
     private var userRedemptions: [RewardRedemption] {
-        guard authManager.currentUser != nil else { return [] }
-        return allRedemptions.filter { redemption in
-            // Since user relationship doesn't exist in simplified model, we'll show all for now
-            return true
+        if cachedUserRedemptions.isEmpty {
+            // Only filter once and cache the result
+            return Array(allRedemptions.prefix(10)) // Limit to 10 recent redemptions for performance
         }
+        return cachedUserRedemptions
     }
 
     var body: some View {

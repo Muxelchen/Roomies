@@ -130,3 +130,10 @@ Temporary Items
 
 # App specific
 # Add any app-specific files that should be ignored
+
+# Node.js Backend
+roomies-backend/node_modules/
+roomies-backend/dist/
+roomies-backend/.env
+roomies-backend/*.log
+roomies-backend/npm-debug.log*

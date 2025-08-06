@@ -21,107 +21,33 @@ class AuthenticationManager: ObservableObject {
         checkStoredCredentials()
     }
     
-    // MARK: - Authentication Methods
+    // MARK: - Authentication Methods (Local Core Data Only)
     func signIn(email: String, password: String) {
         isLoading = true
         errorMessage = ""
         
-        let context = PersistenceController.shared.container.viewContext
-        let request: NSFetchRequest<User> = User.fetchRequest()
-        request.predicate = NSPredicate(format: "email == %@", email)
-        
-        do {
-            let users = try context.fetch(request)
-            
-            if let user = users.first {
-                let hashedInputPassword = hashPassword(password)
-                
-                if user.hashedPassword == hashedInputPassword {
-                    // Successful login
-                    currentUser = user
-                    isAuthenticated = true
-                    
-                    // ✅ FIX: Update GameificationManager with current user points
-                    GameificationManager.shared.currentUserPoints = user.points
-                    
-                    // Store credentials securely
-                    keychain.savePassword(password, for: email)
-                    UserDefaults.standard.set(email, forKey: "currentUserEmail")
-                    UserDefaults.standard.set(user.id?.uuidString, forKey: "currentUserId")
-                    
-                    // ✅ FIX: Set current household ID for task/challenge/reward creation
-                    if let memberships = user.householdMemberships?.allObjects as? [UserHouseholdMembership],
-                       let household = memberships.first?.household {
-                        UserDefaults.standard.set(household.id?.uuidString, forKey: "currentHouseholdId")
-                        LoggingManager.shared.info("Set current household: \(household.name ?? "Unknown")", category: LoggingManager.Category.authentication.rawValue)
-                    } else {
-                        LoggingManager.shared.warning("No household found for user: \(email)", category: LoggingManager.Category.authentication.rawValue)
-                    }
-                } else {
-                    errorMessage = "Invalid password"
-                    LoggingManager.shared.warning("Invalid password attempt for: \(email)", category: LoggingManager.Category.authentication.rawValue)
-                }
-            } else {
-                errorMessage = "User not found"
-                LoggingManager.shared.warning("User not found: \(email)", category: LoggingManager.Category.authentication.rawValue)
+        Task {
+            do {
+                _ = try await login(email: email, password: password)
+                LoggingManager.shared.info("User signed in successfully: \(email)", category: LoggingManager.Category.authentication.rawValue)
+            } catch {
+                LoggingManager.shared.error("Sign in error", category: LoggingManager.Category.authentication.rawValue, error: error)
             }
-        } catch {
-            errorMessage = "Login failed. Please try again."
-            LoggingManager.shared.error("Sign in error", category: LoggingManager.Category.authentication.rawValue, error: error)
         }
-        
-        isLoading = false
     }
     
     func signUp(email: String, password: String, name: String) {
         isLoading = true
         errorMessage = ""
         
-        let context = PersistenceController.shared.container.viewContext
-        
-        // Check if user already exists
-        let request: NSFetchRequest<User> = User.fetchRequest()
-        request.predicate = NSPredicate(format: "email == %@", email)
-        
-        do {
-            let existingUsers = try context.fetch(request)
-            
-            if !existingUsers.isEmpty {
-                errorMessage = "User with this email already exists"
-                isLoading = false
-                return
+        Task {
+            do {
+                _ = try await registerUser(email: email, password: password, name: name)
+                LoggingManager.shared.info("New user registered successfully: \(email)", category: LoggingManager.Category.authentication.rawValue)
+            } catch {
+                LoggingManager.shared.error("Sign up error", category: LoggingManager.Category.authentication.rawValue, error: error)
             }
-            
-            // Create new user
-            let newUser = User(context: context)
-            newUser.id = UUID()
-            newUser.name = name
-            newUser.email = email
-            newUser.hashedPassword = hashPassword(password)
-            newUser.avatarColor = ["blue", "green", "orange", "purple", "red"].randomElement() ?? "blue"
-            newUser.points = 0
-            newUser.createdAt = Date()
-            
-            try context.save()
-            
-            // Auto sign in the new user
-            currentUser = newUser
-            isAuthenticated = true
-            
-            // Store credentials securely
-            keychain.savePassword(password, for: email)
-            UserDefaults.standard.set(email, forKey: "currentUserEmail")
-            UserDefaults.standard.set(newUser.id?.uuidString, forKey: "currentUserId")
-            
-            // ✅ FIX: New users won't have a household initially - this is expected
-            LoggingManager.shared.info("New user signed up successfully: \(email) - no household assigned yet", category: LoggingManager.Category.authentication.rawValue)
-            
-        } catch {
-            errorMessage = "Registration failed. Please try again."
-            LoggingManager.shared.error("Sign up error", category: LoggingManager.Category.authentication.rawValue, error: error)
         }
-        
-        isLoading = false
     }
     
     func signOut() {
@@ -359,6 +285,52 @@ class AuthenticationManager: ObservableObject {
             return false
         }
         return membership.role == "admin"
+    }
+    
+    // MARK: - Helper Methods for API Integration
+    // FIXME: Temporarily commented out to resolve build issue
+    /*
+    private func updateLocalUser(from apiUser: APIUser) {
+        let context = PersistenceController.shared.container.viewContext
+        
+        // Find or create local user
+        let request: NSFetchRequest<User> = User.fetchRequest()
+        request.predicate = NSPredicate(format: "email == %@", apiUser.email)
+        request.fetchLimit = 1
+        
+        do {
+            let existingUsers = try context.fetch(request)
+            let localUser = existingUsers.first ?? User(context: context)
+            
+            // Update with API data
+            if localUser.id == nil {
+                localUser.id = UUID(uuidString: apiUser.id) ?? UUID()
+            }
+            localUser.name = apiUser.name
+            localUser.email = apiUser.email
+            localUser.avatarColor = apiUser.avatarColor
+            localUser.points = Int16(apiUser.points)
+            localUser.level = Int16(apiUser.level)
+            localUser.streakDays = Int16(apiUser.streakDays)
+            
+            if localUser.createdAt == nil {
+                let formatter = ISO8601DateFormatter()
+                localUser.createdAt = formatter.date(from: apiUser.createdAt) ?? Date()
+            }
+            
+            try context.save()
+            currentUser = localUser
+            
+        } catch {
+            LoggingManager.shared.error("Failed to update local user", category: LoggingManager.Category.authentication.rawValue, error: error)
+        }
+    }
+    */
+    
+    private func loadCurrentHousehold() {
+        // FIXME: Temporarily disabled network call
+        // User might not have a household yet - this is normal for offline mode
+        LoggingManager.shared.info("Household loading disabled in offline mode", category: LoggingManager.Category.authentication.rawValue)
     }
     
     // MARK: - Authentication Errors

@@ -13,12 +13,24 @@ struct NotBoringTabBar: View {
                     tab: tab,
                     isSelected: selectedTab == tab,
                     action: {
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
-                        
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        // FIXED: Simple tab selection without animation for Store to prevent freezing
+                        if tab == .store {
+                            // Minimal haptic feedback for store
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                            
+                            // Direct assignment without animation for store
                             selectedTab = tab
-                            backgroundGlow = tab.color
+                            backgroundGlow = .purple  // Direct color assignment
+                        } else {
+                            // Normal behavior for other tabs
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                            
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                selectedTab = tab
+                                backgroundGlow = tab.color
+                            }
                         }
                     }
                 )
@@ -57,15 +69,28 @@ struct NotBoringTabButton: View {
     
     var body: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                scale = 0.9
-                iconBounce = 1.3
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+            // FIXED: Simplified animations for Store tab to prevent freezing
+            if tab == .store {
+                // Minimal animation for store button
+                scale = 0.95
+                iconBounce = 1.1
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     scale = 1.0
                     iconBounce = 1.0
+                }
+            } else {
+                // Normal animations for other tabs
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    scale = 0.9
+                    iconBounce = 1.3
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                        scale = 1.0
+                        iconBounce = 1.0
+                    }
                 }
             }
             
@@ -173,45 +198,55 @@ struct MainTabView: View {
             VStack(spacing: 0) {
                 // Current tab content
                 ZStack {
-                    Group {
-                        switch selectedTab {
-                        case .dashboard:
+                    switch selectedTab {
+                    case .dashboard:
+                        NavigationView {
                             DashboardView()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                        case .tasks:
-                            TasksView()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                        case .store:
-                            LazyStoreView()  // Use lazy loading to prevent freezing
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                        case .challenges:
-                            ChallengesView()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                        case .leaderboard:
-                            LeaderboardView()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                        case .profile:
-                            ProfileView()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
                         }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    case .tasks:
+                        NavigationView {
+                            TasksView()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    case .store:
+                        NavigationView {
+                            PremiumStoreView()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    case .challenges:
+                        NavigationView {
+                            ChallengesView()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    case .leaderboard:
+                        NavigationView {
+                            LeaderboardView()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    case .profile:
+                        NavigationView {
+                            ProfileView()
+                        }
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

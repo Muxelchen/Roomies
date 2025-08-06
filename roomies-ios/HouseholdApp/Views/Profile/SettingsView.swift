@@ -64,26 +64,63 @@ struct SettingsView: View {
                         }
                     }
                     
-                    // App Behavior Section
+                    // Premium Audio & Experience Section
                     NotBoringSettingsCard(
-                        title: "App Experience",
-                        icon: "sparkles",
+                        title: "Premium Audio & Experience",
+                        icon: "speaker.wave.3.fill",
                         color: .purple
                     ) {
                         VStack(spacing: 16) {
+                            // Quick toggles for basic control
                             NotBoringToggle(
-                                title: "Sounds",
-                                isOn: $soundEnabled,
+                                title: "Premium Audio System",
+                                isOn: Binding(
+                                    get: { PremiumAudioHapticSystem.shared.isAudioEnabled },
+                                    set: { PremiumAudioHapticSystem.shared.setAudioEnabled($0) }
+                                ),
                                 icon: "speaker.wave.3.fill",
                                 color: .purple
                             )
                             
                             NotBoringToggle(
-                                title: "Haptic Feedback",
-                                isOn: $hapticFeedback,
+                                title: "Premium Haptic Feedback",
+                                isOn: Binding(
+                                    get: { PremiumAudioHapticSystem.shared.isHapticEnabled },
+                                    set: { PremiumAudioHapticSystem.shared.setHapticEnabled($0) }
+                                ),
                                 icon: "iphone.radiowaves.left.and.right",
                                 color: .indigo
                             )
+                            
+                            // Audio theme selection
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "music.mic")
+                                        .foregroundColor(.pink)
+                                    Text("Audio Theme")
+                                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                                }
+                                
+                                Menu {
+                                    ForEach(PremiumAudioHapticSystem.AudioTheme.allCases, id: \.self) { theme in
+                                        Button(theme.rawValue) {
+                                            PremiumAudioHapticSystem.shared.setAudioTheme(theme)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(PremiumAudioHapticSystem.shared.currentTheme.rawValue)
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .cornerRadius(8)
+                                }
+                            }
                         }
                     }
                     

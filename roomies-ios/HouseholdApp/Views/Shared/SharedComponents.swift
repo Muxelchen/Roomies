@@ -238,12 +238,14 @@ struct EnhancedPointsHeaderView: View {
         }
         .padding(20)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                pointsScale = 1.05
+            // FIXED: Remove repeatForever animations that cause freezing
+            // Use subtle one-time animations instead
+            withAnimation(.easeInOut(duration: 1.0)) {
+                pointsScale = 1.02
             }
             
-            withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-                starRotation = 360
+            withAnimation(.easeInOut(duration: 0.8)) {
+                starRotation = 15
             }
         }
     }
@@ -322,8 +324,10 @@ struct FloatingActionButton: View {
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 4.0).repeatForever(autoreverses: false)) {
-                rotation = 360
+            // FIXED: Remove repeatForever animation that causes freezing
+            // Use subtle one-time rotation instead
+            withAnimation(.easeInOut(duration: 0.8)) {
+                rotation = 15
             }
         }
     }

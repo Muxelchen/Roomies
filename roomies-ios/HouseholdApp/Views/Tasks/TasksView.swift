@@ -233,8 +233,7 @@ struct TaskCompletionAnimation: View {
     }
     
     private func triggerAnimation() {
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
         
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
             pulseScale = 1.2
@@ -317,8 +316,7 @@ struct FloatingActionButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonPress(context: .floatingActionButton)
             action()
         }) {
             Image(systemName: icon)
@@ -373,6 +371,7 @@ struct TasksView: View {
     @State private var earnedPoints: Int = 0
     @State private var isRefreshing = false
     @State private var filterAnimationTrigger = false
+    @State private var completedTasksToday = 0
     
     enum TaskFilter: String, CaseIterable {
         case all = "All"
@@ -508,9 +507,8 @@ struct TasksView: View {
                                 filterAnimationTrigger.toggle()
                             }
                             
-                            // Haptic feedback
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
+                            // Premium audio haptic feedback for filter switching
+                            PremiumAudioHapticSystem.playFilterSwitch(context: .taskFilterChange)
                         }
                     }
                 }
@@ -613,9 +611,8 @@ struct TasksView: View {
     private func refreshTasks() async {
         isRefreshing = true
         
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        // Premium audio haptic feedback for pull to refresh
+        PremiumAudioHapticSystem.playPullToRefresh(context: .taskRefreshStart)
         
         // Simulate refresh delay
         try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -623,6 +620,9 @@ struct TasksView: View {
         withAnimation(.spring()) {
             isRefreshing = false
         }
+        
+        // Premium audio haptic feedback for refresh completion
+        PremiumAudioHapticSystem.playSuccess(context: .taskRefreshComplete)
     }
     
     private func completeTaskWithAnimation(_ task: HouseholdTask) {
@@ -654,6 +654,14 @@ struct TasksView: View {
                 // Award points AFTER successful save using GameificationManager
                 GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
                 
+                // Track daily task completion for streaks
+                completedTasksToday += 1
+                let _ = completedTasksToday > 0 && completedTasksToday % 3 == 0  // isStreak
+                let _ = completedTasksToday > 0 && completedTasksToday % 10 == 0  // isMilestone
+                
+                // Premium audio haptic feedback for task completion with context
+                PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
+                
                 // Log task completion instead of using ActivityTracker
                 LoggingManager.shared.info("Task completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
                 
@@ -672,11 +680,8 @@ struct TasksView: View {
                 // Update badge count
                 NotificationManager.shared.updateBadgeCount()
                 
-                // ✅ FIX: Use AudioServices fallback instead of NotBoringSoundManager to avoid scope issues
+                // Keep existing audio for compatibility
                 AudioServicesPlaySystemSound(1057) // Task completion sound
-                
-                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                impactFeedback.impactOccurred()
                 
                 // Start animation sequence
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -685,6 +690,9 @@ struct TasksView: View {
                 
             } catch {
                 print("❌ ERROR: Failed to save task completion: \(error)")
+                // Premium audio haptic feedback for error
+                PremiumAudioHapticSystem.playError(context: .systemError)
+                
                 // Revert the change if save fails
                 task.isCompleted = false
                 task.completedAt = nil
@@ -844,9 +852,8 @@ struct EnhancedTaskRowView: View {
         
         isCompleting = true
         
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        // Premium audio haptic feedback
+        PremiumAudioHapticSystem.playTaskInteraction(context: .taskButtonPress)
         
         // Pulse animation
         withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {

@@ -62,8 +62,8 @@ struct NotBoringRewardCard: View {
                         Image(systemName: "star.fill")
                             .foregroundColor(.yellow)
                             .font(.caption)
-                            .offset(y: shimmer ? -2 : 2)
-                            .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(Double(index) * 0.2), value: shimmer)
+                            .scaleEffect(shimmer ? 1.1 : 1.0)
+                            .animation(.easeInOut(duration: 0.8).delay(Double(index) * 0.1), value: shimmer)
                     }
                     
                     Text("\(reward.cost)")
@@ -111,13 +111,11 @@ struct NotBoringRewardCard: View {
                 cardOpacity = 1.0
             }
             
-            // Start shimmer effect for affordable rewards
+            // Start shimmer effect for affordable rewards (single animation)
             if canAfford {
-                shimmer = true
-                
-                // Glow animation
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                    glowIntensity = 1.0
+                withAnimation(.easeInOut(duration: 1.0).delay(animationDelay + 0.3)) {
+                    shimmer = true
+                    glowIntensity = 0.8
                 }
             }
         }
@@ -512,8 +510,9 @@ struct EnhancedPointsHeaderView: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                pointsGlow = 1.0
+            // Single subtle glow animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.5)) {
+                pointsGlow = 0.8
             }
         }
     }

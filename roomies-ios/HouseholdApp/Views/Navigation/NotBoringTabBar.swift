@@ -207,7 +207,8 @@ struct TabItemView: View {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.3)) {
                     iconRotation = 360
                 }
-                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                // FIXED: Single glow animation instead of repeatForever
+                withAnimation(.easeInOut(duration: 1.0)) {
                     glowOpacity = 0.6
                 }
             } else {
@@ -252,7 +253,8 @@ struct LiquidTabIndicator: View {
             )
         }
         .onAppear {
-            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+            // FIXED: Single wave animation instead of repeatForever
+            withAnimation(.linear(duration: 2)) {
                 phase = .pi * 2
             }
         }

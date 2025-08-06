@@ -40,7 +40,8 @@ struct TaskListSkeleton: View {
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+            // FIXED: Single shimmer animation instead of repeatForever
+            withAnimation(.linear(duration: 1.5)) {
                 shimmerOffset = 2.0
             }
         }
@@ -79,7 +80,8 @@ struct TaskItemSkeleton: View {
         )
         .opacity(opacity)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(delay)) {
+            // FIXED: Single opacity animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.0).delay(delay)) {
                 opacity = 1.0
             }
         }
@@ -131,7 +133,8 @@ struct ChallengeCardSkeleton: View {
         )
         .scaleEffect(pulseScale)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            // FIXED: Single pulse animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.5)) {
                 pulseScale = 1.02
             }
         }
@@ -224,7 +227,8 @@ struct LeaderboardRowSkeleton: View {
         )
         .opacity(opacity)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(delay)) {
+            // FIXED: Single opacity animation instead of repeatForever  
+            withAnimation(.easeInOut(duration: 1.0).delay(delay)) {
                 opacity = 1.0
             }
         }
@@ -257,7 +261,8 @@ struct SkeletonRectangle: View {
                         .offset(x: shimmerOffset * geometry.size.width)
                 )
                 .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    // FIXED: Single shimmer animation instead of repeatForever
+                    withAnimation(.linear(duration: 1.5)) {
                         shimmerOffset = 2.0
                     }
                 }
@@ -292,7 +297,8 @@ struct SkeletonCircle: View {
                 }
             )
             .onAppear {
-                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                // FIXED: Single shimmer animation instead of repeatForever
+                withAnimation(.linear(duration: 1.5)) {
                     shimmerOffset = 2.0
                 }
             }
@@ -326,7 +332,8 @@ struct SkeletonCapsule: View {
                 }
             )
             .onAppear {
-                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                // FIXED: Single shimmer animation instead of repeatForever
+                withAnimation(.linear(duration: 1.5)) {
                     shimmerOffset = 2.0
                 }
             }
@@ -468,7 +475,8 @@ struct InteractiveEmptyStateIllustration: View {
     }
     
     private func startIdleAnimation() {
-        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+        // FIXED: Single subtle animation instead of repeatForever
+        withAnimation(.easeInOut(duration: 2.0)) {
             animationPhase = 1.0
         }
     }

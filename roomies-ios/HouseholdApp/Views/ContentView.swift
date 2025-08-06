@@ -4,8 +4,10 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
     @EnvironmentObject private var localizationManager: LocalizationManager
+    @EnvironmentObject private var premiumAudioSystem: PremiumAudioHapticSystem
     @State private var isLoading = true
     @State private var showSplash = true
+    @State private var hasPlayedWelcome = false
     
     var body: some View {
         ZStack {
@@ -22,26 +24,50 @@ struct ContentView: View {
                             removal: .move(edge: .top).combined(with: .opacity)
                         ))
                         .onAppear {
-                            // Auto-dismiss splash after delay
+                            // 🎵 PREMIUM AUDIO: Splash screen loading sequence
+                            PremiumAudioHapticSystem.shared.play(.loadingStart, context: .subtle)
+                            
+                            // Auto-dismiss splash after delay with audio feedback
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                                 withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                                     showSplash = false
                                     isLoading = false
+                                    
+                                    // 🎵 PREMIUM AUDIO: Loading complete sound
+                                    PremiumAudioHapticSystem.shared.play(.loadingComplete, context: .premium)
                                 }
                             }
                         }
                 } else if isLoading {
-                    // Loading state
+                    // Loading state with audio
                     ProgressView()
                         .scaleEffect(1.5)
                         .transition(.opacity)
+                        .onAppear {
+                            // 🎵 PREMIUM AUDIO: Data loading sound
+                            PremiumAudioHapticSystem.shared.play(.dataSync, context: .subtle)
+                        }
                 } else if authManager.isAuthenticated {
-                    // Main app content
+                    // Main app content with welcome audio
                     EnhancedMainTabView()
                         .transition(.asymmetric(
                             insertion: .move(edge: .bottom).combined(with: .opacity),
                             removal: .move(edge: .top).combined(with: .opacity)
                         ))
+                        .onAppear {
+                            // 🎵 PREMIUM AUDIO: Welcome to main app (play once per session)
+                            if !hasPlayedWelcome {
+                                hasPlayedWelcome = true
+                                
+                                // Context-aware welcome based on time of day
+                                let timeOfDay = getCurrentTimeOfDay()
+                                
+                                PremiumAudioHapticSystem.shared.playDashboardWelcome(
+                                    timeOfDay: timeOfDay,
+                                    hasUrgentTasks: false // Could integrate with actual task data
+                                )
+                            }
+                        }
                 } else {
                     // Authentication view
                     AuthenticationView()
@@ -55,6 +81,7 @@ struct ContentView: View {
         .animation(.spring(response: 0.8, dampingFraction: 0.7), value: showSplash)
         .onAppear {
             setupNotBoringSounds()
+            setupPremiumAudioHandlers()
         }
     }
     
@@ -62,6 +89,46 @@ struct ContentView: View {
         // ✅ FIX: Restore NotBoringSoundManager reference now that we confirmed it exists
         NotBoringSoundManager.shared.preloadSounds()
         LoggingManager.shared.debug("Sound system initialized", category: "audio")
+    }
+    
+    // MARK: - Premium Audio Integration
+    
+    private func getCurrentTimeOfDay() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "morning"
+        case 12..<17: return "afternoon" 
+        case 17..<21: return "evening"
+        default: return "night"
+        }
+    }
+    
+    private func setupPremiumAudioHandlers() {
+        // Handle audio interruptions gracefully
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Audio system handles this automatically
+        }
+        
+        // Handle app background/foreground transitions
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Audio system pauses gracefully
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Audio system resumes gracefully
+        }
     }
 }
 
@@ -319,6 +386,17 @@ struct EnhancedMainTabView: View {
     }
     
     private func animateTabSelection(_ tab: Tab) {
+        // 🎵 PREMIUM AUDIO: Enhanced tab switching with context
+        let tabContext = PremiumAudioHapticSystem.AudioContext(
+            intensity: 0.6,
+            urgency: 0.0,
+            celebration: 0.0,
+            delay: 0.0,
+            hapticPattern: .tabChange,
+            visualEffect: .premiumGlow
+        )
+        PremiumAudioHapticSystem.shared.play(.tabSwitch, context: tabContext)
+        
         // Bounce animation for selected tab
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
             tabIconBounce[tab] = 1.3
@@ -331,11 +409,7 @@ struct EnhancedMainTabView: View {
             }
         }
         
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-        
-        // ✅ FIX: Restore NotBoringSoundManager reference since the service exists
+        // Keep existing NotBoringSoundManager for compatibility
         NotBoringSoundManager.shared.playSound(.tabSwitch)
     }
     

@@ -20,7 +20,7 @@ struct RoomiesApp: App {
         // Set notification delegate
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
         
-        LoggingManager.shared.info("Roomies App launched", category: LoggingManager.Category.general.rawValue)
+        LoggingManager.shared.info("Roomies App launched successfully", category: LoggingManager.Category.general.rawValue)
     }
     
     private func initializeCoreServices() {
@@ -33,24 +33,29 @@ struct RoomiesApp: App {
         _ = CalendarManager.shared
         _ = AnalyticsManager.shared
         _ = LocalizationManager.shared
+        _ = PremiumAudioHapticSystem.shared
         
         LoggingManager.shared.info("Core services initialized successfully", category: LoggingManager.Category.initialization.rawValue)
     }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(AuthenticationManager.shared)
-                .environmentObject(GameificationManager.shared)
-                .environmentObject(NotificationManager.shared)
-                .environmentObject(PerformanceManager.shared)
-                .environmentObject(CalendarManager.shared)
-                .environmentObject(AnalyticsManager.shared)
+        ContentView()
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(GameificationManager.shared)
+            .environmentObject(LocalizationManager.shared)
+            .environmentObject(CalendarManager.shared)
+            .environmentObject(AnalyticsManager.shared)
+            .environmentObject(PerformanceManager.shared)
                 .environmentObject(LocalizationManager.shared)
+                .environmentObject(PremiumAudioHapticSystem.shared)
                 .onAppear {
                     PerformanceManager.shared.finishAppLaunch()
                     NotificationManager.shared.updateBadgeCount()
+                    
+                    // Play app launch sound with premium audio system
+                    PremiumAudioHapticSystem.shared.play(.appLaunch, context: .default)
                 }
         }
     }

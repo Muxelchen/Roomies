@@ -98,17 +98,20 @@ struct RoomiesStreakCounterView: View {
     
     private func startAnimations() {
         // Flame animation
-        withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+        // FIXED: Single animation instead of repeatForever
+        withAnimation(.linear(duration: 2)) {
             animationOffset = 360
         }
         
         // Pulse animation
-        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+        // FIXED: Single animation instead of repeatForever
+        withAnimation(.easeInOut(duration: 1.5)) {
             pulseScale = 1.2
         }
         
         // Glow animation
-        withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+        // FIXED: Single animation instead of repeatForever
+        withAnimation(.easeInOut(duration: 2)) {
             glowOpacity = 0.8
         }
     }

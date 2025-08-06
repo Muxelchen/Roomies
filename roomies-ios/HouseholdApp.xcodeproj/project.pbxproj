@@ -46,6 +46,10 @@
 		A1000037 /* AppIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000037 /* AppIconView.swift */; };
 		A1000038 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000038 /* QRCodeView.swift */; };
 		A1000039 /* InviteMemberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000039 /* InviteMemberView.swift */; };
+		A1000040 /* LazyStoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000040 /* LazyStoreView.swift */; };
+		A1000041 /* PremiumAudioHapticSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000041 /* PremiumAudioHapticSystem.swift */; };
+		A1000042 /* PremiumStoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000045 /* PremiumStoreView.swift */; };
+		A1000043 /* PremiumStoreComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000046 /* PremiumStoreComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -89,8 +93,12 @@
 		B1000037 /* AppIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconView.swift; sourceTree = "<group>"; };
 		B1000038 /* QRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeView.swift; sourceTree = "<group>"; };
 		B1000039 /* InviteMemberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteMemberView.swift; sourceTree = "<group>"; };
-		B1000040 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B1000041 /* HouseholdApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HouseholdApp.entitlements; sourceTree = "<group>"; };
+		B1000040 /* LazyStoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LazyStoreView.swift; sourceTree = "<group>"; };
+		B1000041 /* PremiumAudioHapticSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumAudioHapticSystem.swift; sourceTree = "<group>"; };
+		B1000042 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1000043 /* HouseholdApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HouseholdApp.entitlements; sourceTree = "<group>"; };
+		B1000045 /* PremiumStoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumStoreView.swift; sourceTree = "<group>"; };
+		B1000046 /* PremiumStoreComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumStoreComponents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,10 +124,10 @@
 			isa = PBXGroup;
 			children = (
 				B1000001 /* RoomiesApp.swift */,
-				B1000041 /* HouseholdApp.entitlements */,
-				B1000040 /* Info.plist */,
+				B1000043 /* HouseholdApp.entitlements */,
+				B1000042 /* Info.plist */,
 				B1000003 /* Assets.xcassets */,
-				B1000042 /* HouseholdModel.xcdatamodeld */,
+				B1000044 /* HouseholdModel.xcdatamodeld */,
 				D0000004 /* Models */,
 				D0000005 /* Services */,
 				D0000006 /* Views */,
@@ -156,6 +164,7 @@
 				B1000012 /* LoggingManager.swift */,
 				B1000013 /* NotificationManager.swift */,
 				B1000014 /* PerformanceManager.swift */,
+				B1000041 /* PremiumAudioHapticSystem.swift */,
 				B1000015 /* SampleDataManager.swift */,
 			);
 			path = Services;
@@ -242,6 +251,9 @@
 			children = (
 				B1000023 /* StoreView.swift */,
 				B1000024 /* AddRewardView.swift */,
+				B1000040 /* LazyStoreView.swift */,
+				B1000045 /* PremiumStoreView.swift */,
+				B1000046 /* PremiumStoreComponents.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -403,6 +415,10 @@
 				A1000037 /* AppIconView.swift in Sources */,
 				A1000038 /* QRCodeView.swift in Sources */,
 				A1000039 /* InviteMemberView.swift in Sources */,
+				A1000040 /* LazyStoreView.swift in Sources */,
+				A1000041 /* PremiumAudioHapticSystem.swift in Sources */,
+				A1000042 /* PremiumStoreView.swift in Sources */,
+				A1000043 /* PremiumStoreComponents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -616,7 +632,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCVersionGroup section */
-		B1000042 /* HouseholdModel.xcdatamodeld */ = {
+		B1000044 /* HouseholdModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
 				B1000005 /* HouseholdModel.xcdatamodel */,

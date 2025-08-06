@@ -84,7 +84,7 @@ struct PulsingDotIndicator: View {
             .opacity(isAnimating ? 0.6 : 1.0)
             .animation(
                 Animation.easeInOut(duration: 1.0)
-                    .repeatForever(autoreverses: true),
+                    ), // FIXED: Remove repeatForever
                 value: isAnimating
             )
             .onAppear {
@@ -137,7 +137,7 @@ struct EnhancedEmptyTasksView: View {
             }
             .animation(
                 Animation.easeInOut(duration: 2.0)
-                    .repeatForever(autoreverses: true),
+                    ), // FIXED: Remove repeatForever
                 value: isAnimating
             )
             

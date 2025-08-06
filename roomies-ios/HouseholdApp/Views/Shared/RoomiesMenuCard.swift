@@ -67,8 +67,8 @@ struct RoomiesMenuCard: View {
                 cardScale = 1.0
             }
             
-            // Icon bounce animation
-            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true).delay(Double.random(in: 0.5...1.5))) {
+            // FIXED: Single icon bounce animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.5).delay(Double.random(in: 0.5...1.5))) {
                 iconBounce = 1.1
             }
         }

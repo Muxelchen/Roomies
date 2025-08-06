@@ -2,32 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Basic data protection for personal development -->
 	<key>com.apple.developer.default-data-protection</key>
 	<string>NSFileProtectionComplete</string>
-	
-	<!-- Keychain access groups -->
-	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)com.roomies.HouseholdApp</string>
-	</array>
-	
-	<!-- App Groups for shared data (updated for roomies) -->
-	<key>com.apple.developer.app-groups</key>
-	<array>
-		<string>group.com.roomies.HouseholdApp</string>
-	</array>
-	
-	<!-- Commented out capabilities that require paid developer account -->
-	<!-- 
-	<key>com.apple.developer.usernotifications.time-sensitive</key>
-	<true/>
-	<key>com.apple.developer.calendar</key>
-	<true/>
-	<key>com.apple.developer.contacts</key>
-	<true/>
-	<key>com.apple.developer.device-information.user-assigned-device-name</key>
-	<true/>
-	-->
 </dict>
 </plist>

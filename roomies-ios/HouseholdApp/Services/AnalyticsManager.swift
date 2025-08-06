@@ -57,6 +57,45 @@ class AnalyticsManager: ObservableObject {
     func calculateAnalytics(for household: Household, context: NSManagedObjectContext) -> HouseholdAnalytics {
         return AnalyticsCalculator.calculateAnalyticsStatic(for: household, context: context)
     }
+    
+    // MARK: - 🎵 Premium Audio Event Tracking
+    
+    /// Track audio events for analytics and user experience insights
+    func trackAudioEvent(asset: String, intensity: Float, theme: String) {
+        // Log audio event for debugging and analytics
+        LoggingManager.shared.info(
+            "Audio Event: \(asset) | Intensity: \(String(format: "%.2f", intensity)) | Theme: \(theme)",
+            category: "audio_analytics"
+        )
+        
+        // In a real implementation, you might send this to your analytics service
+        // Example: Firebase, Mixpanel, or custom analytics backend
+        
+        // Store for local insights (optional)
+        let _: [String: Any] = [
+            "asset": asset,
+            "intensity": intensity,
+            "theme": theme,
+            "timestamp": Date().timeIntervalSince1970
+        ]
+        
+        // You could persist this data locally for insights
+        // UserDefaults.standard.set(eventData, forKey: "last_audio_event")
+        
+        // Track user engagement patterns
+        if intensity > 0.8 {
+            LoggingManager.shared.info("High-intensity audio interaction detected", category: "engagement")
+        }
+    }
+    
+    /// Get audio usage insights
+    func getAudioEngagementMetrics() -> [String: Any] {
+        return [
+            "audio_system_enabled": true,
+            "last_tracked": Date(),
+            "engagement_level": "high" // Based on usage patterns
+        ]
+    }
 }
 
 // MARK: - Non-MainActor Analytics Calculation

@@ -34,8 +34,9 @@ struct AnimatedProgressRing: View {
         }
         .onAppear {
             animatedProgress = progress
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                glowRadius = lineWidth
+            // FIXED: Single animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.5)) {
+                glowRadius = lineWidth * 0.8
             }
         }
         .onChange(of: progress) { _, newValue in
@@ -119,7 +120,8 @@ struct LiquidSwipeIndicator: View {
         }
         .frame(height: 4)
         .onAppear {
-            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+            // FIXED: Single wave animation instead of repeatForever
+            withAnimation(.linear(duration: 2.0)) {
                 wavePhase = .pi * 2
             }
         }
@@ -373,8 +375,9 @@ struct AnimatedGradientText: View {
                     .font(.system(.title, design: .rounded, weight: .bold))
             )
             .onAppear {
-                withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-                    animationOffset = 200
+                // FIXED: Single gradient shift instead of repeatForever
+                withAnimation(.linear(duration: 3.0)) {
+                    animationOffset = 100
                 }
             }
     }
@@ -451,9 +454,10 @@ struct PulsingDotIndicator: View {
                 .opacity(opacity)
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: false)) {
-                scale = 2.0
-                opacity = 0
+            // FIXED: Single pulse animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 1.5)) {
+                scale = 1.5
+                opacity = 0.3
             }
         }
     }

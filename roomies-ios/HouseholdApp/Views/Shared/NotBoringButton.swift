@@ -100,8 +100,9 @@ struct NotBoringButton: View {
     }
     
     private func startGlowAnimation() {
-        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-            glowIntensity = 1.0
+        // Single subtle glow animation instead of repeatForever
+        withAnimation(.easeInOut(duration: 1.0)) {
+            glowIntensity = 0.8
         }
     }
 }
@@ -145,13 +146,12 @@ struct FloatingActionButton: View {
                         .stroke(Color.white.opacity(0.3), lineWidth: 1)
                 )
         }
-        .offset(y: isFloating ? -2 : 2)
-        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isFloating)
+        .offset(y: isFloating ? -1 : 1)
         .onAppear {
-            isFloating = true
-            // Pulsing glow
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                glowRadius = 16
+            // Single subtle float animation instead of repeatForever
+            withAnimation(.easeInOut(duration: 0.8)) {
+                isFloating = true
+                glowRadius = 12
             }
         }
     }
