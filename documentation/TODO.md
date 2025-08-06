@@ -1,4 +1,4 @@
-# TODO Liste - Hamburgir App
+# TODO Liste - Roomies App
 
 ## 🐛 Bugs (Kritisch)
 - [ ] **Task-Synchronisation**: Tasks auf Dashboard und Task-Tab sind nicht synchron

@@ -4,7 +4,7 @@
 ```
 Could not determine generated file paths for Core Data code generation: The command `momc --dry-run --action generate...` exited with status 1. The command's standard error was:
 
-/Users/Max/Hamburgir/HouseholdApp/HouseholdModel.xcdatamodeld:: error: Could not fetch generated file paths: No current version for model at path /Users/Max/Hamburgir/HouseholdApp/HouseholdModel.xcdatamodeld: [0]
+/Users/Max/Roomies/roomies-ios/HouseholdModel.xcdatamodeld:: error: Could not fetch generated file paths: No current version for model at path /Users/Max/Roomies/roomies-ios/HouseholdModel.xcdatamodeld: [0]
 ```
 
 ## Root Cause
