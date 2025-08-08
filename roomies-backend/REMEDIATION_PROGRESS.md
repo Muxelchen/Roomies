@@ -62,13 +62,13 @@
 - **Impact:** Addresses OWASP security best practices
 
 ### 5. **PRODUCTION INFRASTRUCTURE SETUP** ✅ READY
-- **Issue:** 0 AWS resources deployed, no production environment
+- **Issue:** No production environment configured
 - **Status:** ✅ **READY FOR DEPLOYMENT**
 - **Solution:** Complete production deployment automation
 - **Files Created:**
   - `Dockerfile` - Multi-stage production build
   - `docker-compose.prod.yml` - Full production stack
-  - `scripts/deploy-aws.sh` - Automated deployment script
+  - (Removed AWS deployment scripts) Use generic hosting or Docker
   - `.env.production` - Secure production configuration
 
 ### 6. **COMPREHENSIVE HEALTH MONITORING** ✅ IMPLEMENTED
@@ -132,7 +132,7 @@
   - Set up local PostgreSQL instance
   - Run database migrations
   - Test actual database connectivity
-- **ETA:** Requires user setup or AWS RDS deployment
+- **ETA:** Requires local DB setup or managed Postgres
 - **Note:** This is a deployment/setup item, not a code remediation blocker
 
 ---
@@ -200,7 +200,7 @@ Documentation:           95/100 ✅
    - Integration test suite
 
 3. **Production Deployment**
-   - Deploy to AWS with real infrastructure
+   - Deploy to chosen host (Render/Fly.io/Heroku/VPS)
    - Set up monitoring and alerts
    - Implement backup strategies
 
@@ -211,7 +211,7 @@ Documentation:           95/100 ✅
 
 ---
 
-## 🚀 E2E Smoke Tests (Local & AWS)
+## 🚀 E2E Smoke Tests (Local)
 
 Minimal end-to-end checks against a live backend to validate core flows quickly.
 
@@ -222,9 +222,9 @@ Commands:
 node test-api.js
 node test-realtime.js
 
-# AWS (replace with your host; include /api)
-API_URL=http://54.93.77.238:3001/api node test-api.js
-API_URL=http://54.93.77.238:3001/api node test-realtime.js
+# Remote (replace with your host; include /api)
+API_URL=http://<host>:<port>/api node test-api.js
+API_URL=http://<host>:<port>/api node test-realtime.js
 ```
 
 Validates:
@@ -259,7 +259,6 @@ Notes:
 ### Infrastructure ✅ READY
 - [x] Production Dockerfile
 - [x] Docker Compose production stack
-- [x] AWS deployment automation
 - [x] Health check endpoints
 - [x] Environment configurations
 
@@ -310,7 +309,7 @@ Notes:
 1. **Eliminated Deployment Blockers** - Critical error handling implemented
 2. **Hardened Security** - Comprehensive security middleware stack
 3. **Established Testing** - Professional testing framework with critical path coverage
-4. **Production Infrastructure** - Complete Docker/AWS deployment system
+4. **Production Infrastructure** - Docker-based deployment system
 5. **Enhanced Monitoring** - RFC-compliant health checks and observability
 
 **Current State:** The Roomies backend has transformed from a "15/100" prototype to a "78/100" production-capable system. All critical deployment blockers have been resolved, and the system is ready for production deployment with comprehensive security, monitoring, and error handling.

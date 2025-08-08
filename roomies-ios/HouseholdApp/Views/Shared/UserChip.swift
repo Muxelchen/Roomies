@@ -40,7 +40,7 @@ struct UserChip: View {
                     .shadow(color: (isSelected ? Color.accentColor : .gray).opacity(0.25), radius: 8, x: 0, y: 4)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }

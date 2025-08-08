@@ -215,6 +215,18 @@ class NetworkManager: ObservableObject {
                 await MainActor.run {
                     isOnline = true
                 }
+                // Fetch cloud status and toggle CloudKit runtime flag
+                do {
+                    let status = try await performRequest(
+                        endpoint: "/cloud/status",
+                        method: .GET,
+                        responseType: CloudStatusResponse.self,
+                        requiresAuth: false
+                    )
+                    CloudRuntime.shared.update(from: status)
+                } catch {
+                    // Ignore cloud status failures; remain offline for cloud
+                }
             } catch {
                 await MainActor.run {
                     isOnline = false
@@ -673,3 +685,34 @@ typealias HouseholdResponse = APIResponse<APIHousehold>
 typealias MembersResponse = APIResponse<[APIUser]>
 typealias TaskResponse = APIResponse<APITask>
 typealias TasksResponse = APIResponse<[APITask]>
+
+// MARK: - Cloud status models
+struct CloudStatus: Codable {
+    let enabled: Bool
+    let available: Bool
+    let lastSync: String?
+    let error: String?
+}
+
+struct CloudStatusEnvelope: Codable {
+    let success: Bool
+    let cloud: CloudStatus
+}
+
+typealias CloudStatusResponse = CloudStatusEnvelope
+
+// MARK: - Cloud runtime gating
+final class CloudRuntime: ObservableObject {
+    static let shared = CloudRuntime()
+    @Published private(set) var cloudEnabled: Bool = false
+    @Published private(set) var cloudAvailable: Bool = false
+    @Published private(set) var lastError: String?
+
+    private init() {}
+
+    func update(from response: CloudStatusResponse) {
+        self.cloudEnabled = response.cloud.enabled
+        self.cloudAvailable = response.cloud.available
+        self.lastError = response.cloud.error
+    }
+}

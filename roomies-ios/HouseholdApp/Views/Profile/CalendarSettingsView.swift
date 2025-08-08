@@ -7,13 +7,15 @@ struct CalendarSettingsView: View {
     var body: some View {
         ZStack {
             PremiumScreenBackground(sectionColor: .profile, style: .minimal)
-            VStack(alignment: .leading, spacing: 16) {
-            Text("Calendar Integration")
-                .font(.headline)
-                .padding(.horizontal)
-            
-            VStack(alignment: .leading, spacing: 12) {
-                Toggle("Calendar Synchronization", isOn: Binding(
+            VStack(alignment: .leading, spacing: PremiumDesignSystem.Spacing.small.value) {
+                Text("Calendar Integration")
+                    .premiumText(.sectionHeader)
+                    .accessibilityHeader()
+                    .padding(.horizontal)
+                
+                GlassmorphicCard(cornerRadius: 20) {
+                    VStack(alignment: .leading, spacing: PremiumDesignSystem.Spacing.micro.value) {
+                    Toggle("Calendar Synchronization", isOn: Binding(
                     get: { calendarManager.isCalendarSyncEnabled },
                     set: { newValue in
                         if newValue {
@@ -28,43 +30,52 @@ struct CalendarSettingsView: View {
                             calendarManager.disableCalendarSync()
                         }
                     }
-                ))
-                
-                if calendarManager.isCalendarSyncEnabled {
-                    HStack {
-                        Text("Calendar Access")
-                        Spacer()
-                        Text(authorizationStatusText)
-                            .foregroundColor(authorizationStatusColor)
-                    }
+                    ))
+                    .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
+                    .accessibilityLabel(Text("Calendar Synchronization"))
                     
-                    if isCalendarAuthorized() {
-                        Toggle("Enable Reminders", isOn: Binding(
-                            get: { calendarManager.isReminderEnabled },
-                            set: { newValue in
-                                calendarManager.setRemindersEnabled(newValue)
-                            }
-                        ))
-                        
-                        Toggle("Deadline Notifications", isOn: Binding(
-                            get: { calendarManager.isDeadlineNotificationEnabled },
-                            set: { newValue in
-                                calendarManager.setDeadlineNotificationsEnabled(newValue)
-                            }
-                        ))
-                    } else if calendarManager.authorizationStatus == .denied {
-                        Text("Calendar access denied. Please enable access in Settings.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Button("Open Settings") {
-                            openSettings()
+                    if calendarManager.isCalendarSyncEnabled {
+                        HStack {
+                            Text("Calendar Access")
+                            Spacer()
+                            Text(authorizationStatusText)
+                                .foregroundColor(authorizationStatusColor)
                         }
-                        .font(.caption)
+                        
+                        if isCalendarAuthorized() {
+                            Toggle("Enable Reminders", isOn: Binding(
+                                get: { calendarManager.isReminderEnabled },
+                                set: { newValue in
+                                    calendarManager.setRemindersEnabled(newValue)
+                                }
+                            ))
+                            .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
+                            .accessibilityLabel(Text("Enable Reminders"))
+                            
+                            Toggle("Deadline Notifications", isOn: Binding(
+                                get: { calendarManager.isDeadlineNotificationEnabled },
+                                set: { newValue in
+                                    calendarManager.setDeadlineNotificationsEnabled(newValue)
+                                }
+                            ))
+                            .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
+                            .accessibilityLabel(Text("Deadline Notifications"))
+                        } else if calendarManager.authorizationStatus == .denied {
+                            Text("Calendar access denied. Please enable access in Settings.")
+                                .premiumText(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Button("Open Settings") {
+                                PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                                openSettings()
+                            }
+                            .buttonStyle(PremiumPressButtonStyle())
+                            .font(.caption)
+                        }
                     }
                 }
-            }
-            .padding(.horizontal)
+                }
+                .padding(.horizontal)
             }
         }
     }

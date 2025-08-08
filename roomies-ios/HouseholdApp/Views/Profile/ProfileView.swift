@@ -11,6 +11,11 @@ struct ProfileView: View {
     @State private var showingStatistics = false
     @State private var particleAnimation = false
     @State private var showingFloatingParticles = false
+    @State private var openAllBadgesTrigger = false
+
+    enum NavigationDestination: Hashable {
+        case allBadges
+    }
     
     var body: some View {
         ZStack {
@@ -46,6 +51,12 @@ struct ProfileView: View {
         .background(Color.clear)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(for: NavigationDestination.self) { dest in
+            switch dest {
+            case .allBadges:
+                AllBadgesView()
+            }
+        }
         .sheet(isPresented: $showingHouseholdManager) {
             HouseholdManagerView()
         }
@@ -61,6 +72,14 @@ struct ProfileView: View {
                     showingFloatingParticles = true
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenAllBadges"))) { _ in
+            // Safely convert the event into a navigable destination
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
+            openAllBadgesTrigger = true
+        }
+        .navigationDestination(isPresented: $openAllBadgesTrigger) {
+            AllBadgesView()
         }
     }
 }
@@ -488,22 +507,25 @@ struct EnhancedRecentBadgesView: View {
                 
                 Spacer()
                 
-                Button("Show All") {
-                    // TODO: Show all badges
-                } 
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.purple)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.purple.opacity(0.1))
-                        .overlay(
+                NavigationLink(value: NavigationDestination.allBadges) {
+                    Text("Show All")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                .fill(Color.purple.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                                )
                         )
-                )
+                }
+                .simultaneousGesture(TapGesture().onEnded {
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                })
             }
             
             ScrollView(.horizontal, showsIndicators: false) {

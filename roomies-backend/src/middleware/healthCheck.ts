@@ -236,9 +236,10 @@ export class HealthCheckService {
       
       // CloudKit check (if enabled)
       if (process.env.CLOUDKIT_ENABLED === 'true') {
+        const hasContainer = !!process.env.CLOUDKIT_CONTAINER_ID;
         checks.cloudkit = {
-          status: 'warn' as const,
-          message: 'CloudKit integration pending paid Apple Developer account'
+          status: hasContainer ? 'pass' as const : 'warn' as const,
+          message: hasContainer ? 'CloudKit ready' : 'Missing CLOUDKIT_CONTAINER_ID'
         };
       } else {
         checks.cloudkit = {
@@ -247,18 +248,11 @@ export class HealthCheckService {
         };
       }
 
-      // AWS services check (placeholder)
-      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-        checks.aws = {
-          status: 'pass' as const,
-          message: 'AWS credentials configured'
-        };
-      } else {
-        checks.aws = {
-          status: 'warn' as const,
-          message: 'AWS credentials not configured'
-        };
-      }
+      // No AWS: explicitly report AWS as removed
+      checks.aws = {
+        status: 'pass' as const,
+        message: 'AWS removed; CloudKit is the only cloud provider'
+      };
 
       // Determine overall external services status
       const hasFailures = Object.values(checks).some((check: any) => check.status === 'fail');

@@ -1242,7 +1242,7 @@ struct PremiumTaskRowView: View {
                 .scaleEffect(pulseScale)
                 .shadow(color: task.isCompleted ? Color.green.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(PremiumPressButtonStyle())
             .disabled(isCompleting)
             
             // Task Content

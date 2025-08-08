@@ -67,7 +67,10 @@ struct OnboardingView: View {
                             title: localizationManager.localizedString("onboarding.get_started"),
                             icon: "arrow.right.circle.fill",
                             isPrimary: true,
-                            action: completeOnboarding
+                            action: { 
+                                PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                                completeOnboarding()
+                            }
                         )
                     } else {
                         RoomiesOnboardingButton(
@@ -81,7 +84,10 @@ struct OnboardingView: View {
                         )
                     }
                     
-                    Button(action: completeOnboarding) {
+                    Button(action: { 
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
+                        completeOnboarding() 
+                    }) {
                         Text(localizationManager.localizedString("onboarding.skip"))
                             .font(.system(.subheadline, design: .rounded, weight: .medium))
                             .foregroundColor(.secondary)
@@ -328,6 +334,8 @@ struct RoomiesOnboardingButton: View {
                     .shadow(color: isPrimary ? .blue.opacity(0.4) : .clear, radius: 12, x: 0, y: 6)
             )
         }
+        .buttonStyle(PremiumPressButtonStyle())
+        .minTappableArea()
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
         .onLongPressGesture(minimumDuration: 0) {

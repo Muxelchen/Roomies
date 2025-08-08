@@ -355,7 +355,8 @@ struct HouseholdSettingsTabView: View {
             
             Section("Actions") {
                 Button("Leave Household") {
-                    // TODO: Leave household
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                    leaveHousehold()
                 }
                 .foregroundColor(.orange)
                 
@@ -405,6 +406,23 @@ struct HouseholdSettingsTabView: View {
             
         } catch {
             LoggingManager.shared.error("Failed to delete household", category: LoggingManager.Category.general.rawValue, error: error)
+        }
+    }
+
+    private func leaveHousehold() {
+        // Remove current user's membership from this household
+        if let currentUser = IntegratedAuthenticationManager.shared.currentUser,
+           let memberships = household.memberships?.allObjects as? [UserHouseholdMembership],
+           let membership = memberships.first(where: { $0.user == currentUser }),
+           let context = household.managedObjectContext {
+            context.delete(membership)
+            do {
+                try context.save()
+                LoggingManager.shared.info("User left household", category: LoggingManager.Category.general.rawValue)
+                UserDefaults.standard.removeObject(forKey: "currentHouseholdId")
+            } catch {
+                LoggingManager.shared.error("Failed to leave household", category: LoggingManager.Category.general.rawValue, error: error)
+            }
         }
     }
 }

@@ -316,7 +316,8 @@ struct SettingsView: View {
             .alert("Delete All Data", isPresented: $showingDeleteAllAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete All", role: .destructive) {
-                    // TODO: Implement delete all data functionality
+                    PremiumAudioHapticSystem.playButtonTap(style: .heavy)
+                    PersistenceController.shared.resetAllData()
                 }
             } message: {
                 Text("Do you really want to delete all data? This action cannot be undone.")
@@ -337,8 +338,25 @@ struct SettingsView: View {
     }
     
     private func exportData() {
-        // TODO: Implement data export
-        print("Exporting data...")
+        PremiumAudioHapticSystem.playButtonTap(style: .medium)
+        // Basic JSON export of user defaults and a few counters as a placeholder export
+        let export: [String: Any] = [
+            "notificationsEnabled": notificationsEnabled,
+            "taskReminders": taskReminders,
+            "challengeUpdates": challengeUpdates,
+            "leaderboardUpdates": leaderboardUpdates,
+            "soundEnabled": soundEnabled,
+            "hapticFeedback": hapticFeedback
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: export, options: [.prettyPrinted]),
+           let tmp = try? FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: URL(fileURLWithPath: NSTemporaryDirectory()), create: true).appendingPathComponent("roomies-export.json") {
+            try? data.write(to: tmp)
+            let avc = UIActivityViewController(activityItems: [tmp], applicationActivities: nil)
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                window.rootViewController?.present(avc, animated: true)
+            }
+        }
     }
     
     private func rateApp() {
@@ -594,7 +612,7 @@ struct NotBoringNavigationRow<Destination: View>: View {
                     .foregroundColor(color)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         .padding(.vertical, 4)
     }
 }
@@ -1048,7 +1066,7 @@ struct SafeNavigationRow<Destination: View>: View {
                         .foregroundColor(color)
                 }
             }
-            .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         }
         .padding(.vertical, 4)
         .alert("Error", isPresented: $showingError) {

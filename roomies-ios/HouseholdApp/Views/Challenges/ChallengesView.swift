@@ -5,6 +5,7 @@ struct ChallengesView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedTab: ChallengeTab = .active
     @State private var showingAddChallenge = false
+    @State private var selectedChallenge: Challenge?
     
     enum ChallengeTab: String, CaseIterable {
         case active = "Active"
@@ -62,6 +63,10 @@ struct ChallengesView: View {
                                     challenge: challenge,
                                     animationDelay: Double(index) * 0.1
                                 )
+                                .onTapGesture {
+                                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                                    selectedChallenge = challenge
+                                }
                             }
                         }
                         
@@ -75,6 +80,10 @@ struct ChallengesView: View {
                                     isCompleted: true,
                                     animationDelay: Double(index) * 0.1
                                 )
+                                .onTapGesture {
+                                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                                    selectedChallenge = challenge
+                                }
                             }
                         }
                         
@@ -129,6 +138,41 @@ struct ChallengesView: View {
         }
         .sheet(isPresented: $showingAddChallenge) {
             AddChallengeView()
+        }
+        .sheet(item: $selectedChallenge) { challenge in
+            ChallengeDetailView(challenge: challenge)
+        }
+    }
+}
+
+// Fallback inline detail view to ensure tapping a challenge always works
+struct ChallengeDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    let challenge: Challenge
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .challenges, style: .minimal)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(challenge.title ?? "Unknown Challenge")
+                        .font(.title2.bold())
+                    Text(challenge.challengeDescription ?? "")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button {
+                        PremiumAudioHapticSystem.playModalDismiss()
+                        dismiss()
+                    } label: {
+                        Text("Close")
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                    }
+                    .buttonStyle(PremiumPressButtonStyle())
+                }
+                .padding(20)
+            }
+            .navigationTitle("Challenge")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
@@ -474,6 +518,7 @@ struct EnhancedChallengeCardView: View {
         .scaleEffect(isPressed ? 0.97 : 1.0)
         .opacity(cardOpacity)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .buttonStyle(PremiumPressButtonStyle())
         .onLongPressGesture(minimumDuration: 0) {
             // Do nothing on perform
         } onPressingChanged: { pressing in
@@ -670,6 +715,7 @@ struct EnhancedSampleChallengeCard: View {
                     }
                     
                     PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                    PremiumAudioHapticSystem.shared.play(.challengeJoin, context: .premium)
 
                     // Trigger backend join using a mock sample challenge id when wired to live data
                     Task {
@@ -701,6 +747,7 @@ struct EnhancedSampleChallengeCard: View {
                             .shadow(color: Color.blue.opacity(0.3), radius: 4, x: 0, y: 2)
                     )
                 }
+                .buttonStyle(PremiumPressButtonStyle())
                 .scaleEffect(joinButtonScale)
             }
             .padding(.horizontal, 20)

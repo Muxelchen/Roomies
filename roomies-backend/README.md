@@ -30,6 +30,25 @@ A comprehensive backend API for the **Roomies** gamified household management pl
 - **Redis 6+** (optional, for caching)
 - **Apple Developer Account** (for CloudKit features)
 
+### Environment
+
+Create a `.env` at project root with at least:
+
+```
+CLOUDKIT_ENABLED=false
+DATABASE_URL=postgresql://localhost:5432/roomies_dev
+PORT=3000
+```
+
+To enable CloudKit later, add:
+
+```
+CLOUDKIT_ENABLED=true
+CLOUDKIT_CONTAINER_ID=iCloud.com.yourcompany.roomies
+# Optional token for CloudKit Web Services if used
+CLOUDKIT_API_TOKEN=your_token
+```
+
 ### Installation
 
 1. **Clone and Install**
@@ -124,9 +143,9 @@ challenge.completed        # Challenge completed
 
 ## ☁️ CloudKit Integration
 
-### Current Status: **READY FOR ACTIVATION** 
+### Current Status: **CloudKit Ready (AWS removed)** 
 
-**Important:** CloudKit features are fully implemented but **disabled by default** because they require a **paid Apple Developer account** ($99/year). Free Apple Developer accounts cannot access CloudKit, iCloud, or any Apple cloud services.
+This backend has removed all AWS dependencies and is now CloudKit-first. CloudKit features are scaffolded and disabled by default via `CLOUDKIT_ENABLED=false`. When enabled and credentials provided, CloudKit paths activate system-wide.
 
 ### When You're Ready to Enable CloudKit
 
@@ -135,12 +154,13 @@ challenge.completed        # Challenge completed
    - Verify CloudKit access in Apple Developer Console
 
 2. **Configure CloudKit**
-   ```bash
-   # In your .env file:
-   CLOUDKIT_ENABLED=true
-   CLOUDKIT_CONTAINER_ID=iCloud.com.yourcompany.roomies
-   CLOUDKIT_API_TOKEN=your_cloudkit_api_token
-   ```
+```bash
+# In your .env file:
+CLOUDKIT_ENABLED=true
+CLOUDKIT_CONTAINER_ID=iCloud.com.yourcompany.roomies
+# Optional if using CloudKit Web Services auth flow
+CLOUDKIT_API_TOKEN=your_cloudkit_api_token
+```
 
 3. **CloudKit Features Auto-Activate**
    - Household cross-device sync
@@ -151,25 +171,13 @@ challenge.completed        # Challenge completed
 
 ### CloudKit Features Overview
 
-```typescript
-// All CloudKit features are ready and will activate when enabled:
+All CloudKit features are scaffolded and will activate when enabled:
 
-// ✅ Household Synchronization
-await CloudKitService.getInstance().syncHousehold(household);
-
-// ✅ Task Cross-device Sync  
-await CloudKitService.getInstance().syncTask(task);
-
-// ✅ Join Household via Cloud
-const household = await CloudKitService.getInstance()
-  .joinHouseholdFromCloud(inviteCode, user);
-
-// ✅ Real-time Updates
-await CloudKitService.getInstance().fetchHouseholdUpdates(household);
-
-// ✅ Activity Sync
-await CloudKitService.getInstance().syncActivity(activity);
-```
+- Household sync: `CloudKitService.getInstance().syncHousehold(household)`
+- Task sync: `CloudKitService.getInstance().syncTask(task)`
+- Join via invite code: `CloudKitService.getInstance().joinHouseholdFromCloud(code, user)`
+- Fetch updates: `CloudKitService.getInstance().fetchHouseholdUpdates(household)`
+- Activity sync: `CloudKitService.getInstance().syncActivity(activity)`
 
 ### Local-First Design Philosophy
 
@@ -358,9 +366,9 @@ A: Verify `JWT_SECRET` is set in environment variables
 - Include proper logging and monitoring
 - Write tests for all new functionality
 
-### E2E Smoke Tests
+### E2E Smoke Tests (Local / Remote)
 
-You can run quick, high-signal smoke checks against either local or AWS environments.
+You can run quick, high-signal smoke checks against local or your chosen hosting environment.
 
 ```
 # Local (default: http://localhost:3000)
@@ -370,10 +378,6 @@ node test-realtime.js
 # Remote (set your API base; include /api suffix)
 API_URL=http://<host>:<port>/api node test-api.js
 API_URL=http://<host>:<port>/api node test-realtime.js
-
-# Example (current EC2)
-API_URL=http://54.93.77.238:3001/api node test-api.js
-API_URL=http://54.93.77.238:3001/api node test-realtime.js
 ```
 
 Notes:

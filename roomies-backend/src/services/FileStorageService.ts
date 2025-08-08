@@ -1,7 +1,6 @@
-import { s3, s3Config, isAWSEnabled } from '@/config/aws.config';
 import { logger } from '@/utils/logger';
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
 import { promisify } from 'util';
 
 const writeFile = promisify(fs.writeFile);
@@ -10,11 +9,11 @@ const unlink = promisify(fs.unlink);
 const mkdir = promisify(fs.mkdir);
 
 /**
- * AWS S3 Storage Service
- * Handles all file storage operations with S3 or local fallback
+ * File Storage Service (local-only) and CloudKit-ready scaffold
+ * Handles file storage operations locally. Presigned URLs map to local URLs.
  */
-export class AWSStorageService {
-  private static instance: AWSStorageService;
+export class FileStorageService {
+  private static instance: FileStorageService;
   private localStoragePath: string = path.join(process.cwd(), 'uploads');
 
   private constructor() {
@@ -22,11 +21,11 @@ export class AWSStorageService {
     this.ensureLocalStorageExists();
   }
 
-  public static getInstance(): AWSStorageService {
-    if (!AWSStorageService.instance) {
-      AWSStorageService.instance = new AWSStorageService();
+  public static getInstance(): FileStorageService {
+    if (!FileStorageService.instance) {
+      FileStorageService.instance = new FileStorageService();
     }
-    return AWSStorageService.instance;
+    return FileStorageService.instance;
   }
 
   private async ensureLocalStorageExists(): Promise<void> {
@@ -38,7 +37,7 @@ export class AWSStorageService {
   }
 
   /**
-   * Upload a file to S3 or local storage
+   * Upload a file to local storage
    */
   async uploadFile(
     file: Buffer | string,
@@ -47,25 +46,8 @@ export class AWSStorageService {
     metadata?: Record<string, string>
   ): Promise<{ url: string; key: string }> {
     try {
-      if (isAWSEnabled()) {
-        // Upload to S3
-        const params = {
-          Bucket: s3Config.bucket,
-          Key: key,
-          Body: file,
-          ContentType: contentType || 'application/octet-stream',
-          Metadata: metadata || {}
-        };
-
-        const result = await s3.upload(params).promise();
-        logger.info(`File uploaded to S3: ${result.Location}`);
-
-        return {
-          url: result.Location,
-          key: result.Key
-        };
-      } else {
-        // Fallback to local storage
+      {
+        // Local storage
         const localPath = path.join(this.localStoragePath, key);
         const localDir = path.dirname(localPath);
         
@@ -91,22 +73,11 @@ export class AWSStorageService {
   }
 
   /**
-   * Download a file from S3 or local storage
+   * Download a file from local storage
    */
   async downloadFile(key: string): Promise<Buffer> {
     try {
-      if (isAWSEnabled()) {
-        // Download from S3
-        const params = {
-          Bucket: s3Config.bucket,
-          Key: key
-        };
-
-        const result = await s3.getObject(params).promise();
-        logger.info(`File downloaded from S3: ${key}`);
-
-        return result.Body as Buffer;
-      } else {
+      {
         // Read from local storage
         const localPath = path.join(this.localStoragePath, key);
         const file = await readFile(localPath);
@@ -121,22 +92,11 @@ export class AWSStorageService {
   }
 
   /**
-   * Delete a file from S3 or local storage
+   * Delete a file from local storage
    */
   async deleteFile(key: string): Promise<boolean> {
     try {
-      if (isAWSEnabled()) {
-        // Delete from S3
-        const params = {
-          Bucket: s3Config.bucket,
-          Key: key
-        };
-
-        await s3.deleteObject(params).promise();
-        logger.info(`File deleted from S3: ${key}`);
-
-        return true;
-      } else {
+      {
         // Delete from local storage
         const localPath = path.join(this.localStoragePath, key);
         await unlink(localPath);
@@ -151,7 +111,7 @@ export class AWSStorageService {
   }
 
   /**
-   * Generate a presigned URL for direct upload/download
+   * Generate a URL for direct download (local)
    */
   async getPresignedUrl(
     key: string,
@@ -159,19 +119,7 @@ export class AWSStorageService {
     expiresIn: number = 3600
   ): Promise<string> {
     try {
-      if (isAWSEnabled()) {
-        // Generate S3 presigned URL
-        const params = {
-          Bucket: s3Config.bucket,
-          Key: key,
-          Expires: expiresIn
-        };
-
-        const url = await s3.getSignedUrlPromise(operation, params);
-        logger.info(`Presigned URL generated for ${operation}: ${key}`);
-
-        return url;
-      } else {
+      {
         // Return local URL
         const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
         return `${baseUrl}/uploads/${key}`;
@@ -183,25 +131,11 @@ export class AWSStorageService {
   }
 
   /**
-   * List files in a directory/prefix
+   * List files in a local directory/prefix
    */
   async listFiles(prefix: string): Promise<Array<{ key: string; size: number; lastModified: Date }>> {
     try {
-      if (isAWSEnabled()) {
-        // List from S3
-        const params = {
-          Bucket: s3Config.bucket,
-          Prefix: prefix
-        };
-
-        const result = await s3.listObjectsV2(params).promise();
-        
-        return (result.Contents || []).map(item => ({
-          key: item.Key || '',
-          size: item.Size || 0,
-          lastModified: item.LastModified || new Date()
-        }));
-      } else {
+      {
         // List from local storage
         const localPath = path.join(this.localStoragePath, prefix);
         const files: Array<{ key: string; size: number; lastModified: Date }> = [];
@@ -269,4 +203,6 @@ export class AWSStorageService {
   }
 }
 
-export default AWSStorageService;
+export default FileStorageService;
+
+

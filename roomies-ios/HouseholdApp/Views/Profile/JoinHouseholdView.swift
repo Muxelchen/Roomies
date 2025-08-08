@@ -64,7 +64,10 @@ struct JoinHouseholdView: View {
                         
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
                             ForEach(avatarColors, id: \.self) { color in
-                                Button(action: { selectedAvatarColor = color }) {
+                                Button(action: { 
+                                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                                    selectedAvatarColor = color 
+                                }) {
                                     Circle()
                                         .fill(Color(color))
                                         .frame(width: 50, height: 50)
@@ -79,7 +82,8 @@ struct JoinHouseholdView: View {
                                                 .foregroundColor(.white)
                                         )
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .buttonStyle(PremiumPressButtonStyle())
+                                .minTappableArea()
                             }
                         }
                     }
@@ -87,6 +91,7 @@ struct JoinHouseholdView: View {
                 
                 Section("Sync Options") {
                     Toggle("Use Cloud Sync", isOn: $useCloudSync)
+                        .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
                     
                     if useCloudSync {
                         Text("This will sync your household data across all your devices using CloudKit.")
@@ -113,22 +118,25 @@ struct JoinHouseholdView: View {
                         }
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    }
                 }
+                }
+            .premiumFormAppearance()
                 }
             }
             .navigationTitle("Join Household")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                Button("Cancel") {
+                    PremiumAudioHapticSystem.playModalDismiss()
                         dismiss()
                     }
                     .disabled(isJoining)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Join") {
+                Button("Join") {
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         Task {
                             await joinHousehold()
                         }

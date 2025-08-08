@@ -3,8 +3,8 @@ import CloudKit
 import CoreData
 import SwiftUI
 
-// MARK: - Cloud Sync Configuration
-private let CLOUD_SYNC_ENABLED = false // 🔧 Set to true when you have a paid developer account
+// MARK: - Cloud Sync Configuration (runtime driven by backend status)
+private var CLOUD_SYNC_ENABLED: Bool { CloudRuntime.shared.cloudEnabled && CloudRuntime.shared.cloudAvailable }
 
 @MainActor
 class CloudSyncManager: ObservableObject {
@@ -13,15 +13,23 @@ class CloudSyncManager: ObservableObject {
     @Published var isSyncing = false
     @Published var syncError: String?
     
-    private let container = CKContainer.default()
-    private let database: CKDatabase
+    private var container: CKContainer?
+    private var database: CKDatabase?
     
     private init() {
-        self.database = container.publicCloudDatabase
-        
+        // Defer CloudKit initialization until enabled by runtime status
         if !CLOUD_SYNC_ENABLED {
-            LoggingManager.shared.info("CloudKit sync disabled for personal development team", category: "CloudSync")
+            LoggingManager.shared.info("CloudKit sync disabled (runtime)", category: "CloudSync")
         }
+    }
+
+    private func getDatabase() -> CKDatabase? {
+        guard CLOUD_SYNC_ENABLED else { return nil }
+        if database == nil {
+            container = CKContainer.default()
+            database = container?.publicCloudDatabase
+        }
+        return database
     }
     
     // MARK: - Household Sync
@@ -41,12 +49,13 @@ class CloudSyncManager: ObservableObject {
         await MainActor.run { isSyncing = true }
         
         do {
+            guard let db = getDatabase() else { return }
             let record = CKRecord(recordType: "Household", recordID: CKRecord.ID(recordName: householdId.uuidString))
             record["name"] = householdName
             record["inviteCode"] = inviteCode
             record["createdAt"] = household.createdAt
             
-            let _ = try await database.save(record)
+            let _ = try await db.save(record)
             LoggingManager.shared.info("Household synced to CloudKit: \(householdName)", category: "CloudSync")
             
         } catch {
@@ -72,10 +81,11 @@ class CloudSyncManager: ObservableObject {
         
         do {
             // Query CloudKit for household with invite code
+            guard let db = getDatabase() else { throw NSError(domain: "CloudSyncDisabled", code: 2) }
             let predicate = NSPredicate(format: "inviteCode == %@", code)
             let query = CKQuery(recordType: "Household", predicate: predicate)
             
-            let result = try await database.records(matching: query)
+            let result = try await db.records(matching: query)
             let records = result.matchResults.compactMap { try? $0.1.get() }
             
             guard let householdRecord = records.first else {
@@ -141,6 +151,7 @@ class CloudSyncManager: ObservableObject {
               let householdId = task.household?.id else { return }
         
         do {
+            guard let db = getDatabase() else { return }
             let record = CKRecord(recordType: "HouseholdTask", recordID: CKRecord.ID(recordName: taskId.uuidString))
             record["title"] = task.title
             record["taskDescription"] = task.taskDescription
@@ -154,7 +165,7 @@ class CloudSyncManager: ObservableObject {
             record["assignedToId"] = task.assignedTo?.id?.uuidString
             record["completedById"] = task.completedBy?.id?.uuidString
             
-            let _ = try await database.save(record)
+            let _ = try await db.save(record)
             LoggingManager.shared.debug("Task synced to CloudKit: \(task.title ?? "Unknown")", category: "CloudSync")
             
         } catch {
@@ -173,13 +184,14 @@ class CloudSyncManager: ObservableObject {
               let userId = membership.user?.id,
               let householdId = membership.household?.id else { return }
         
+        guard let db = getDatabase() else { return }
         let record = CKRecord(recordType: "UserHouseholdMembership", recordID: CKRecord.ID(recordName: membershipId.uuidString))
         record["userId"] = userId.uuidString
         record["householdId"] = householdId.uuidString
         record["role"] = membership.role
         record["joinedAt"] = membership.joinedAt
         
-        let _ = try await database.save(record)
+        let _ = try await db.save(record)
         LoggingManager.shared.info("User membership synced to CloudKit", category: "CloudSync")
     }
     
@@ -224,17 +236,18 @@ class CloudSyncManager: ObservableObject {
         
         do {
             // Fetch tasks for this household
+            guard let db = getDatabase() else { return }
             let taskPredicate = NSPredicate(format: "householdId == %@", householdId.uuidString)
             let taskQuery = CKQuery(recordType: "HouseholdTask", predicate: taskPredicate)
             
-            let taskResult = try await database.records(matching: taskQuery)
+            let taskResult = try await db.records(matching: taskQuery)
             let taskRecords = taskResult.matchResults.compactMap { try? $0.1.get() }
             
             // Fetch activities for this household
             let activityPredicate = NSPredicate(format: "householdId == %@", householdId.uuidString)
             let activityQuery = CKQuery(recordType: "Activity", predicate: activityPredicate)
             
-            let activityResult = try await database.records(matching: activityQuery)
+            let activityResult = try await db.records(matching: activityQuery)
             let activityRecords = activityResult.matchResults.compactMap { try? $0.1.get() }
             
             // Update local data from CloudKit

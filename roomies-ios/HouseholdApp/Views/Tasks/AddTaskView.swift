@@ -34,6 +34,7 @@ struct AnimatedPointsStepper: View {
                         .font(.title2)
                         .foregroundColor(points > 1 ? .red : .gray)
                 }
+                .minTappableArea()
                 .disabled(points <= 1)
                 
                 HStack(spacing: 4) {
@@ -74,6 +75,7 @@ struct AnimatedPointsStepper: View {
                         .foregroundColor(points < 100 ? .green : .gray)
                 }
                 .disabled(points >= 100)
+                .minTappableArea()
             }
         }
     }
@@ -166,7 +168,7 @@ struct PriorityChip: View {
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isPressed)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
         }, perform: {})
@@ -217,6 +219,7 @@ struct FloatingCreateButton: View {
             .scaleEffect(pulseScale)
         }
         .disabled(!isEnabled)
+        .minTappableArea()
         .onAppear {
             if isEnabled {
                 // Single glow animation to prevent battery drain
@@ -571,7 +574,7 @@ struct AddTaskView: View {
                 Spacer()
                 
                 Toggle("", isOn: $hasDueDate)
-                    .toggleStyle(SwitchToggleStyle(tint: .purple))
+                    .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.tasks.primary))
             }
             
             if hasDueDate {
@@ -920,7 +923,7 @@ struct UserChip: View {
                     .lineLimit(1)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
     }
 }
 

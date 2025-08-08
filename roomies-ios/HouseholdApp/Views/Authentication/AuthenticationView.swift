@@ -53,6 +53,8 @@ struct AuthenticationView: View {
                             }
                         }
                         .disabled(isPrimaryActionDisabled || authManager.isLoading)
+                        .accessibilityLabel(Text(isSignUp ? "Create account" : "Sign in"))
+                        .accessibilityHint(Text(isSignUp ? "Creates your Roomies account" : "Signs you in to Roomies"))
                         
                         Button {
                             PremiumAudioHapticSystem.playButtonTap(style: .light)
@@ -76,8 +78,11 @@ struct AuthenticationView: View {
                                     )
                             )
                         }
+                        .buttonStyle(PremiumPressButtonStyle())
                         .disabled(authManager.isLoading)
                         .buttonStyle(.plain)
+                        .accessibilityLabel(Text("Try Demo"))
+                        .accessibilityHint(Text("Opens Roomies demo without signing in"))
                         
                         Button {
                             PremiumAudioHapticSystem.playButtonTap(style: .light)
@@ -90,6 +95,8 @@ struct AuthenticationView: View {
                                 .fontWeight(.medium)
                         }
                         .disabled(authManager.isLoading)
+                        .minTappableArea()
+                        .accessibilityHint(Text("Switches between sign in and sign up"))
                     }
                 }
                 .padding(22)

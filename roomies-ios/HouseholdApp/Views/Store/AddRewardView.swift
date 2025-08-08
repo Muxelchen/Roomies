@@ -24,7 +24,7 @@ struct AddRewardView: View {
     
     var body: some View {
         NavigationView {
-            Form {
+        Form {
                 Section("Reward Details") {
                     TextField("Reward Name", text: $name)
                         .focused($nameFieldFocused)
@@ -58,6 +58,9 @@ struct AddRewardView: View {
                         Text("Cost (Points)")
                         Spacer()
                         Stepper("\(cost)", value: $cost, in: 1...1000, step: 5)
+                            .onChange(of: cost) { _, _ in
+                                PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            }
                     }
                     
                     VStack(alignment: .leading, spacing: 12) {
@@ -67,7 +70,10 @@ struct AddRewardView: View {
                         
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
                             ForEach(availableIcons, id: \.self) { icon in
-                                Button(action: { selectedIcon = icon }) {
+                            Button(action: { 
+                                PremiumAudioHapticSystem.playButtonTap(style: .light)
+                                selectedIcon = icon 
+                            }) {
                                     Image(systemName: icon)
                                         .font(.title2)
                                         .foregroundColor(selectedIcon == icon ? .white : .blue)
@@ -75,14 +81,16 @@ struct AddRewardView: View {
                                         .background(selectedIcon == icon ? Color.blue : Color.blue.opacity(0.1))
                                         .cornerRadius(12)
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                            .buttonStyle(PremiumPressButtonStyle())
+                            .minTappableArea()
                             }
                         }
                     }
                 }
                 
                 Section("Settings") {
-                    Toggle("Active", isOn: $isActive)
+                Toggle("Active", isOn: $isActive)
+                    .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.store.primary))
                 }
                 
                 Section {
@@ -90,7 +98,8 @@ struct AddRewardView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-            }
+        }
+        .premiumFormAppearance()
             .navigationTitle("Add Reward")
             .navigationBarTitleDisplayMode(.inline)
             .onSubmit {
@@ -98,15 +107,17 @@ struct AddRewardView: View {
                     saveReward()
                 }
             }
-            .toolbar {
+        .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(localizationManager.localizedString("common.cancel")) {
+                Button(localizationManager.localizedString("common.cancel")) {
+                    PremiumAudioHapticSystem.playModalDismiss()
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(localizationManager.localizedString("common.save")) {
+                Button(localizationManager.localizedString("common.save")) {
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         saveReward()
                     }
                     .disabled(name.isEmpty)
@@ -119,6 +130,7 @@ struct AddRewardView: View {
             descriptionFieldFocused = false
             hideKeyboard()
         }
+        .background(PremiumScreenBackground(sectionColor: .store, style: .minimal))
     }
     
     // Add function to hide keyboard

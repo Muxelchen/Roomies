@@ -132,7 +132,7 @@ struct NotBoringRewardCard: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         .scaleEffect(isPressed ? 0.96 : cardScale)
         .opacity(canAfford ? 1.0 : 0.7)
         .disabled(!canAfford)
@@ -677,7 +677,7 @@ struct NotBoringTabPicker: View {
                             .shadow(color: selectedTab == tab ? Color.purple.opacity(0.4) : Color.clear, radius: selectionGlow, x: 0, y: 4)
                     )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(PremiumPressButtonStyle())
             }
         }
         .onAppear {

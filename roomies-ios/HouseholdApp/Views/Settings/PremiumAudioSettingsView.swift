@@ -31,6 +31,7 @@ struct PremiumAudioSettingsView: View {
                                 }
                             }
                         ))
+                        .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
                     }
                     
                     // Haptic Feedback Toggle
@@ -48,6 +49,7 @@ struct PremiumAudioSettingsView: View {
                                 }
                             }
                         ))
+                        .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
                     }
                 }
                 .disabled(!premiumAudioSystem.isAudioEnabled && !premiumAudioSystem.isHapticEnabled)
@@ -292,6 +294,7 @@ struct PremiumAudioSettingsView: View {
                     .foregroundColor(.primary)
                 }
                 }
+                .premiumFormAppearance()
             }
             .navigationTitle("Premium Audio")
             .navigationBarTitleDisplayMode(.large)
@@ -418,7 +421,7 @@ struct AudioTestRow: View {
                     .foregroundColor(.secondary)
             }
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
     }
 }
 

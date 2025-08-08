@@ -44,7 +44,7 @@ struct EnhancedFilterChip: View {
                     .stroke(isSelected ? filter.color.opacity(0.3) : Color.clear, lineWidth: 2)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
     }
 }
 

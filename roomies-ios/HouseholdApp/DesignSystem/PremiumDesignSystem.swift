@@ -579,6 +579,15 @@ extension View {
      func premiumEntrance(delay: Double = 0) -> some View {
          modifier(PremiumEntranceModifier(delay: delay))
      }
+
+    // MARK: - Accessibility helpers (co-located to ensure inclusion in build)
+    func minTappableArea() -> some View {
+        modifier(_MinTappableArea())
+    }
+
+    func accessibilityHeader() -> some View {
+        accessibilityAddTraits(.isHeader)
+    }
 }
 
 // Modifier to avoid using state-changing calls directly inside View builder chain
@@ -597,5 +606,79 @@ private struct PremiumEntranceModifier: ViewModifier {
                     viewOpacity = 1.0
                 }
             }
+    }
+}
+
+// MARK: - Private helper modifiers
+private struct _MinTappableArea: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .contentShape(Rectangle())
+            .frame(minWidth: 44, minHeight: 44, alignment: .center)
+    }
+}
+
+// MARK: - Premium Interactive Styles (global)
+
+struct PremiumToggleStyle: ToggleStyle {
+    var tint: Color = PremiumDesignSystem.SectionColor.dashboard.primary
+
+    func makeBody(configuration: Configuration) -> some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(configuration.isOn ? tint : Color(UIColor.tertiarySystemFill))
+            .frame(width: 52, height: 30)
+            .overlay(
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .offset(x: configuration.isOn ? 11 : -11)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            )
+            .onTapGesture {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    configuration.isOn.toggle()
+                }
+                if configuration.isOn {
+                    PremiumAudioHapticSystem.shared.play(.toggleOn, context: .subtle)
+                } else {
+                    PremiumAudioHapticSystem.shared.play(.toggleOff, context: .subtle)
+                }
+            }
+            .minTappableArea()
+            .accessibility(addTraits: .isButton)
+            .accessibilityValue(configuration.isOn ? Text("On") : Text("Off"))
+            .accessibilityAction {
+                configuration.isOn.toggle()
+            }
+    }
+}
+
+struct PremiumPressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, isPressed in
+                if isPressed { PremiumAudioHapticSystem.playButtonTap(style: .light) }
+            }
+            .minTappableArea()
+            .accessibilityAddTraits(.isButton)
+    }
+}
+
+extension View {
+    func premiumListAppearance() -> some View {
+        self
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+    }
+
+    func premiumFormAppearance() -> some View {
+        self
+            .scrollContentBackground(.hidden)
     }
 }

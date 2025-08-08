@@ -79,7 +79,9 @@ struct EnhancedMemberManagementView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                VStack(spacing: 0) {
                 if let household = currentHousehold {
                     // Household Header
                     householdHeaderView(household)
@@ -104,18 +106,23 @@ struct EnhancedMemberManagementView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") { dismiss() }
+                    Button("Close") { 
+                        PremiumAudioHapticSystem.playModalDismiss()
+                        dismiss() 
+                    }
                 }
                 
                 if currentHousehold != nil {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button("Invite Members") {
+                                PremiumAudioHapticSystem.playModalPresent()
                                 showingInviteSheet = true
                             }
                             
                             if isCurrentUserAdmin {
                                 Button("Create Invite Link") {
+                                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
                                     showingCreateInviteSheet = true
                                 }
                             }
@@ -128,11 +135,13 @@ struct EnhancedMemberManagementView: View {
         }
         .sheet(isPresented: $showingInviteSheet) {
             InviteMemberSheet(household: currentHousehold)
+                .accessibilityIdentifier("InviteMemberSheet")
         }
         .sheet(isPresented: $showingCreateInviteSheet) {
             CreateInviteSheet(household: currentHousehold)
+                .accessibilityIdentifier("CreateInviteSheet")
         }
-        .actionSheet(isPresented: $showingMemberActions) {
+            .actionSheet(isPresented: $showingMemberActions) {
             memberActionSheet
         }
         .onAppear {
@@ -203,6 +212,9 @@ struct EnhancedMemberManagementView: View {
         }
         .pickerStyle(SegmentedPickerStyle())
         .padding()
+        .onChange(of: selectedTab) { _, _ in
+            PremiumAudioHapticSystem.playFilterSwitch(context: .taskFilterChange)
+        }
     }
     
     private var membersTabContent: some View {
@@ -438,7 +450,10 @@ struct EnhancedMemberRowView: View {
     }
     
     var body: some View {
-        Button(action: { onMemberTapped(member) }) {
+        Button(action: { 
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
+            onMemberTapped(member) 
+        }) {
             HStack(spacing: 16) {
                 // Avatar
                 Circle()
@@ -517,7 +532,10 @@ struct EnhancedMemberRowView: View {
                     .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
             )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(member.name ?? "Unknown Member"))
+        .accessibilityHint(Text(isCurrentUser ? "You. Double-tap for actions." : "Opens actions for this member"))
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -666,7 +684,10 @@ struct AdminSection: View {
     var body: some View {
         Section(title) {
             ForEach(items, id: \.title) { item in
-                Button(action: item.action) {
+                Button(action: {
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                    item.action()
+                }) {
                     HStack {
                         Image(systemName: item.icon)
                             .foregroundColor(item.color)
@@ -682,7 +703,7 @@ struct AdminSection: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(PremiumPressButtonStyle())
             }
         }
     }

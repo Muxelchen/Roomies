@@ -3,6 +3,7 @@ import { authenticateToken } from '@/middleware/auth';
 import { AppDataSource } from '@/config/database';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { eventBroker } from '@/services/EventBroker';
+import CloudKitService from '@/services/CloudKitService';
 import { logger } from '@/utils/logger';
 
 const router = express.Router();
@@ -66,3 +67,9 @@ router.get('/household/:householdId', async (req, res) => {
 });
 
 export default router;
+
+// Health/status for events and cloud
+router.get('/status', (req, res) => {
+  const cloud = CloudKitService.getInstance();
+  res.json({ success: true, cloud: cloud.getCloudKitStatus() });
+});

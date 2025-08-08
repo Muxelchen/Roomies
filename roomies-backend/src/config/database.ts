@@ -10,18 +10,13 @@ import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { RewardRedemption } from '@/models/RewardRedemption';
 import { TaskComment } from '@/models/TaskComment';
 import { logger } from '@/utils/logger';
-import { rdsConfig, isAWSEnabled } from '@/config/aws.config';
 
 const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.DB_TYPE === 'sqlite';
 
-// Use AWS RDS if enabled, otherwise fall back to local database
+// Resolve database URL (local/dev by default)
 const getDatabaseUrl = (): string => {
   if (isTestEnvironment) {
     return '';
-  }
-  if (isAWSEnabled() && process.env.AWS_RDS_HOST) {
-    const { username, password, host, port, database } = rdsConfig;
-    return `postgresql://${username}:${password}@${host}:${port}/${database}`;
   }
   return process.env.DATABASE_URL || 'postgresql://localhost:5432/roomies_dev';
 };

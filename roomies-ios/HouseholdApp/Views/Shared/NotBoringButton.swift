@@ -71,7 +71,7 @@ struct NotBoringButton: View {
                         )
                 )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .shadow(
             color: style.shadowColor,

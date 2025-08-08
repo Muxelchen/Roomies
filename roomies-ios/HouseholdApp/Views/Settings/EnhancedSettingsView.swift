@@ -187,7 +187,7 @@ struct EnhancedSettingsSection<Content: View>: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(PremiumPressButtonStyle())
             
             // Section Content
             if isExpanded {
@@ -517,7 +517,7 @@ struct EnhancedToggleRow: View {
             Spacer()
             
             Toggle("", isOn: $isOn)
-                .toggleStyle(EnhancedToggleStyle())
+                .toggleStyle(PremiumToggleStyle(tint: .blue))
                 .scaleEffect(toggleScale)
                 .onChange(of: isOn) { _, _ in
                     onChange?()
@@ -578,7 +578,8 @@ struct EnhancedSettingsRow: View {
             .padding(.vertical, 8)
             .scaleEffect(isPressed ? 0.98 : 1.0)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PremiumPressButtonStyle())
+        .minTappableArea()
         .onLongPressGesture(minimumDuration: 0) {
             // Do nothing
         } onPressingChanged: { pressing in
@@ -592,21 +593,7 @@ struct EnhancedSettingsRow: View {
 // MARK: - Enhanced Toggle Style
 struct EnhancedToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(configuration.isOn ? Color.blue : Color(UIColor.tertiarySystemFill))
-            .frame(width: 48, height: 28)
-            .overlay(
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 24, height: 24)
-                    .offset(x: configuration.isOn ? 10 : -10)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            )
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    configuration.isOn.toggle()
-                }
-            }
+            PremiumToggleStyle(tint: .blue).makeBody(configuration: configuration)
     }
 }
 

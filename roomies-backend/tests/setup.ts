@@ -99,23 +99,23 @@ export const testHelpers = {
 
 // Mock implementations for external services
 jest.mock('@/services/CloudKitService', () => ({
-  CloudKitService: jest.fn().mockImplementation(() => ({
-    syncToCloud: jest.fn().mockResolvedValue({}),
-    isEnabled: false
-  }))
+  __esModule: true,
+  default: class MockCloudKitService {
+    static getInstance() { return new MockCloudKitService(); }
+    getCloudKitStatus() { return { enabled: false, available: false, lastSync: null, error: 'CloudKit disabled' }; }
+    syncHousehold = jest.fn().mockResolvedValue(true);
+    syncUser = jest.fn().mockResolvedValue(true);
+    syncTask = jest.fn().mockResolvedValue(true);
+    syncActivity = jest.fn().mockResolvedValue(true);
+    syncUserMembership = jest.fn().mockResolvedValue(true);
+    joinHouseholdFromCloud = jest.fn().mockResolvedValue(null);
+    fetchHouseholdUpdates = jest.fn().mockResolvedValue(true);
+  }
 }));
 
-jest.mock('@/services/AWSStorageService', () => ({
-  AWSStorageService: jest.fn().mockImplementation(() => ({
-    uploadFile: jest.fn().mockResolvedValue({ url: 'https://test-bucket.s3.amazonaws.com/test.jpg' }),
+jest.mock('@/services/FileStorageService', () => ({
+  FileStorageService: jest.fn().mockImplementation(() => ({
+    uploadFile: jest.fn().mockResolvedValue({ url: '/uploads/test.jpg' }),
     deleteFile: jest.fn().mockResolvedValue(true)
-  }))
-}));
-
-jest.mock('@/services/AWSCacheService', () => ({
-  AWSCacheService: jest.fn().mockImplementation(() => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(true),
-    delete: jest.fn().mockResolvedValue(true)
   }))
 }));

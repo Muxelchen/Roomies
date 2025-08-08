@@ -54,7 +54,10 @@ struct CreateHouseholdView: View {
                         
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
                             ForEach(avatarColors, id: \.self) { color in
-                                Button(action: { selectedAvatarColor = color }) {
+                                Button(action: { 
+                                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                                    selectedAvatarColor = color 
+                                }) {
                                     Circle()
                                         .fill(Color(color))
                                         .frame(width: 50, height: 50)
@@ -69,7 +72,8 @@ struct CreateHouseholdView: View {
                                                 .foregroundColor(.white)
                                         )
                                 }
-                                .buttonStyle(PlainButtonStyle())
+                                .buttonStyle(PremiumPressButtonStyle())
+                                .minTappableArea()
                             }
                         }
                     }
@@ -77,6 +81,7 @@ struct CreateHouseholdView: View {
                 
                 Section("Sync Options") {
                     Toggle("Use Cloud Sync", isOn: $useCloudSync)
+                        .toggleStyle(PremiumToggleStyle(tint: PremiumDesignSystem.SectionColor.profile.primary))
                     
                     if useCloudSync {
                         Text("This will sync your household data across all your devices.")
@@ -103,22 +108,25 @@ struct CreateHouseholdView: View {
                         }
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    }
                 }
+                }
+            .premiumFormAppearance()
                 }
             }
             .navigationTitle("Create Household")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+            Button("Cancel") {
+                PremiumAudioHapticSystem.playModalDismiss()
                         dismiss()
                     }
                     .disabled(isCreating)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Create") {
+            Button("Create") {
+                PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         Task {
                             await createHousehold()
                         }

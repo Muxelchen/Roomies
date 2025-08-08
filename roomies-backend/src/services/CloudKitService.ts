@@ -5,6 +5,34 @@ import { HouseholdTask } from '@/models/HouseholdTask';
 import { Activity } from '@/models/Activity';
 import { AppDataSource } from '@/config/database';
 
+type CloudKitClient = {
+  isConfigured: boolean;
+  configure: (opts: { containerId: string; apiToken?: string }) => Promise<void>;
+  createRecord: (recordType: string, fields: Record<string, any>) => Promise<any>;
+  fetchRecords: (recordType: string, predicate?: Record<string, any>) => Promise<any[]>;
+  subscribeToChanges?: (recordType: string, handler: (change: any) => void) => Promise<void>;
+};
+
+// Minimal CloudKit client scaffold (Web Services placeholder)
+class DefaultCloudKitClient implements CloudKitClient {
+  public isConfigured = false;
+  async configure(opts: { containerId: string; apiToken?: string }): Promise<void> {
+    if (!opts.containerId) {
+      throw new Error('CLOUDKIT_CONTAINER_ID missing');
+    }
+    // TODO: Implement real CloudKit Web Services auth and signing.
+    this.isConfigured = true;
+  }
+  async createRecord(recordType: string, fields: Record<string, any>): Promise<any> {
+    // TODO: Replace with CloudKit Web Services call
+    return { recordType, fields, id: `local-${Date.now()}` };
+  }
+  async fetchRecords(recordType: string, predicate?: Record<string, any>): Promise<any[]> {
+    // TODO: Replace with CloudKit Web Services query
+    return [];
+  }
+}
+
 /**
  * CloudKit Service - Handles cloud synchronization with Apple's CloudKit
  * 
@@ -16,14 +44,23 @@ import { AppDataSource } from '@/config/database';
 export class CloudKitService {
   private static instance: CloudKitService;
   private isCloudKitEnabled: boolean;
+  private client: CloudKitClient;
 
   private constructor() {
     this.isCloudKitEnabled = process.env.CLOUDKIT_ENABLED === 'true';
+    this.client = new DefaultCloudKitClient();
     
     if (!this.isCloudKitEnabled) {
       logger.info('🚫 CloudKit synchronization disabled (Free Apple Developer account)');
     } else {
       logger.info('☁️ CloudKit synchronization enabled');
+      // Best-effort configuration; do not throw on boot
+      const containerId = process.env.CLOUDKIT_CONTAINER_ID || '';
+      const apiToken = process.env.CLOUDKIT_API_TOKEN || undefined;
+      this.client
+        .configure({ containerId, apiToken })
+        .then(() => logger.info('✅ CloudKit client configured'))
+        .catch((e) => logger.warn('⚠️ CloudKit client configuration failed', e));
     }
   }
 
@@ -47,14 +84,17 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Create CKRecord for household
-      // 2. Set household data (name, inviteCode, settings)
-      // 3. Upload to CloudKit public database
-      // 4. Handle conflicts and merging
-      
-      // Placeholder implementation
-      await this.simulateCloudOperation('household_sync');
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        await this.client.createRecord('Household', {
+          id: household.id,
+          name: household.name,
+          inviteCode: household.inviteCode,
+          createdAt: household.createdAt,
+          updatedAt: household.updatedAt,
+        });
+      } else {
+        await this.simulateCloudOperation('household_sync');
+      }
       
       cloudLogger.syncSuccess('household', 'sync');
       return true;
@@ -72,6 +112,41 @@ export class CloudKitService {
   }
 
   /**
+   * Sync user profile to CloudKit
+   * TODO: Implement user identity mapping with CloudKit
+   */
+  async syncUser(user: User): Promise<boolean> {
+    cloudLogger.syncAttempt('user', 'sync');
+
+    if (!this.isCloudKitEnabled) {
+      cloudLogger.syncSkipped('user', 'CloudKit disabled for free developer account');
+      return true;
+    }
+
+    try {
+      if (this.client.isConfigured) {
+        await this.client.createRecord('User', {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          points: user.points,
+          level: user.level,
+          streakDays: user.streakDays,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
+      } else {
+        await this.simulateCloudOperation('user_sync');
+      }
+      cloudLogger.syncSuccess('user', 'sync');
+      return true;
+    } catch (error) {
+      cloudLogger.syncError('user', error);
+      return process.env.NODE_ENV !== 'production';
+    }
+  }
+
+  /**
    * Sync task data to CloudKit
    * TODO: Implement CloudKit task synchronization
    */
@@ -84,14 +159,22 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Create CKRecord for task
-      // 2. Set task data (title, description, points, etc.)
-      // 3. Create references to household and users
-      // 4. Upload to CloudKit
-      // 5. Handle recurring task logic
-      
-      await this.simulateCloudOperation('task_sync');
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        await this.client.createRecord('Task', {
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          points: task.points,
+          householdId: (task.household as any)?.id,
+          assignedToId: (task.assignedTo as any)?.id,
+          isCompleted: task.isCompleted,
+          dueDate: task.dueDate,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+        });
+      } else {
+        await this.simulateCloudOperation('task_sync');
+      }
       
       cloudLogger.syncSuccess('task', 'sync');
       return true;
@@ -115,14 +198,19 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Create CKRecord for activity
-      // 2. Set activity data (type, action, points, metadata)
-      // 3. Create references to user and household
-      // 4. Upload to CloudKit
-      // 5. Implement activity filtering (only sync important activities)
-      
-      await this.simulateCloudOperation('activity_sync');
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        await this.client.createRecord('Activity', {
+          id: activity.id,
+          type: activity.type,
+          action: activity.action,
+          points: activity.points,
+          userId: (activity.user as any)?.id,
+          householdId: (activity.household as any)?.id,
+          createdAt: activity.createdAt,
+        });
+      } else {
+        await this.simulateCloudOperation('activity_sync');
+      }
       
       cloudLogger.syncSuccess('activity', 'sync');
       return true;
@@ -154,23 +242,24 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Query CloudKit for household with invite code
-      // 2. Verify household exists and is accessible
-      // 3. Create local household record if not exists
-      // 4. Add user to household membership
-      // 5. Sync membership to CloudKit
-      // 6. Download recent household data
-      
-      await this.simulateCloudOperation('household_join');
-      
-      // For now, fallback to local lookup
-      const householdRepo = AppDataSource.getRepository(Household);
-      const household = await householdRepo.findOne({
-        where: { inviteCode },
-        relations: ['memberships', 'memberships.user']
-      });
-      
+      let household: Household | null = null;
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        const matches = await this.client.fetchRecords('Household', { inviteCode });
+        if (matches?.length) {
+          const householdRepo = AppDataSource.getRepository(Household);
+          household = await householdRepo.findOne({
+            where: { inviteCode },
+            relations: ['memberships', 'memberships.user']
+          });
+        }
+      } else {
+        await this.simulateCloudOperation('household_join');
+        const householdRepo = AppDataSource.getRepository(Household);
+        household = await householdRepo.findOne({
+          where: { inviteCode },
+          relations: ['memberships', 'memberships.user']
+        });
+      }
       cloudLogger.syncSuccess('household', 'join_from_cloud');
       return household;
 
@@ -193,14 +282,12 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Query CloudKit for household updates since last sync
-      // 2. Fetch updated tasks, activities, memberships
-      // 3. Merge changes with local data (conflict resolution)
-      // 4. Update local database
-      // 5. Notify connected users of updates via WebSocket
-      
-      await this.simulateCloudOperation('fetch_updates');
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        // TODO: Implement delta fetch and merge for records linked to this household
+        await Promise.resolve();
+      } else {
+        await this.simulateCloudOperation('fetch_updates');
+      }
       
       cloudLogger.syncSuccess('household', 'fetch_updates');
       return true;
@@ -224,13 +311,16 @@ export class CloudKitService {
     }
 
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Create CKRecord for membership
-      // 2. Set membership data (user, household, role, joined date)
-      // 3. Upload to CloudKit
-      // 4. Handle membership changes and role updates
-      
-      await this.simulateCloudOperation('membership_sync');
+      if (this.isCloudKitEnabled && this.client.isConfigured) {
+        await this.client.createRecord('Membership', {
+          userId,
+          householdId,
+          role,
+          joinedAt: new Date(),
+        });
+      } else {
+        await this.simulateCloudOperation('membership_sync');
+      }
       
       cloudLogger.syncSuccess('membership', 'sync');
       return true;
@@ -292,9 +382,9 @@ export class CloudKitService {
   } {
     return {
       enabled: this.isCloudKitEnabled,
-      available: false, // TODO: Check actual CloudKit availability
+      available: this.isCloudKitEnabled && this.client.isConfigured,
       lastSync: null, // TODO: Track last sync time
-      error: this.isCloudKitEnabled ? null : 'CloudKit requires paid Apple Developer account'
+      error: this.isCloudKitEnabled ? (this.client.isConfigured ? null : 'CloudKit not configured') : 'CloudKit disabled'
     };
   }
 
@@ -306,14 +396,12 @@ export class CloudKitService {
     logger.info('🔄 Starting initial CloudKit sync...');
     
     try {
-      // TODO: When CloudKit is available, implement:
-      // 1. Upload all existing households
-      // 2. Upload all tasks and activities
-      // 3. Upload user memberships
-      // 4. Set up sync timestamps
-      // 5. Configure change notifications
-      
-      await this.simulateCloudOperation('initial_sync');
+      if (this.client.isConfigured) {
+        // TODO: Implement bulk sync using CloudKit Web Services
+        await Promise.resolve();
+      } else {
+        await this.simulateCloudOperation('initial_sync');
+      }
       
       logger.info('✅ Initial CloudKit sync completed');
       

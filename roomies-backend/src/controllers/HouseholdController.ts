@@ -8,16 +8,8 @@ import { Activity } from '@/models/Activity';
 import { logger } from '@/utils/logger';
 import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
-import { CloudKitService } from '@/services/CloudKitService';
-
-// CloudKit service will be initialized when needed
-const getCloudKitService = () => {
-  try {
-    return new (require('@/services/CloudKitService').CloudKitService)();
-  } catch {
-    return null; // CloudKit not available
-  }
-};
+import CloudKitService from '@/services/CloudKitService';
+const getCloudKitService = () => CloudKitService.getInstance();
 
 export class HouseholdController {
   private householdRepository = AppDataSource.getRepository(Household);

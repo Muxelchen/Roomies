@@ -10,12 +10,12 @@
 
 ### Phase 1 (Initial Setup)
 
-### 1. **Security - AWS Credentials** ✅
-- **Issue:** AWS credentials exposed in .env file (CRITICAL P0)
+### 1. **Security - Cloud Credentials** ✅
+- **Issue:** Secrets management needed for cloud configuration (CRITICAL P0)
 - **Action Taken:** 
-  - Removed hardcoded AWS credentials from .env
-  - Created secure credential management script
-  - Updated .env to use environment variables
+  - Removed all AWS-specific references
+  - Updated secret generation script to output CloudKit envs
+  - Ensured `.env` relies on environment variables only
 - **Status:** COMPLETE
 
 ### 2. **Local Services Setup** ✅
@@ -83,7 +83,7 @@
 2. **JWT Secret Weakness** - Using example secret
 3. **No Rate Limiting** - Vulnerable to DoS/brute force
 4. **No Error Handling** - 0 try-catch blocks in codebase
-5. **AWS Infrastructure** - Nothing deployed (0 resources)
+5. **Cloud Infrastructure** - Deployment setup pending
 
 ### Priority 1 (High)
 1. **No Input Sanitization** - 31 endpoints vulnerable
@@ -105,7 +105,7 @@
 
 - **Production Readiness:** 35/100 (up from 15/100) 🎯
 - **Tests Written:** 0 (still needed)
-- **AWS Resources Deployed:** 0
+- **Cloud Resources Deployed:** 0
 - **Security Vulnerabilities:** 36 (down from 47) 🔒
 - **Build Status:** ✅ PASSING
 - **Local Services:** PostgreSQL ✅, Redis ✅, Node.js 🔧 (fixing startup)
@@ -128,17 +128,14 @@
    - Implement input sanitization
    - Add SQL injection protection
 
-### Phase 3: AWS Deployment (Hours 3-4)
-1. **Create AWS Resources**
-   - Launch EC2 instance
-   - Set up RDS PostgreSQL
-   - Configure ElastiCache Redis
-   - Create S3 bucket
+### Phase 3: Deployment (Hours 3-4)
+1. **Prepare Hosting**
+   - Choose hosting (Render/Fly.io/Heroku/VPS)
+   - Provision PostgreSQL and optional Redis
+   - Configure environment variables
 
-2. **Configure Security Groups**
-   - Set up VPC
-   - Configure security groups
-   - Enable HTTPS/TLS
+2. **Security**
+   - Enable HTTPS/TLS at the edge
 
 ### Phase 4: Testing & Monitoring (Hours 5-6)
 1. **Write Critical Path Tests**
@@ -147,7 +144,7 @@
    - Household management tests
 
 2. **Set Up Monitoring**
-   - CloudWatch configuration
+   - Monitoring configuration (APM/metrics)
    - Error tracking
    - Performance monitoring
 
@@ -160,7 +157,7 @@
 | Build Status | ❌ Failing | ✅ Passing | ✅ Passing |
 | Security | 15% | 20% | 90% |
 | Tests | 0% | 0% | 60% |
-| AWS Deploy | 0% | 0% | 100% |
+| Cloud Deploy | 0% | 0% | 100% |
 | Error Handling | 0% | 0% | 95% |
 | Documentation | 30% | 35% | 80% |
 
@@ -171,7 +168,7 @@
 **Estimated Time Remaining:** 18-20 hours of focused work
 
 1. **Hour 1-2:** Error handling & security hardening ⬅️ CURRENT
-2. **Hour 3-4:** AWS infrastructure deployment
+2. **Hour 3-4:** Deployment setup on chosen host
 3. **Hour 5-6:** Testing & monitoring setup
 4. **Hour 7-8:** Performance optimization
 5. **Hour 9-10:** Documentation & runbooks
@@ -185,11 +182,11 @@
 
 ## 📝 Notes
 
-- AWS credentials now secured via environment variables
+- AWS references removed; CloudKit-only configuration
 - Redis installed and running locally
 - TypeScript compilation successful
 - Need to start applying database migrations next
-- Focus on security and error handling before AWS deployment
+- Focus on security and error handling before deployment
 
 ---
 

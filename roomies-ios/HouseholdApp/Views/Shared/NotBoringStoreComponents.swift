@@ -448,7 +448,7 @@ struct NotBoringTabPicker: View {
                                 )
                         )
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(PremiumPressButtonStyle())
             }
         }
         .padding(4)

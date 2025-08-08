@@ -18,6 +18,7 @@ import { logger } from '@/utils/logger';
 import { healthCheckService } from '@/middleware/healthCheck';
 import { createCacheService, getCacheService, CacheConfig } from '@/services/CacheService';
 import { CacheWarmer, cacheStats, cacheHealthCheck } from '@/middleware/cache';
+import CloudKitService from '@/services/CloudKitService';
 
 // Routes
 import authRoutes from '@/routes/auth.routes';
@@ -166,6 +167,9 @@ class RoomiesServer {
       threshold: 1024
     }));
 
+    // Serve local uploads when CloudKit is disabled or for local dev
+    this.app.use('/uploads', express.static('uploads'));
+
     // Enhanced Logging
     if (process.env.NODE_ENV !== 'test') {
       this.app.use(morgan('combined', {
@@ -235,6 +239,12 @@ class RoomiesServer {
     this.app.use('/api/notifications', notificationRoutes);
     // SSE events (under /api/events)
     this.app.use('/api/events', eventRoutes);
+
+    // Cloud status endpoint for frontend awareness
+    this.app.get('/api/cloud/status', (req, res) => {
+      const cloud = CloudKitService.getInstance();
+      res.json({ success: true, cloud: cloud.getCloudKitStatus() });
+    });
 
     // 404 handler
     this.app.use('*', (req, res) => {

@@ -78,6 +78,9 @@ struct AddChallengeView: View {
                         Text("Duration (Days)")
                         Spacer()
                         Stepper("\(duration)", value: $duration, in: 1...30)
+                            .onChange(of: duration) { _, _ in
+                                PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            }
                     }
                 }
                 

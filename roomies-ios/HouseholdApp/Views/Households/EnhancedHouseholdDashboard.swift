@@ -233,7 +233,7 @@ struct EnhancedHouseholdDashboard: View {
                     icon: "plus.circle.fill",
                     color: .green
                 ) {
-                    // Navigate to add task
+                    PremiumAudioHapticSystem.playButtonPress(context: .floatingActionButton)
                 }
                 
                 QuickActionButton(
@@ -241,7 +241,7 @@ struct EnhancedHouseholdDashboard: View {
                     icon: "list.bullet.circle.fill",
                     color: .blue
                 ) {
-                    // Navigate to tasks view
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
                 }
                 
                 QuickActionButton(
