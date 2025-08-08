@@ -5,7 +5,9 @@ struct PerformanceMonitorView: View {
     @AppStorage("performanceMonitoringEnabled") private var performanceMonitoringEnabled = false
     
     var body: some View {
-        Section("Performance Monitoring") {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+            Section("Performance Monitoring") {
             Toggle("Performance Monitoring", isOn: $performanceMonitoringEnabled)
             
             if performanceMonitoringEnabled {
@@ -36,6 +38,7 @@ struct PerformanceMonitorView: View {
                     performanceManager.scheduleBackgroundCleanup()
                 }
                 .disabled(performanceManager.isOptimizing)
+            }
             }
         }
     }

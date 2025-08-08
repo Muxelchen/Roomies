@@ -14,9 +14,7 @@ router.use(authenticateToken);
  * @desc    Get current user profile with detailed information
  * @access  Private
  */
-router.get('/profile', asyncHandler(async (req: Request, res: Response) => {
-  await userController.getProfile(req, res);
-}));
+router.get('/profile', userController.getProfile);
 
 /**
  * @route   PUT /api/users/profile
@@ -24,18 +22,14 @@ router.get('/profile', asyncHandler(async (req: Request, res: Response) => {
  * @access  Private
  * @body    { name?: string, avatarColor?: string }
  */
-router.put('/profile', asyncHandler(async (req: Request, res: Response) => {
-  await userController.updateProfile(req, res);
-}));
+router.put('/profile', userController.updateProfile);
 
 /**
  * @route   GET /api/users/statistics
  * @desc    Get user statistics and achievements
  * @access  Private
  */
-router.get('/statistics', asyncHandler(async (req: Request, res: Response) => {
-  await userController.getStatistics(req, res);
-}));
+router.get('/statistics', userController.getStatistics);
 
 /**
  * @route   GET /api/users/activity
@@ -43,17 +37,13 @@ router.get('/statistics', asyncHandler(async (req: Request, res: Response) => {
  * @access  Private
  * @query   { page?: number, limit?: number }
  */
-router.get('/activity', asyncHandler(async (req: Request, res: Response) => {
-  await userController.getActivityHistory(req, res);
-}));
+router.get('/activity', userController.getActivityHistory);
 
 /**
  * @route   GET /api/users/badges
  * @desc    Get user badges
  * @access  Private
  */
-router.get('/badges', asyncHandler(async (req: Request, res: Response) => {
-  await userController.getBadges(req, res);
-}));
+router.get('/badges', userController.getBadges);
 
 export default router;

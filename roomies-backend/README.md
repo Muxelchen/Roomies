@@ -358,6 +358,29 @@ A: Verify `JWT_SECRET` is set in environment variables
 - Include proper logging and monitoring
 - Write tests for all new functionality
 
+### E2E Smoke Tests
+
+You can run quick, high-signal smoke checks against either local or AWS environments.
+
+```
+# Local (default: http://localhost:3000)
+node test-api.js
+node test-realtime.js
+
+# Remote (set your API base; include /api suffix)
+API_URL=http://<host>:<port>/api node test-api.js
+API_URL=http://<host>:<port>/api node test-realtime.js
+
+# Example (current EC2)
+API_URL=http://54.93.77.238:3001/api node test-api.js
+API_URL=http://54.93.77.238:3001/api node test-realtime.js
+```
+
+Notes:
+- `test-api.js` checks health, auth basics, and protected routes.
+- `test-realtime.js` verifies SSE and Socket.IO events by creating a household and a task.
+- For HTTPS domains, use `https://.../api` and ensure CORS/socket settings allow your client origin.
+
 ### CloudKit Development Notes
 
 All CloudKit integration is marked with clear TODOs:

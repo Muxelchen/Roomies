@@ -28,9 +28,15 @@ class AuthenticationManager: ObservableObject {
         
         Task {
             do {
+                // For now, use local login until NetworkManager is integrated
+                // TODO: Integrate with NetworkManager.shared.login
                 _ = try await login(email: email, password: password)
-                LoggingManager.shared.info("User signed in successfully: \(email)", category: LoggingManager.Category.authentication.rawValue)
+                LoggingManager.shared.info("User signed in locally: \(email)", category: LoggingManager.Category.authentication.rawValue)
             } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
                 LoggingManager.shared.error("Sign in error", category: LoggingManager.Category.authentication.rawValue, error: error)
             }
         }
@@ -42,31 +48,44 @@ class AuthenticationManager: ObservableObject {
         
         Task {
             do {
+                // For now, use local registration until NetworkManager is integrated
+                // TODO: Integrate with NetworkManager.shared.register
                 _ = try await registerUser(email: email, password: password, name: name)
-                LoggingManager.shared.info("New user registered successfully: \(email)", category: LoggingManager.Category.authentication.rawValue)
+                LoggingManager.shared.info("User registered locally: \(email)", category: LoggingManager.Category.authentication.rawValue)
             } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isLoading = false
+                }
                 LoggingManager.shared.error("Sign up error", category: LoggingManager.Category.authentication.rawValue, error: error)
             }
         }
     }
     
     func signOut() {
-        currentUser = nil
-        isAuthenticated = false
-        errorMessage = ""
-        
-        // Clear stored credentials
-        if let email = UserDefaults.standard.string(forKey: "currentUserEmail") {
-            keychain.deletePassword(for: email)
+        Task {
+            // Call backend logout (when NetworkManager is available)
+            // TODO: Integrate with NetworkManager.shared.logout()
+            
+            await MainActor.run {
+                currentUser = nil
+                isAuthenticated = false
+                errorMessage = ""
+                
+                // Clear stored credentials
+                if let email = UserDefaults.standard.string(forKey: "currentUserEmail") {
+                    keychain.deletePassword(for: email)
+                }
+                
+                UserDefaults.standard.removeObject(forKey: "currentUserEmail")
+                UserDefaults.standard.removeObject(forKey: "currentUserId")
+                UserDefaults.standard.removeObject(forKey: "currentUserName")
+                UserDefaults.standard.removeObject(forKey: "currentUserAvatarColor")
+                UserDefaults.standard.removeObject(forKey: "currentHouseholdId")
+                
+                LoggingManager.shared.info("User signed out", category: LoggingManager.Category.authentication.rawValue)
+            }
         }
-        
-        UserDefaults.standard.removeObject(forKey: "currentUserEmail")
-        UserDefaults.standard.removeObject(forKey: "currentUserId")
-        UserDefaults.standard.removeObject(forKey: "currentUserName")
-        UserDefaults.standard.removeObject(forKey: "currentUserAvatarColor")
-        UserDefaults.standard.removeObject(forKey: "currentHouseholdId")
-        
-        LoggingManager.shared.info("User signed out", category: LoggingManager.Category.authentication.rawValue)
     }
     
     // MARK: - Auto Login
@@ -288,9 +307,9 @@ class AuthenticationManager: ObservableObject {
     }
     
     // MARK: - Helper Methods for API Integration
-    // FIXME: Temporarily commented out to resolve build issue
     /*
-    private func updateLocalUser(from apiUser: APIUser) {
+    @MainActor
+    private func syncUserFromAPI(_ apiUser: APIUser) async {
         let context = PersistenceController.shared.container.viewContext
         
         // Find or create local user
@@ -309,9 +328,15 @@ class AuthenticationManager: ObservableObject {
             localUser.name = apiUser.name
             localUser.email = apiUser.email
             localUser.avatarColor = apiUser.avatarColor
-            localUser.points = Int16(apiUser.points)
-            localUser.level = Int16(apiUser.level)
-            localUser.streakDays = Int16(apiUser.streakDays)
+            localUser.points = Int32(apiUser.points)
+            // Note: level and streakDays are not in the Core Data model
+            // These would need to be added if we want to persist them
+            
+            // Store password hash if not exists (for offline mode)
+            if localUser.hashedPassword == nil {
+                // Note: We don't store the actual password, just mark that this user can authenticate
+                localUser.hashedPassword = "backend_authenticated"
+            }
             
             if localUser.createdAt == nil {
                 let formatter = ISO8601DateFormatter()
@@ -319,18 +344,283 @@ class AuthenticationManager: ObservableObject {
             }
             
             try context.save()
+            
+            // Update current user
             currentUser = localUser
+            isAuthenticated = true
+            isLoading = false
+            
+            // Update GameificationManager
+            GameificationManager.shared.currentUserPoints = Int32(localUser.points)
+            
+            // Store user info for offline mode
+            UserDefaults.standard.set(apiUser.email, forKey: "currentUserEmail")
+            UserDefaults.standard.set(apiUser.id, forKey: "currentUserId")
+            UserDefaults.standard.set(apiUser.name, forKey: "currentUserName")
+            UserDefaults.standard.set(apiUser.avatarColor, forKey: "currentUserAvatarColor")
+            
+            // Load household if available
+            await loadCurrentHousehold()
             
         } catch {
-            LoggingManager.shared.error("Failed to update local user", category: LoggingManager.Category.authentication.rawValue, error: error)
+            LoggingManager.shared.error("Failed to sync user from API", category: LoggingManager.Category.authentication.rawValue, error: error)
+            errorMessage = "Failed to sync user data"
+            isLoading = false
+        }
+    }*/
+    
+    @MainActor
+    private func loadCurrentHousehold() async {
+        // Try to load household from backend
+        /*if NetworkManager.shared.isOnline {
+            do {
+                let response = try await NetworkManager.shared.getCurrentHousehold()
+                if let apiHousehold = response.data {
+                    await syncHouseholdFromAPI(apiHousehold)
+                }
+            } catch {
+                // User might not have a household yet - this is normal
+                LoggingManager.shared.info("No household found or failed to load: \(error.localizedDescription)", category: LoggingManager.Category.authentication.rawValue)
+            }
+        } else {*/
+            LoggingManager.shared.info("Skipping household load in offline mode", category: LoggingManager.Category.authentication.rawValue)
+        //}
+    }
+    
+    /*@MainActor
+    private func syncHouseholdFromAPI(_ apiHousehold: APIHousehold) async {
+        let context = PersistenceController.shared.container.viewContext
+        
+        // Find or create local household
+        let request: NSFetchRequest<Household> = Household.fetchRequest()
+        request.predicate = NSPredicate(format: "inviteCode == %@", apiHousehold.inviteCode)
+        request.fetchLimit = 1
+        
+        do {
+            let existingHouseholds = try context.fetch(request)
+            let localHousehold = existingHouseholds.first ?? Household(context: context)
+            
+            // Update with API data
+            if localHousehold.id == nil {
+                localHousehold.id = UUID(uuidString: apiHousehold.id) ?? UUID()
+            }
+            localHousehold.name = apiHousehold.name
+            localHousehold.inviteCode = apiHousehold.inviteCode
+            
+            if localHousehold.createdAt == nil {
+                let formatter = ISO8601DateFormatter()
+                localHousehold.createdAt = formatter.date(from: apiHousehold.createdAt) ?? Date()
+            }
+            
+            // Create or update membership for current user
+            if let currentUser = currentUser {
+                let membershipRequest: NSFetchRequest<UserHouseholdMembership> = UserHouseholdMembership.fetchRequest()
+                membershipRequest.predicate = NSPredicate(
+                    format: "user == %@ AND household == %@",
+                    currentUser, localHousehold
+                )
+                membershipRequest.fetchLimit = 1
+                
+                let existingMemberships = try context.fetch(membershipRequest)
+                let membership = existingMemberships.first ?? UserHouseholdMembership(context: context)
+                
+                membership.user = currentUser
+                membership.household = localHousehold
+                membership.role = apiHousehold.role
+                membership.joinedAt = membership.joinedAt ?? Date()
+            }
+            
+            try context.save()
+            
+            // Store household ID
+            UserDefaults.standard.set(apiHousehold.id, forKey: "currentHouseholdId")
+            
+            LoggingManager.shared.info("Synced household from API: \(apiHousehold.name)", category: LoggingManager.Category.authentication.rawValue)
+            
+        } catch {
+            LoggingManager.shared.error("Failed to sync household from API", category: LoggingManager.Category.authentication.rawValue, error: error)
+        }
+    }*/
+    
+    // MARK: - Household Management Methods
+    
+    func createHousehold(name: String, inviteCode: String) {
+        guard isAuthenticated, let currentUser = currentUser else {
+            errorMessage = "You must be logged in to create a household"
+            return
+        }
+        
+        guard !name.isEmpty else {
+            errorMessage = "Household name cannot be empty"
+            return
+        }
+        
+        guard !inviteCode.isEmpty else {
+            errorMessage = "Invite code cannot be empty"
+            return
+        }
+        
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                try await createHouseholdLocally(name: name, inviteCode: inviteCode, user: currentUser)
+                
+                await MainActor.run {
+                    self.isLoading = false
+                    LoggingManager.shared.info("Household created successfully: \(name)", 
+                                              category: LoggingManager.Category.household.rawValue)
+                }
+                
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to create household: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                LoggingManager.shared.error("Household creation failed", 
+                                          category: LoggingManager.Category.household.rawValue, 
+                                          error: error)
+            }
         }
     }
-    */
     
-    private func loadCurrentHousehold() {
-        // FIXME: Temporarily disabled network call
-        // User might not have a household yet - this is normal for offline mode
-        LoggingManager.shared.info("Household loading disabled in offline mode", category: LoggingManager.Category.authentication.rawValue)
+    func joinHousehold(inviteCode: String) {
+        guard isAuthenticated, let currentUser = currentUser else {
+            errorMessage = "You must be logged in to join a household"
+            return
+        }
+        
+        guard !inviteCode.isEmpty else {
+            errorMessage = "Please enter a valid invite code"
+            return
+        }
+        
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                try await joinHouseholdLocally(inviteCode: inviteCode, user: currentUser)
+                
+                await MainActor.run {
+                    self.isLoading = false
+                    LoggingManager.shared.info("Joined household successfully with code: \(inviteCode)", 
+                                              category: LoggingManager.Category.household.rawValue)
+                }
+                
+            } catch {
+                await MainActor.run {
+                    if error.localizedDescription.contains("not found") {
+                        self.errorMessage = "Invalid invite code. Please check and try again."
+                    } else if error.localizedDescription.contains("already exists") {
+                        self.errorMessage = "You are already a member of this household."
+                    } else {
+                        self.errorMessage = "Failed to join household: \(error.localizedDescription)"
+                    }
+                    self.isLoading = false
+                }
+                LoggingManager.shared.error("Household join failed", 
+                                          category: LoggingManager.Category.household.rawValue, 
+                                          error: error)
+            }
+        }
+    }
+    
+    // MARK: - Local Household Methods
+    
+    @MainActor
+    private func createHouseholdLocally(name: String, inviteCode: String, user: User) async throws {
+        let context = PersistenceController.shared.container.viewContext
+        
+        // Check if invite code already exists
+        let request: NSFetchRequest<Household> = Household.fetchRequest()
+        request.predicate = NSPredicate(format: "inviteCode == %@", inviteCode)
+        request.fetchLimit = 1
+        
+        let existingHouseholds = try context.fetch(request)
+        if !existingHouseholds.isEmpty {
+            throw NSError(domain: "HouseholdError", code: 409, 
+                         userInfo: [NSLocalizedDescriptionKey: "A household with this invite code already exists"])
+        }
+        
+        // Check if user is already in a household
+        if let existingMemberships = user.householdMemberships?.allObjects as? [UserHouseholdMembership],
+           !existingMemberships.isEmpty {
+            throw NSError(domain: "HouseholdError", code: 409,
+                         userInfo: [NSLocalizedDescriptionKey: "You can only be a member of one household at a time"])
+        }
+        
+        // Create new household
+        let newHousehold = Household(context: context)
+        newHousehold.id = UUID()
+        newHousehold.name = name
+        newHousehold.inviteCode = inviteCode
+        newHousehold.createdAt = Date()
+        
+        // Create membership for current user as admin
+        let membership = UserHouseholdMembership(context: context)
+        membership.user = user
+        membership.household = newHousehold
+        membership.role = "admin"
+        membership.joinedAt = Date()
+        
+        try context.save()
+        
+        // Real-time sync will be implemented when backend is ready
+        LoggingManager.shared.info("Household created locally: \(newHousehold.name ?? "Unknown")", category: "Household")
+        
+        // Store household ID
+        UserDefaults.standard.set(newHousehold.id?.uuidString, forKey: "currentHouseholdId")
+    }
+    
+    @MainActor
+    private func joinHouseholdLocally(inviteCode: String, user: User) async throws {
+        let context = PersistenceController.shared.container.viewContext
+        
+        // Find household by invite code
+        let request: NSFetchRequest<Household> = Household.fetchRequest()
+        request.predicate = NSPredicate(format: "inviteCode == %@", inviteCode)
+        request.fetchLimit = 1
+        
+        let households = try context.fetch(request)
+        guard let household = households.first else {
+            throw NSError(domain: "HouseholdError", code: 404, 
+                         userInfo: [NSLocalizedDescriptionKey: "No household found with this invite code"])
+        }
+        
+        // Check if user is already a member
+        let membershipRequest: NSFetchRequest<UserHouseholdMembership> = UserHouseholdMembership.fetchRequest()
+        membershipRequest.predicate = NSPredicate(format: "user == %@ AND household == %@", user, household)
+        membershipRequest.fetchLimit = 1
+        
+        let existingMemberships = try context.fetch(membershipRequest)
+        if !existingMemberships.isEmpty {
+            throw NSError(domain: "HouseholdError", code: 409, 
+                         userInfo: [NSLocalizedDescriptionKey: "You are already a member of this household"])
+        }
+        
+        // Check if user is already in another household
+        if let otherMemberships = user.householdMemberships?.allObjects as? [UserHouseholdMembership],
+           !otherMemberships.isEmpty {
+            throw NSError(domain: "HouseholdError", code: 409,
+                         userInfo: [NSLocalizedDescriptionKey: "You can only be a member of one household at a time. Please leave your current household first."])
+        }
+        
+        // Create membership for user
+        let membership = UserHouseholdMembership(context: context)
+        membership.user = user
+        membership.household = household
+        membership.role = "member"
+        membership.joinedAt = Date()
+        
+        try context.save()
+        
+        // Real-time member sync will be implemented when backend is ready
+        LoggingManager.shared.info("Member joined household locally: \(user.name ?? "Unknown")", category: "Household")
+        
+        // Store household ID
+        UserDefaults.standard.set(household.id?.uuidString, forKey: "currentHouseholdId")
     }
     
     // MARK: - Authentication Errors

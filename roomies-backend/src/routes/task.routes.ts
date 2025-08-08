@@ -1,7 +1,9 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import { TaskController } from '@/controllers/TaskController';
 import { authenticateToken } from '@/middleware/auth';
-import { asyncHandler } from '@/middleware/errorHandler';
+import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
+import { taskPaginationMiddleware, paginationMonitoringMiddleware } from '@/middleware/pagination';
+import { expensiveOperationLimiter } from '@/middleware/rateLimiter';
 
 const router = express.Router();
 const taskController = new TaskController();
@@ -11,60 +13,83 @@ router.use(authenticateToken);
 
 /**
  * @route   POST /api/tasks
- * @desc    Create a new task
+ * @desc    Create a new task - ENHANCED with validation and rate limiting
  * @access  Private (Household members)
- * @body    { title: string, description?: string, dueDate?: string, priority?: string, points?: number, isRecurring?: boolean, recurringType?: string, recurringInterval?: number, assignedUserId?: string, householdId: string }
+ * @body    { title: string, description?: string, dueDate?: string, priority?: string, points?: number, isRecurring?: boolean, recurringType?: string, assignedUserId?: string, householdId: string }
  */
-router.post('/', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.createTask(req, res);
-}));
+router.post('/', 
+  validateRequest(schemas.createTask),
+  expensiveOperationLimiter(20), // Limit task creation
+  taskController.createTask
+);
 
 /**
  * @route   GET /api/tasks/household/:householdId
- * @desc    Get tasks for a household
+ * @desc    Get tasks for a household - ENHANCED with pagination and monitoring
  * @access  Private (Household members)
- * @query   { completed?: boolean, assignedToMe?: boolean, page?: number, limit?: number }
+ * @query   { completed?: boolean, assignedToMe?: boolean, page?: number, limit?: number, sortBy?: string, sortOrder?: string }
  */
-router.get('/household/:householdId', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.getHouseholdTasks(req, res);
-}));
+router.get('/household/:householdId', 
+  validateUUID('householdId'),
+  taskPaginationMiddleware(),
+  paginationMonitoringMiddleware(),
+  taskController.getHouseholdTasks
+);
 
 /**
  * @route   GET /api/tasks/:taskId
- * @desc    Get a specific task with details
+ * @desc    Get a specific task with details - ENHANCED with validation
  * @access  Private (Household members)
  */
-router.get('/:taskId', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.getTask(req, res);
-}));
+router.get('/:taskId', 
+  validateUUID('taskId'),
+  taskController.getTask
+);
 
 /**
  * @route   PUT /api/tasks/:taskId
- * @desc    Update a task
+ * @desc    Update a task - ENHANCED with validation
  * @access  Private (Task creator or household admin)
  * @body    { title?: string, description?: string, dueDate?: string, priority?: string, points?: number, assignedUserId?: string }
  */
-router.put('/:taskId', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.updateTask(req, res);
-}));
+router.put('/:taskId', 
+  validateUUID('taskId'),
+  // TODO: Add update task validation schema
+  taskController.updateTask
+);
+
+/**
+ * @route   DELETE /api/tasks/:taskId
+ * @desc    Delete a task - ENHANCED with validation
+ * @access  Private (Task creator or household admin)
+ */
+router.delete('/:taskId', 
+  validateUUID('taskId'),
+  taskController.deleteTask
+);
 
 /**
  * @route   POST /api/tasks/:taskId/complete
- * @desc    Mark a task as completed
+ * @desc    Mark a task as completed - ENHANCED with rate limiting for points
  * @access  Private (Assigned user or household admin)
  */
-router.post('/:taskId/complete', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.completeTask(req, res);
-}));
+router.post('/:taskId/complete', 
+  validateUUID('taskId'),
+  expensiveOperationLimiter(50), // Prevent task completion spam
+  taskController.completeTask
+);
 
 /**
  * @route   POST /api/tasks/:taskId/comments
- * @desc    Add a comment to a task
+ * @desc    Add a comment to a task - ENHANCED with validation and rate limiting
  * @access  Private (Household members)
  * @body    { content: string }
  */
-router.post('/:taskId/comments', asyncHandler(async (req: Request, res: Response) => {
-  await taskController.addComment(req, res);
-}));
+router.post('/:taskId/comments', 
+  validateUUID('taskId'),
+  validateRequest(schemas.completeTask), // Reuse for basic content validation
+  expensiveOperationLimiter(100), // Limit comment spam
+  taskController.addComment
+);
 
 export default router;

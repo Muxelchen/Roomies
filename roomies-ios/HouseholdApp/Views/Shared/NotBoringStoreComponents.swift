@@ -88,7 +88,7 @@ struct NotBoringRewardCard: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(UIColor.systemBackground))
+                .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(
@@ -455,6 +455,10 @@ struct NotBoringTabPicker: View {
         .background(
             Capsule()
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    Capsule()
+                        .stroke(Color.blue.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }

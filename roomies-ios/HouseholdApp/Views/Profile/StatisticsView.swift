@@ -13,7 +13,9 @@ struct StatisticsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                ScrollView {
                 VStack(spacing: 20) {
                     // Timeframe Picker
                     Picker("Zeitraum", selection: $selectedTimeframe) {
@@ -40,9 +42,12 @@ struct StatisticsView: View {
                     AchievementsTimelineView()
                 }
                 .padding(.horizontal)
+                }
             }
             .navigationTitle("Statistiken")
-            .navigationBarTitleDisplayMode(.large)
+             .navigationBarTitleDisplayMode(.large)
+             .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color(UIColor.secondarySystemBackground), for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Fertig") {
@@ -95,7 +100,14 @@ struct OverallStatsView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
@@ -157,7 +169,14 @@ struct TaskCompletionChartView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
@@ -212,7 +231,14 @@ struct PointsProgressChartView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
@@ -253,7 +279,14 @@ struct CategoryBreakdownView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
@@ -296,7 +329,14 @@ struct AchievementsTimelineView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }

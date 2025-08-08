@@ -4,7 +4,7 @@ import CoreData
 struct JoinHouseholdView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     
     @State private var inviteCode = ""
     @State private var userName = ""
@@ -26,7 +26,9 @@ struct JoinHouseholdView: View {
     
     var body: some View {
         NavigationView {
-            Form {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+                Form {
                 Section("Invitation Code") {
                     TextField("6-digit code", text: $inviteCode)
                         .textCase(.uppercase)
@@ -113,6 +115,7 @@ struct JoinHouseholdView: View {
                         .foregroundColor(.secondary)
                     }
                 }
+                }
             }
             .navigationTitle("Join Household")
             .navigationBarTitleDisplayMode(.inline)
@@ -144,47 +147,59 @@ struct JoinHouseholdView: View {
     private var isFormValid: Bool {
         return inviteCode.count == 6 &&
                !userName.isEmpty &&
-               authManager.isValidEmail(email) &&
-               authManager.isValidPassword(password) &&
+                authManager.isValidEmail(email) &&
+                authManager.isValidPassword(password) &&
                password == confirmPassword
     }
     
     private func joinHousehold() async {
         isJoining = true
+        defer { isJoining = false }
         
         do {
-            // First, register the user
-            let newUser = try await authManager.registerUser(email: email, password: password, name: userName)
-            newUser.avatarColor = selectedAvatarColor
+            // Ensure user is authenticated (create account if needed)
+            if !authManager.isAuthenticated || authManager.currentUser == nil {
+                authManager.signUp(
+                    email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                    password: password,
+                    name: userName.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+                try await waitForAuthentication()
+            }
             
-            // TODO: Re-enable CloudKit sync when CloudSyncManager is properly integrated
-            // if useCloudSync {
-            //     if let household = try await cloudSync.joinHouseholdFromInvite(code: inviteCode) {
-            //         ActivityTracker.shared.trackMemberJoined(user: newUser, household: household)
-            //         await cloudSync.syncHousehold(household)
-            //         GameificationManager.shared.currentUserPoints = newUser.points
-            //         await MainActor.run { dismiss() }
-            //     } else {
-            //         await MainActor.run {
-            //             errorMessage = cloudSync.syncError ?? "Failed to join household via cloud sync"
-            //             showingError = true
-            //         }
-            //     }
-            // } else {
-                await joinHouseholdLocally(user: newUser)
-            // }
+            guard let authenticatedUser = authManager.currentUser else {
+                throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Could not authenticate user"])
+            }
+            
+            // Join household (manager handles online/offline inside)
+            await joinHouseholdLocally(user: authenticatedUser)
             
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
                 showingError = true
-                isJoining = false
             }
         }
     }
     
+    private func waitForAuthentication(timeoutSeconds: Double = 10.0) async throws {
+        let steps = Int(timeoutSeconds * 10)
+        for _ in 0..<steps {
+            if authManager.isAuthenticated, authManager.currentUser != nil { return }
+            if !authManager.errorMessage.isEmpty {
+                throw NSError(domain: "Auth", code: 400, userInfo: [NSLocalizedDescriptionKey: authManager.errorMessage])
+            }
+            try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        }
+        throw NSError(domain: "Auth", code: 408, userInfo: [NSLocalizedDescriptionKey: "Authentication timed out. Please try again."])
+    }
+    
     @MainActor
     private func joinHouseholdLocally(user: User) async {
+        if NetworkManager.shared.isOnline {
+            authManager.joinHousehold(inviteCode: inviteCode)
+            return
+        }
         // Find household with matching invite code (local)
         guard let household = households.first(where: { $0.inviteCode == inviteCode }) else {
             errorMessage = "Invalid invitation code. Please check the code and try again."
@@ -229,6 +244,6 @@ struct JoinHouseholdView_Previews: PreviewProvider {
     static var previews: some View {
         JoinHouseholdView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
     }
 }

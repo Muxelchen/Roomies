@@ -3,13 +3,17 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var localizationManager: LocalizationManager
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var isInitializing = true
     
     var body: some View {
-        Group {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                .allowsHitTesting(false)
+            
+            Group {
             if isInitializing {
                 // Show loading state while initializing
                 VStack {
@@ -25,6 +29,7 @@ struct ContentView: View {
                 MainTabView()
             } else {
                 AuthenticationView()
+            }
             }
         }
         .preferredColorScheme(nil)
@@ -78,7 +83,7 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(LocalizationManager.shared)
     }
 }

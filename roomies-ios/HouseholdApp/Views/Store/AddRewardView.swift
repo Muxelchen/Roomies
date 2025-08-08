@@ -136,7 +136,7 @@ struct AddRewardView: View {
             newReward.createdAt = Date()
             
             // ✅ FIX: Improved household assignment logic using correct relationship name
-            if let currentUser = AuthenticationManager.shared.currentUser {
+            if let currentUser = IntegratedAuthenticationManager.shared.currentUser {
                 // First try to get household from current user's memberships
                 if let memberships = currentUser.householdMemberships?.allObjects as? [UserHouseholdMembership],
                    let household = memberships.first?.household {

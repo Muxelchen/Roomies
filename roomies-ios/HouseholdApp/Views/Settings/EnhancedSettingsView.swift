@@ -18,8 +18,7 @@ struct EnhancedSettingsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Adaptive background
-                adaptiveBackground
+                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
                 
                 ScrollView {
                     LazyVStack(spacing: 20) {
@@ -153,9 +152,7 @@ struct EnhancedSettingsSection<Content: View>: View {
                     isExpanded.toggle()
                     rotationAngle = isExpanded ? 0 : -90
                 }
-                
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                PremiumAudioHapticSystem.playButtonTap(style: .light)
             }) {
                 HStack(spacing: 16) {
                     // Icon with gradient
@@ -206,6 +203,10 @@ struct EnhancedSettingsSection<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
                 .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
         )
     }
@@ -213,7 +214,7 @@ struct EnhancedSettingsSection<Content: View>: View {
 
 // MARK: - Settings Profile Card
 struct EnhancedSettingsProfileCard: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var avatarScale: CGFloat = 1.0
     @State private var glowOpacity: Double = 0.3
     
@@ -308,8 +309,24 @@ struct EnhancedSettingsProfileCard: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            // Single pulse with timer-based cycle to avoid infinite animation load
+            withAnimation(.easeInOut(duration: 1.0)) {
                 glowOpacity = 0.6
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    glowOpacity = 0.3
+                }
+            }
+            Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    glowOpacity = 0.6
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        glowOpacity = 0.3
+                    }
+                }
             }
         }
     }
@@ -514,9 +531,7 @@ struct EnhancedToggleRow: View {
                             toggleScale = 1.0
                         }
                     }
-                    
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                    impactFeedback.impactOccurred()
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
                 }
         }
         .padding(.vertical, 8)
@@ -535,8 +550,7 @@ struct EnhancedSettingsRow: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 16) {
@@ -636,7 +650,7 @@ struct EnhancedSignOutButton: View {
         .alert("Sign Out", isPresented: $showingConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Sign Out", role: .destructive) {
-                AuthenticationManager.shared.signOut()
+                IntegratedAuthenticationManager.shared.signOut()
             }
         } message: {
             Text("Are you sure you want to sign out?")
@@ -712,7 +726,7 @@ struct LanguagePickerView: View {
 struct EnhancedSettingsView_Previews: PreviewProvider {
     static var previews: some View {
         EnhancedSettingsView()
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(LocalizationManager.shared)
     }
 }

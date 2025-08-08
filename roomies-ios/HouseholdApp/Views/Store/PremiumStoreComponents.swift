@@ -39,7 +39,7 @@ struct PremiumRewardCard: View {
                 ZStack {
                     // Background with glassmorphism
                     RoundedRectangle(cornerRadius: 25)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 25)
                                 .stroke(
@@ -214,14 +214,28 @@ struct PremiumRewardCard: View {
             if canAfford {
                 // Shimmer animation
                 shimmerOffset = -200
-                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false).delay(animationDelay)) {
+withAnimation(.linear(duration: 2.0).delay(animationDelay)) {
                     shimmerOffset = 200
+                }
+                Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
+                    shimmerOffset = -200
+                    withAnimation(.linear(duration: 2.0)) {
+                        shimmerOffset = 200
+                    }
                 }
                 
                 // Pulse animation for icon
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(animationDelay + 0.5)) {
-                    pulseScale = 1.1
-                    glowIntensity = 0.6
+Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 0.75)) {
+                        pulseScale = 1.1
+                        glowIntensity = 0.6
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                        withAnimation(.easeInOut(duration: 0.75)) {
+                            pulseScale = 1.0
+                            glowIntensity = 0.3
+                        }
+                    }
                 }
             }
         }
@@ -338,8 +352,7 @@ struct RoomiesRedemptionSuccessOverlay: View {
     
     private func triggerCelebration() {
         // Heavy haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
         
         // Generate celebration particles
         particles = (0..<15).map { index in
@@ -464,8 +477,13 @@ struct RoomiesEmptyStoreState: View {
                 iconScale = 1.0
             }
             
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5)) {
+            withAnimation(.easeInOut(duration: 1.0).delay(0.5)) {
                 iconBounce = 1.1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    iconBounce = 1.0
+                }
             }
             
             withAnimation(.easeIn(duration: 0.5).delay(0.4)) {
@@ -602,6 +620,10 @@ struct AchievementBadge: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                    )
                     .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
             )
         }
@@ -682,6 +704,10 @@ struct RoomiesRedeemedCard: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
                 .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         )
         .scaleEffect(cardScale)
@@ -797,6 +823,10 @@ struct UnlockableCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                    )
                     .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
             )
         }
@@ -854,7 +884,7 @@ struct RoomiesStoreHeader: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
                                 .stroke(
@@ -915,7 +945,7 @@ struct RoomiesSearchBar: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(Color.purple.opacity(isEditing ? 0.4 : 0.2), lineWidth: 1)
@@ -969,8 +999,7 @@ struct CategoryButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             Text(title)

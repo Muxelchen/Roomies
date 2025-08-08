@@ -146,8 +146,8 @@ class ServiceInitializationCoordinator {
             _ = PersistenceController.shared
         }
         
-        initializeService("AuthenticationManager") {
-            _ = AuthenticationManager.shared
+        initializeService("IntegratedAuthenticationManager") {
+            _ = IntegratedAuthenticationManager.shared
         }
         
         initializeService("NotificationManager") {

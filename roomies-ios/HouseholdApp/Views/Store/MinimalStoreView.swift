@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Minimal Store View (No Heavy Animations)
 struct MinimalStoreView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
     @EnvironmentObject private var localizationManager: LocalizationManager
     @State private var selectedTab: StoreTab = .available
@@ -217,7 +217,10 @@ struct SimpleRewardCard: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
         .cornerRadius(12)
         .shadow(radius: 2)
         .opacity(canAfford ? 1.0 : 0.6)
@@ -250,7 +253,10 @@ struct SimpleRedemptionCard: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
         .cornerRadius(12)
         .shadow(radius: 2)
     }

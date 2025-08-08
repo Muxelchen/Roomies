@@ -21,7 +21,7 @@ struct DraggableTaskList: View {
                     )
                     .onDrag {
                         self.draggedTask = task
-                        EnhancedAudioSystem.shared.play(.swipeAction)
+        PremiumAudioHapticSystem.playButtonTap(style: .light)
                         return NSItemProvider(object: task.id?.uuidString as NSString? ?? "")
                     }
                     .onDrop(of: [.text], delegate: TaskDropDelegate(
@@ -138,8 +138,7 @@ struct TaskDropDelegate: DropDelegate {
             dropTargetIndex = toIndex
         }
         
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .light)
     }
     
     func dropExited(info: DropInfo) {
@@ -197,10 +196,7 @@ struct LongPressContextMenu<Content: View>: View {
     }
     
     private func showContextMenu() {
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-        
-        EnhancedAudioSystem.shared.play(.buttonTap)
+        PremiumAudioHapticSystem.playButtonTap(style: .light)
         
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             showMenu = true
@@ -239,7 +235,7 @@ struct ContextMenuView: View {
         VStack(spacing: 8) {
             ForEach(items, id: \.id) { item in
                 Button(action: {
-                    EnhancedAudioSystem.shared.play(.buttonTap)
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
                     onSelect(item)
                 }) {
                     HStack(spacing: 12) {
@@ -267,7 +263,7 @@ struct ContextMenuView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.regularMaterial)
+                .fill(Color(UIColor.secondarySystemBackground))
                 .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
         )
         .scaleEffect(scale)
@@ -348,7 +344,7 @@ struct PinchableStatsView: View {
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(UIColor.secondarySystemBackground))
+                    .fill(.ultraThinMaterial)
                     .shadow(
                         color: color.opacity(0.2),
                         radius: 10 * currentScale,
@@ -368,8 +364,7 @@ struct PinchableStatsView: View {
                                 showDetails = true
                             }
                             
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
+                            PremiumAudioHapticSystem.playButtonTap(style: .light)
                         }
                         
                         // Hide details when zoomed out
@@ -532,10 +527,7 @@ struct CustomPullToRefresh<Content: View>: View {
     private func triggerRefresh() {
         isRefreshing = true
         
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-        
-        EnhancedAudioSystem.shared.play(.pullRefresh)
+        PremiumAudioHapticSystem.playPullToRefresh(context: .taskRefreshStart)
         
         Task {
             await onRefresh()

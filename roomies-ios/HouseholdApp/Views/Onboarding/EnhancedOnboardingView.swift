@@ -5,9 +5,11 @@ struct EnhancedOnboardingView: View {
     @State private var currentPage = 0
     @State private var isCompleted = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         ZStack {
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
             // Animated gradient background
             AnimatedGradientBackground()
             
@@ -52,7 +54,7 @@ struct EnhancedOnboardingView: View {
     }
     
     private func completeOnboarding() {
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.8)) {
             isCompleted = true
         }
     }
@@ -112,6 +114,7 @@ struct OnboardingPageView: View {
     @State private var iconOffset: CGSize = .zero
     @State private var textOpacity: Double = 0
     @State private var particlesVisible = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         VStack(spacing: 40) {
@@ -202,39 +205,73 @@ struct OnboardingPageView: View {
     
     private func animateIcon() {
         // Initial scale animation
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.2)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.6).delay(0.2)) {
             iconScale = 1.0
         }
         
         // Text fade in
-        withAnimation(.easeIn(duration: 0.5).delay(0.4)) {
+        withAnimation(reduceMotion ? .none : .easeIn(duration: 0.5).delay(0.4)) {
             textOpacity = 1.0
         }
         
         // Particles
-        withAnimation(.easeIn(duration: 0.3).delay(0.6)) {
-            particlesVisible = true
+        if !reduceMotion {
+            withAnimation(.easeIn(duration: 0.3).delay(0.6)) {
+                particlesVisible = true
+            }
         }
         
         // Continuous animation based on type
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             switch page.animation {
             case .bounce:
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    iconOffset = CGSize(width: 0, height: -10)
+                if !reduceMotion {
+Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 0.75)) {
+                        iconOffset = CGSize(width: 0, height: -10)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                        withAnimation(.easeInOut(duration: 0.75)) {
+                            iconOffset = .zero
+                        }
+                    }
+                }
                 }
             case .rotate:
-                withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
-                    iconRotation = 360
+                if !reduceMotion {
+Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+                    withAnimation(.linear(duration: 8.0)) {
+                        iconRotation += 360
+                    }
+                }
                 }
             case .pulse:
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    iconScale = 1.1
+                if !reduceMotion {
+Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        iconScale = 1.1
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            iconScale = 1.0
+                        }
+                    }
+                }
                 }
             case .float:
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                    iconOffset = CGSize(width: 0, height: -5)
-                    iconRotation = 5
+                if !reduceMotion {
+Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        iconOffset = CGSize(width: 0, height: -5)
+                        iconRotation = 5
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation(.easeInOut(duration: 1.0)) {
+                            iconOffset = .zero
+                            iconRotation = 0
+                        }
+                    }
+                }
                 }
             }
         }
@@ -289,6 +326,7 @@ struct LiquidPageIndicator: View {
     let currentPage: Int
     let totalPages: Int
     @State private var wavePhase: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         HStack(spacing: 12) {
@@ -317,8 +355,10 @@ struct LiquidPageIndicator: View {
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
-                wavePhase = .pi * 2
+            if !reduceMotion {
+withAnimation(.linear(duration: 2.0)) {
+                    wavePhase = .pi * 2
+                }
             }
         }
     }
@@ -359,13 +399,14 @@ struct OnboardingNavigationView: View {
     let totalPages: Int
     let onComplete: () -> Void
     @State private var buttonScale: CGFloat = 1.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         HStack {
             // Skip button
             if currentPage < totalPages - 1 {
                 Button("Skip") {
-                    withAnimation(.spring()) {
+                    withAnimation(reduceMotion ? .none : .spring()) {
                         currentPage = totalPages - 1
                     }
                 }
@@ -377,14 +418,13 @@ struct OnboardingNavigationView: View {
             
             // Next/Get Started button
             Button(action: {
-                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                impactFeedback.impactOccurred()
+                PremiumAudioHapticSystem.playButtonTap(style: .medium)
                 
-                if currentPage < totalPages - 1 {
-                    withAnimation(.spring()) {
-                        currentPage += 1
-                    }
-                } else {
+                    if currentPage < totalPages - 1 {
+                        withAnimation(reduceMotion ? .none : .spring()) {
+                            currentPage += 1
+                        }
+                    } else {
                     onComplete()
                 }
             }) {
@@ -423,7 +463,7 @@ struct OnboardingNavigationView: View {
             .onLongPressGesture(minimumDuration: 0) {
                 // Do nothing
             } onPressingChanged: { pressing in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.6)) {
                     buttonScale = pressing ? 0.95 : 1.0
                 }
             }
@@ -435,6 +475,7 @@ struct OnboardingNavigationView: View {
 struct AnimatedGradientBackground: View {
     @State private var gradientOffset: CGFloat = 0
     @State private var rotation: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         ZStack {
@@ -462,12 +503,22 @@ struct AnimatedGradientBackground: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            withAnimation(.linear(duration: 20.0).repeatForever(autoreverses: false)) {
-                rotation = 360
+            if !reduceMotion {
+Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { _ in
+                withAnimation(.linear(duration: 20.0)) {
+                    rotation += 360
+                }
             }
-            
-            withAnimation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true)) {
-                gradientOffset = 1.0
+            Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+                withAnimation(.easeInOut(duration: 4.0)) {
+                    gradientOffset = 1.0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    withAnimation(.easeInOut(duration: 4.0)) {
+                        gradientOffset = 0.0
+                    }
+                }
+            }
             }
         }
     }

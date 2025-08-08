@@ -9,6 +9,7 @@ struct NotBoringRewardCard: View {
     let animationDelay: Double
     let onRedeem: () -> Void
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var cardScale: CGFloat = 0.8
     @State private var shimmer: Bool = false
     @State private var glowIntensity: Double = 0.3
@@ -21,8 +22,7 @@ struct NotBoringRewardCard: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             onRedeem()
         }) {
             VStack(alignment: .leading, spacing: 16) {
@@ -115,7 +115,7 @@ struct NotBoringRewardCard: View {
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(
@@ -138,24 +138,20 @@ struct NotBoringRewardCard: View {
         .disabled(!canAfford)
         .onAppear {
             // Entrance animation
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.6).delay(animationDelay)) {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.8, dampingFraction: 0.6).delay(animationDelay)) {
                 cardScale = 1.0
             }
             
-                // FIXED: Remove repeatForever animations that cause freezing
-                // Use simple one-time animations instead
-                if canAfford {
-                    // Single animation for glow effect
-                    withAnimation(.easeInOut(duration: 1.0).delay(animationDelay)) {
-                        glowIntensity = 0.6
-                        shimmer = true
-                    }
-                    
-                    // Small rotation for visual interest without performance impact
-                    withAnimation(.easeInOut(duration: 0.8).delay(animationDelay + 0.2)) {
-                        rotationEffect = 2
-                    }
+            // Single, optional animations only if motion allowed
+            if canAfford && !reduceMotion {
+                withAnimation(.easeInOut(duration: 1.0).delay(animationDelay)) {
+                    glowIntensity = 0.6
+                    shimmer = true
                 }
+                withAnimation(.easeInOut(duration: 0.8).delay(animationDelay + 0.2)) {
+                    rotationEffect = 2
+                }
+            }
         }
         .onLongPressGesture(minimumDuration: 0) {
             // Do nothing on perform
@@ -229,7 +225,7 @@ struct NotBoringRedeemedCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.green.opacity(0.2), lineWidth: 1)
@@ -416,9 +412,10 @@ struct RedemptionCelebrationAnimation: View {
 
 struct StoreView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
     @EnvironmentObject private var localizationManager: LocalizationManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedTab: StoreTab = .available
     @State private var showingAddReward = false
     @State private var showingRedemptionSuccess = false
@@ -473,25 +470,26 @@ struct StoreView: View {
 
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    Color.purple.opacity(0.1),
-                    Color.blue.opacity(0.05),
-                    Color.clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            PremiumScreenBackground(sectionColor: .store, style: .minimal)
             
             VStack(spacing: 0) {
                 // ✨ Enhanced Points Header with breathing animation
-                NotBoringCard {
+                VStack {
                     EnhancedPointsHeaderView()
                         .scaleEffect(headerPulse)
-                        .shadow(color: .purple.opacity(storeGlow), radius: 20, x: 0, y: 0)
+                        .shadow(color: .purple.opacity(storeGlow), radius: 16, x: 0, y: 0)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(Text("Your points: \(gameificationManager.currentUserPoints)"))
                 }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.purple.opacity(0.15), lineWidth: 1)
+                        )
+                )
                 .padding(.horizontal)
                 .padding(.top)
                 
@@ -544,11 +542,11 @@ struct StoreView: View {
                     rewardName: redeemedReward?.name ?? "",
                     pointsSpent: pointsSpent
                 ) {
-                    withAnimation(.easeOut(duration: 0.5)) {
+                    withAnimation(reduceMotion ? .none : .easeOut(duration: 0.5)) {
                         showingRedemptionAnimation = false
                     }
                 }
-                .transition(.opacity)
+                .transition(reduceMotion ? .identity : .opacity)
             }
             
             // Floating Action Button
@@ -605,7 +603,7 @@ struct StoreView: View {
             let pointsNeeded = reward.cost - gameificationManager.currentUserPoints
             insufficientPointsMessage = "You need \(pointsNeeded) more points to redeem this reward."
             showingInsufficientPointsAlert = true
-            AudioServicesPlaySystemSound(1006) // Tock sound for error
+            PremiumAudioHapticSystem.playError()
             return
         }
         
@@ -627,12 +625,11 @@ struct StoreView: View {
             // Deduct points AFTER successful save using correct method signature
             gameificationManager.deductPoints(from: currentUser, points: reward.cost, reason: "reward_redemption")
             
-            // Play success sound - temporarily use AudioServices as fallback
-            AudioServicesPlaySystemSound(1016) // Camera shutter sound for success
+            // Premium success feedback
+            PremiumAudioHapticSystem.playSuccess()
             
             // Success feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playSuccess()
             
             // Start celebration animation
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -641,7 +638,7 @@ struct StoreView: View {
         } catch {
             errorMessage = "Failed to redeem reward: \(error.localizedDescription)"
             showingError = true
-            AudioServicesPlaySystemSound(1006) // Tock sound for error
+            PremiumAudioHapticSystem.playError()
         }
     }
 }
@@ -658,8 +655,7 @@ struct NotBoringTabPicker: View {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                         selectedTab = tab
                     }
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                    impactFeedback.impactOccurred()
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
                 }) {
                     VStack(spacing: 8) {
                         Image(systemName: tab == .available ? "bag.fill" : "checkmark.circle.fill")
@@ -750,7 +746,10 @@ struct RewardCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
         .opacity(canAfford ? 1.0 : 0.6)
@@ -791,7 +790,10 @@ struct RedeemedRewardCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+        )
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
@@ -914,7 +916,7 @@ struct StoreView_Previews: PreviewProvider {
     static var previews: some View {
         StoreView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(GameificationManager.shared)
             .environmentObject(LocalizationManager.shared)
     }

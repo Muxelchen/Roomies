@@ -3,7 +3,7 @@ import CoreData
 
 struct HouseholdActivityView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var cloudSync: CloudSyncManager
     
     @FetchRequest var activities: FetchedResults<Activity>
@@ -24,7 +24,7 @@ struct HouseholdActivityView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(.systemGroupedBackground).ignoresSafeArea()
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
                 
                 if activities.isEmpty {
                     emptyStateView
@@ -38,7 +38,10 @@ struct HouseholdActivityView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { Task { await refreshActivities() } }) {
+                    Button(action: {
+                        PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                        Task { await refreshActivities() }
+                    }) {
                         Image(systemName: "arrow.clockwise")
                             .foregroundColor(.blue)
                     }
@@ -149,9 +152,15 @@ struct ActivityRowView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
     }
     
     private func timeAgoString(from date: Date) -> String {
@@ -224,7 +233,7 @@ struct HouseholdActivityView_Previews: PreviewProvider {
     static var previews: some View {
         HouseholdActivityView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(CloudSyncManager.shared)
     }
 }

@@ -1,8 +1,5 @@
-import SwiftUI
-
-// MARK: - Custom Not Boring Tab Bar
-struct NotBoringTabBar: View {
     @Binding var selectedTab: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var tabOffsets: [CGFloat] = Array(repeating: 0, count: 5)
     @State private var tabScales: [CGFloat] = Array(repeating: 1.0, count: 5)
     @State private var liquidIndicatorOffset: CGFloat = 0
@@ -19,29 +16,16 @@ struct NotBoringTabBar: View {
     
     var body: some View {
         ZStack {
-            // Background with gradient and blur
+            // Background minimal solid + faint accent stroke
             RoundedRectangle(cornerRadius: 30)
-                .fill(.ultraThinMaterial)
-                .background(
-                    RoundedRectangle(cornerRadius: 30)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.9),
-                                    Color.white.opacity(0.7)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                )
+                .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 30)
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.8),
-                                    Color.gray.opacity(0.2)
+                                    tabs[selectedTab].color.opacity(0.18),
+                                    tabs[selectedTab].color.opacity(0.08)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -49,8 +33,7 @@ struct NotBoringTabBar: View {
                             lineWidth: 1
                         )
                 )
-                .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: -5)
-                .shadow(color: tabs[selectedTab].color.opacity(0.3), radius: 10, x: 0, y: -2)
+                .shadow(color: tabs[selectedTab].color.opacity(0.12), radius: 8, x: 0, y: -2)
             
             // Liquid Indicator
             GeometryReader { geometry in
@@ -60,7 +43,7 @@ struct NotBoringTabBar: View {
                 LiquidTabIndicator(color: tabs[selectedTab].color)
                     .frame(width: 60, height: 4)
                     .position(x: xOffset, y: 8)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7), value: selectedTab)
+                    .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: selectedTab)
             }
             
             // Tab Items
@@ -75,6 +58,11 @@ struct NotBoringTabBar: View {
                         scale: tabScales[index],
                         showParticles: particleEmitters[index]
                     )
+                    .contentShape(Rectangle())
+                    .accessibilityElement()
+                    .accessibilityLabel(Text(tabs[index].label))
+                    .accessibilityValue(Text(selectedTab == index ? "Selected" : ""))
+                    .accessibilityAddTraits(.isButton)
                     .onTapGesture {
                         selectTab(index)
                     }
@@ -89,31 +77,30 @@ struct NotBoringTabBar: View {
     }
     
     private func selectTab(_ index: Int) {
-        // Trigger haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.prepare()
-        
+        // Premium audio + haptic feedback
+        PremiumAudioHapticSystem.playTabSwitch()
+
         // Animate deselection of previous tab
         if selectedTab != index {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7)) {
                 tabScales[selectedTab] = 1.0
                 tabOffsets[selectedTab] = 0
             }
         }
         
         // Animate selection of new tab
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.6)) {
             selectedTab = index
             tabScales[index] = 1.15
             tabOffsets[index] = -8
         }
         
         // Trigger particle emission
-        particleEmitters[index] = true
+        particleEmitters[index] = reduceMotion ? false : true
         
         // Reset scale after bounce
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.8)) {
                 tabScales[index] = 1.0
                 tabOffsets[index] = -4
             }
@@ -124,9 +111,7 @@ struct NotBoringTabBar: View {
             particleEmitters[index] = false
         }
         
-        // Play sound
-        NotBoringSoundManager.shared.playSound(.tabSwitch)
-        impactFeedback.impactOccurred()
+        // Sound handled by PremiumAudioHapticSystem
     }
 }
 
@@ -140,6 +125,7 @@ struct TabItemView: View {
     let scale: CGFloat
     let showParticles: Bool
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var iconRotation: Double = 0
     @State private var glowOpacity: Double = 0
     
@@ -161,7 +147,7 @@ struct TabItemView: View {
                             )
                         )
                         .frame(width: 40, height: 40)
-                        .blur(radius: 8)
+                        .blur(radius: 6)
                 }
                 
                 // Icon with 3D effect
@@ -185,7 +171,7 @@ struct TabItemView: View {
                     .shadow(color: isSelected ? color.opacity(0.4) : .clear, radius: 4, x: 0, y: 2)
                 
                 // Particle emitter
-                if showParticles {
+                if showParticles && !reduceMotion {
                     ForEach(0..<5, id: \.self) { _ in
                         TabParticle(color: color)
                     }
@@ -204,11 +190,11 @@ struct TabItemView: View {
         .onChange(of: isSelected) { _, newValue in
             if newValue {
                 // Animate icon when selected
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.3)) {
+                withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.3)) {
                     iconRotation = 360
                 }
                 // FIXED: Single glow animation instead of repeatForever
-                withAnimation(.easeInOut(duration: 1.0)) {
+                withAnimation(reduceMotion ? .none : .easeInOut(duration: 1.0)) {
                     glowOpacity = 0.6
                 }
             } else {
@@ -318,19 +304,21 @@ struct NotBoringNavigationBar: View {
     
     var body: some View {
         ZStack {
-            // Animated background
+            // Animated background (minimal style)
             RoundedRectangle(cornerRadius: 25)
-                .fill(.ultraThinMaterial)
-                .background(
-                    LinearGradient(
-                        colors: [
-                            accentColor.opacity(0.1),
-                            Color.clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(
+                            LinearGradient(
+                                colors: [accentColor.opacity(0.14), accentColor.opacity(0.06)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 )
+                .shadow(color: accentColor.opacity(0.08), radius: 8, x: 0, y: 4)
                 .opacity(backgroundOpacity)
             
             HStack(spacing: 16) {
@@ -399,6 +387,7 @@ struct NotBoringNavButton: View {
     
     var body: some View {
         Button(action: {
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                 rotation += 360
             }
@@ -407,7 +396,7 @@ struct NotBoringNavButton: View {
             ZStack {
                 Circle()
                     .fill(color.opacity(0.1))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                 
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .semibold))
@@ -424,4 +413,3 @@ struct NotBoringNavButton: View {
             }
         }
     }
-}

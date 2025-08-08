@@ -287,7 +287,7 @@ class EnhancedAudioSystem: ObservableObject {
     // MARK: - Background Music
     
     func startBackgroundMusic() {
-        guard let musicFile = currentTheme.backgroundMusic else { return }
+        guard currentTheme.backgroundMusic != nil else { return }
         
         // In production, load and play the music file
         // For now, we'll just set the flag

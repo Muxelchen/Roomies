@@ -256,8 +256,7 @@ struct FloatingActionButton: View {
             }
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             
             action()
         }) {

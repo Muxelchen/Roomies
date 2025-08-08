@@ -7,7 +7,7 @@ struct AppIconView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background gradient with glass & shadow for depth
             Circle()
                 .fill(
                     LinearGradient(
@@ -17,6 +17,7 @@ struct AppIconView: View {
                     )
                 )
                 .frame(width: size, height: size)
+                .shadow(color: .cyan.opacity(0.35), radius: size * 0.08, x: 0, y: size * 0.04)
             
             // House shape
             VStack(spacing: 0) {

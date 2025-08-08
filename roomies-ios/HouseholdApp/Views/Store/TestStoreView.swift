@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Minimal Test Store View (NO ANIMATIONS)
 struct TestStoreView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
     
     @FetchRequest(
@@ -69,6 +69,6 @@ struct SimpleRewardRow: View {
 #Preview {
     TestStoreView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(IntegratedAuthenticationManager.shared)
         .environmentObject(GameificationManager.shared)
 }

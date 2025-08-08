@@ -4,7 +4,7 @@ import CoreData
 // MARK: - Premium Store View - Fully Featured
 struct PremiumStoreView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
     
     @State private var selectedCategory: StoreCategory = .rewards
@@ -13,6 +13,8 @@ struct PremiumStoreView: View {
     @State private var currentRedemption: Reward?
     @State private var searchText = ""
     @State private var headerAnimationTrigger = false
+    @State private var isRedeeming = false
+    @State private var redeemError: String?
     
     enum StoreCategory: String, CaseIterable {
         case rewards = "Rewards"
@@ -65,18 +67,8 @@ struct PremiumStoreView: View {
     
     var body: some View {
         ZStack {
-            // Premium gradient background
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    selectedCategory.color.opacity(0.03),
-                    Color(UIColor.systemBackground)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.6), value: selectedCategory)
+            PremiumScreenBackground(sectionColor: premiumSectionColor, style: .minimal)
+                .animation(.easeInOut(duration: 0.6), value: selectedCategory)
             
             ScrollView {
                 LazyVStack(spacing: 24) {
@@ -115,6 +107,11 @@ struct PremiumStoreView: View {
             .refreshable {
                 await refreshStore()
             }
+            .premiumLoadingOverlay(
+                isLoading: (searchText.count > 0 && filteredRewards.isEmpty) || isRedeeming,
+                message: isRedeeming ? "Redeeming…" : "Searching…",
+                sectionColor: .store
+            )
         }
         .navigationTitle("")
         .navigationBarHidden(true)
@@ -134,10 +131,53 @@ struct PremiumStoreView: View {
                     )
                     .transition(.scale.combined(with: .opacity))
                 }
+                
+                if let redeemError = redeemError {
+                    VStack {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.yellow)
+                            Text(redeemError)
+                                .font(.system(.subheadline, design: .rounded, weight: .medium))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(UIColor.secondarySystemBackground))
+                                .shadow(color: Color.red.opacity(0.2), radius: 12, x: 0, y: 6)
+                        )
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation(.easeOut(duration: 0.2)) { self.redeemError = nil }
+                        }
+                    }
+                }
             }
         )
         .onAppear {
             triggerHeaderAnimation()
+            // UITest hook to force redeem overlay without backend work
+            if ProcessInfo.processInfo.arguments.contains("UITEST_FORCE_REDEEMING") {
+                isRedeeming = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeOut(duration: 0.2)) { isRedeeming = false }
+                }
+            }
+        }
+    }
+
+    private var premiumSectionColor: PremiumDesignSystem.SectionColor {
+        switch selectedCategory {
+        case .rewards: return .store
+        case .achievements: return .store
+        case .redeemed: return .store
+        case .unlocks: return .store
         }
     }
     
@@ -146,7 +186,8 @@ struct PremiumStoreView: View {
     private var rewardsSection: some View {
         LazyVStack(spacing: 16) {
             if filteredRewards.isEmpty {
-                RoomiesEmptyStoreState(category: .rewards)
+                PremiumCardSkeleton(sectionColor: .store, showAvatar: true, showTitle: true, showSubtitle: true, showAction: true)
+                    .padding(.horizontal)
             } else {
                 ForEach(Array(filteredRewards.enumerated()), id: \.element.id) { index, reward in
                     PremiumRewardCard(
@@ -165,6 +206,9 @@ struct PremiumStoreView: View {
     
     private var achievementsSection: some View {
         LazyVStack(spacing: 16) {
+            // Premium skeleton header to enhance perceived load
+            PremiumCardSkeleton(sectionColor: .store, showAvatar: true, showTitle: true, showSubtitle: false, showAction: false)
+                .padding(.horizontal)
             RoomiesAchievementsGrid()
                 .padding(.horizontal)
         }
@@ -173,7 +217,13 @@ struct PremiumStoreView: View {
     private var redeemedSection: some View {
         LazyVStack(spacing: 16) {
             if redemptions.isEmpty {
-                RoomiesEmptyStoreState(category: .redeemed)
+                PremiumEmptyState(
+                    icon: "checkmark.seal",
+                    title: "No Redemptions Yet",
+                    message: "Redeem a reward to see it here.",
+                    sectionColor: .store
+                )
+                .padding(.horizontal)
             } else {
                 ForEach(Array(redemptions.enumerated()), id: \.element.id) { index, redemption in
                     RoomiesRedeemedCard(
@@ -188,6 +238,9 @@ struct PremiumStoreView: View {
     
     private var unlocksSection: some View {
         LazyVStack(spacing: 16) {
+            // Premium skeleton header to enhance perceived load
+            PremiumCardSkeleton(sectionColor: .store, showAvatar: true, showTitle: true, showSubtitle: false, showAction: false)
+                .padding(.horizontal)
             RoomiesUnlockablesGrid(userPoints: gameificationManager.currentUserPoints)
                 .padding(.horizontal)
         }
@@ -218,32 +271,49 @@ struct PremiumStoreView: View {
         guard gameificationManager.currentUserPoints >= reward.cost else { return }
         
         PremiumAudioHapticSystem.playSuccess(context: .taskRefreshComplete)
+        isRedeeming = true
         
+        // Optimistic UI update
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            // Deduct points
             gameificationManager.deductPoints(from: currentUser, points: reward.cost, reason: "reward_redemption")
-            
-            // Create redemption record
-            let redemption = RewardRedemption(context: viewContext)
-            redemption.id = UUID()
-            redemption.redeemedAt = Date()
-            // Note: user relationship removed from simplified model
-            redemption.reward = reward
-            
-            do {
-                try viewContext.save()
+        }
+        
+        // Persist locally by default. Optionally call backend when explicitly enabled.
+        Task {
+            let shouldCallAPI = ProcessInfo.processInfo.environment["ENABLE_STORE_API"] == "1"
+            if shouldCallAPI, NetworkManager.shared.isOnline {
+                do { _ = try await NetworkManager.shared.redeemReward(rewardId: reward.id?.uuidString ?? "") } catch {
+                    LoggingManager.shared.warning("Redeem API failed, falling back to local: \(error.localizedDescription)", category: "Store")
+                }
+            }
+
+            // Persist redemption locally
+            await MainActor.run {
+                let redemption = RewardRedemption(context: viewContext)
+                redemption.id = UUID()
+                redemption.redeemedAt = Date()
+                redemption.reward = reward
                 
-                // Show success animation
-                currentRedemption = reward
-                showingRedemptionSuccess = true
-                
-                LoggingManager.shared.info(
-                    "Reward redeemed: \(reward.name ?? "Unknown") by \(currentUser.name ?? "Unknown")",
-                    category: "Store"
-                )
-            } catch {
-                PremiumAudioHapticSystem.playError(context: .systemError)
-                print("❌ Failed to save reward redemption: \(error)")
+                do {
+                    try viewContext.save()
+                    currentRedemption = reward
+                    showingRedemptionSuccess = true
+                    LoggingManager.shared.info(
+                        "Reward redeemed (local): \(reward.name ?? "Unknown") by \(currentUser.name ?? "Unknown")",
+                        category: "Store"
+                    )
+                } catch {
+                    redeemError = error.localizedDescription
+                    PremiumAudioHapticSystem.playError(context: .systemError)
+                    LoggingManager.shared.error("Failed to save reward redemption: \(error)", category: "Store")
+                }
+            }
+
+            // Dismiss overlay after a brief moment
+            await MainActor.run {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeOut(duration: 0.2)) { isRedeeming = false }
+                }
             }
         }
     }
@@ -252,6 +322,6 @@ struct PremiumStoreView: View {
 #Preview {
     PremiumStoreView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(IntegratedAuthenticationManager.shared)
         .environmentObject(GameificationManager.shared)
 }

@@ -5,6 +5,7 @@ import SwiftUI
 
 struct NotBoringCard<Content: View>: View {
     let content: Content
+    var glowColor: Color = .blue
     @State private var hoverScale: CGFloat = 1.0
     @State private var shadowRadius: CGFloat = 8
     
@@ -16,14 +17,21 @@ struct NotBoringCard<Content: View>: View {
         content
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(.systemGray5), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.6), Color.gray.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                     )
             )
-            .shadow(color: Color.black.opacity(0.08), radius: shadowRadius, x: 0, y: 4)
+            .shadow(color: glowColor.opacity(0.25), radius: shadowRadius, x: 0, y: 6)
             .scaleEffect(hoverScale)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hoverScale)
             .animation(.easeInOut(duration: 0.3), value: shadowRadius)
@@ -60,7 +68,7 @@ struct NotBoringFloatingCard<Content: View>: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .shadow(color: Color.blue.opacity(0.2), radius: 12, x: 0, y: 6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)

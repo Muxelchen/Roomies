@@ -75,7 +75,7 @@ class GameificationManager: ObservableObject {
     // MARK: - Points Synchronization
     @MainActor
     func updateCurrentUserPoints() {
-        guard let currentUser = AuthenticationManager.shared.currentUser else {
+        guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else {
             self.currentUserPoints = 0
             return
         }
@@ -86,7 +86,7 @@ class GameificationManager: ObservableObject {
     
     @MainActor
     private func updateCurrentUserPointsSync() {
-        guard let currentUser = AuthenticationManager.shared.currentUser else {
+        guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else {
             self.currentUserPoints = 0
             return
         }
@@ -248,7 +248,7 @@ class GameificationManager: ObservableObject {
         
         // Update current user level
         DispatchQueue.main.async {
-            if let currentUser = AuthenticationManager.shared.currentUser {
+            if let currentUser = IntegratedAuthenticationManager.shared.currentUser {
                 self.currentUserLevel = self.calculateLevel(from: currentUser.points)
             }
         }
@@ -452,22 +452,12 @@ class GameificationManager: ObservableObject {
     }
     
     // MARK: - Sound & Haptic Feedback (Direct Implementation)
-    private func playTaskCompleteSound() {
-        // Play system sound for task completion
-        AudioServicesPlaySystemSound(1057) // SMS Received 4
-        
-        // Success haptic feedback
-        let feedback = UINotificationFeedbackGenerator()
-        feedback.notificationOccurred(.success)
+    @MainActor private func playTaskCompleteSound() {
+        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
     }
     
-    private func playPointsEarnedSound() {
-        // Play system sound for points
-        AudioServicesPlaySystemSound(1106) // Camera shutter
-        
-        // Light haptic feedback
-        let feedback = UIImpactFeedbackGenerator(style: .light)
-        feedback.impactOccurred()
+    @MainActor private func playPointsEarnedSound() {
+        PremiumAudioHapticSystem.playSuccess()
     }
 }
 

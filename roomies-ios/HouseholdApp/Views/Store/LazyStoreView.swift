@@ -13,7 +13,7 @@ struct LazyStoreView_Previews: PreviewProvider {
     static var previews: some View {
         LazyStoreView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(GameificationManager.shared)
             .environmentObject(LocalizationManager.shared)
     }

@@ -1,36 +1,37 @@
 import SwiftUI
 
-// MARK: - Enhanced Tab Bar
-struct NotBoringTabBar: View {
+// MARK: - Enhanced Tab Bar (Renamed to avoid duplication with Navigation/NotBoringTabBar)
+struct MainTabBar: View {
     @Binding var selectedTab: MainTabView.Tab
+    let onTabSwitch: () -> Void
     @State private var tabIndicatorOffset: CGFloat = 0
     @State private var backgroundGlow: Color = .blue
     
     var body: some View {
         HStack(spacing: 0) {
             ForEach(MainTabView.Tab.allCases, id: \.self) { tab in
-                NotBoringTabButton(
+                MainTabBarButton(
                     tab: tab,
                     isSelected: selectedTab == tab,
                     action: {
                         // FIXED: Simple tab selection without animation for Store to prevent freezing
                         if tab == .store {
                             // Minimal haptic feedback for store
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
+                            PremiumAudioHapticSystem.playTabSwitch()
                             
                             // Direct assignment without animation for store
                             selectedTab = tab
                             backgroundGlow = .purple  // Direct color assignment
+                            onTabSwitch()
                         } else {
                             // Normal behavior for other tabs
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                            impactFeedback.impactOccurred()
+                            PremiumAudioHapticSystem.playTabSwitch()
                             
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                 selectedTab = tab
                                 backgroundGlow = tab.color
                             }
+                            onTabSwitch()
                         }
                     }
                 )
@@ -40,26 +41,26 @@ struct NotBoringTabBar: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 25)
-                .fill(.ultraThinMaterial)
+                .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 25)
                         .stroke(
                             LinearGradient(
-                                colors: [backgroundGlow.opacity(0.6), backgroundGlow.opacity(0.2)],
+                                colors: [backgroundGlow.opacity(0.18), backgroundGlow.opacity(0.08)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: 2
+                            lineWidth: 1
                         )
                 )
-                .shadow(color: backgroundGlow.opacity(0.3), radius: 20, x: 0, y: 8)
+                .shadow(color: backgroundGlow.opacity(0.15), radius: 8, x: 0, y: 4)
         )
         .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+        .padding(.bottom, 16)
     }
 }
 
-struct NotBoringTabButton: View {
+struct MainTabBarButton: View {
     let tab: MainTabView.Tab
     let isSelected: Bool
     let action: () -> Void
@@ -81,6 +82,7 @@ struct NotBoringTabButton: View {
                 }
             } else {
                 // Normal animations for other tabs
+                PremiumAudioHapticSystem.playButtonTap(style: .medium)
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                     scale = 0.9
                     iconBounce = 1.3
@@ -107,12 +109,12 @@ struct NotBoringTabButton: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
                             .shadow(color: tab.color.opacity(0.4), radius: 8, x: 0, y: 4)
                     }
                     
                     Image(systemName: tab.icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(isSelected ? .white : .gray)
                         .scaleEffect(iconBounce)
                 }
@@ -131,7 +133,7 @@ struct NotBoringTabButton: View {
 
 struct MainTabView: View {
     @EnvironmentObject private var localizationManager: LocalizationManager
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
     @EnvironmentObject private var performanceManager: PerformanceManager
     @State private var selectedTab: Tab = .dashboard
@@ -183,16 +185,8 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    Color(UIColor.secondarySystemBackground).opacity(0.3)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Premium background (minimal style to match toned-down visuals)
+            PremiumScreenBackground(sectionColor: premiumSectionColor(for: selectedTab), style: .minimal)
             
             // Main content area
             VStack(spacing: 0) {
@@ -200,49 +194,49 @@ struct MainTabView: View {
                 ZStack {
                     switch selectedTab {
                     case .dashboard:
-                        NavigationView {
-                            DashboardView()
-                        }
+                         NavigationView {
+                             DashboardView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                     case .tasks:
-                        NavigationView {
-                            TasksView()
-                        }
+                         NavigationView {
+                             TasksView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                     case .store:
-                        NavigationView {
-                            PremiumStoreView()
-                        }
+                         NavigationView {
+                             PremiumStoreView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                     case .challenges:
-                        NavigationView {
-                            ChallengesView()
-                        }
+                         NavigationView {
+                             ChallengesView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                     case .leaderboard:
-                        NavigationView {
-                            LeaderboardView()
-                        }
+                         NavigationView {
+                             LeaderboardView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
                     case .profile:
-                        NavigationView {
-                            ProfileView()
-                        }
+                         NavigationView {
+                             ProfileView()
+                         }
                         .transition(.asymmetric(
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
@@ -251,8 +245,8 @@ struct MainTabView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                // Enhanced custom tab bar
-                NotBoringTabBar(selectedTab: $selectedTab)
+// Enhanced custom tab bar
+                MainTabBar(selectedTab: $selectedTab, onTabSwitch: { })
                     .offset(y: tabBarOffset)
                     .animation(.spring(response: 0.5, dampingFraction: 0.8), value: tabBarOffset)
             }
@@ -267,6 +261,9 @@ struct MainTabView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
+        .onChange(of: selectedTab) { _, _ in
+            PremiumAudioHapticSystem.playTabSwitch()
+        }
         .onAppear {
             setupView()
         }
@@ -275,6 +272,17 @@ struct MainTabView: View {
     private func setupView() {
         // Tab bar is already visible (offset = 0)
         // No entrance animation needed
+    }
+    
+    private func premiumSectionColor(for tab: Tab) -> PremiumDesignSystem.SectionColor {
+        switch tab {
+        case .dashboard: return .dashboard
+        case .tasks: return .tasks
+        case .store: return .store
+        case .challenges: return .challenges
+        case .leaderboard: return .leaderboard
+        case .profile: return .profile
+        }
     }
 }
 

@@ -83,7 +83,7 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
   });
 
   // Handle validation errors from class-validator
-  if (error.name === 'ValidationError' || error.message.includes('validation failed')) {
+  if (error.name === 'ValidationError' || (error.message && error.message.toLowerCase().includes('validation'))) {
     return res.status(400).json({
       success: false,
       error: {
@@ -118,7 +118,7 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
 
   // Handle specific error types
   const statusCode = error.statusCode || 500;
-  const errorCode = error.code || 'INTERNAL_SERVER_ERROR';
+  const errorCode = error.code || (statusCode === 500 ? 'INTERNAL_SERVER_ERROR' : 'ERROR');
   
   const errorResponse: any = {
     success: false,
@@ -144,7 +144,7 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
 // Async error handler wrapper
 export function asyncHandler(fn: Function) {
   return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    return Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
 

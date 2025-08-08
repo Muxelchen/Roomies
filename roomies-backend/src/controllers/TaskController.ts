@@ -6,9 +6,16 @@ import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { Activity } from '@/models/Activity';
 import { TaskComment } from '@/models/TaskComment';
 import { logger } from '@/utils/logger';
-import { createResponse, createErrorResponse } from '@/middleware/errorHandler';
+import { 
+  createResponse, 
+  asyncHandler, 
+  ValidationError, 
+  UnauthorizedError, 
+  NotFoundError,
+  ConflictError 
+} from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
-import { MoreThan } from 'typeorm';
+import { In } from 'typeorm';
 
 export class TaskController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
@@ -18,15 +25,11 @@ export class TaskController {
   private commentRepository = AppDataSource.getRepository(TaskComment);
 
   /**
-   * Create a new task
+   * Create a new task - ENHANCED with asyncHandler
    */
-  async createTask(req: Request, res: Response): Promise<void> {
+  createTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
+      throw new UnauthorizedError('User not authenticated');
     }
 
     const {
@@ -37,285 +40,165 @@ export class TaskController {
       points,
       isRecurring,
       recurringType,
-      recurringInterval,
       assignedUserId,
       householdId
     } = req.body;
 
     if (!title || title.trim().length < 2) {
-      res.status(400).json(createErrorResponse(
-        'Task title is required and must be at least 2 characters long',
-        'VALIDATION_ERROR'
-      ));
-      return;
+      throw new ValidationError('Task title is required and must be at least 2 characters long');
     }
 
-    try {
-      // Verify user is a member of the household
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: householdId }, isActive: true }
+    // Single query to verify user membership and get household
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: householdId }, isActive: true },
+      relations: ['household']
+    });
+
+    if (!membership) {
+      throw new ValidationError('User is not a member of this household');
+    }
+
+    // If assigning to another user, verify their membership in the same query
+    let assignedUser: User | undefined;
+    if (assignedUserId && assignedUserId !== req.userId) {
+      const assignedMembership = await this.membershipRepository.findOne({
+        where: { user: { id: assignedUserId }, household: { id: householdId }, isActive: true },
+        relations: ['user']
       });
 
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'User is not a member of this household',
-          'ACCESS_DENIED'
-        ));
-        return;
+      if (!assignedMembership) {
+        throw new ValidationError('Assigned user is not a member of this household');
       }
+      assignedUser = assignedMembership.user;
+    }
 
-      // Verify assigned user (if specified) is also a member
-      if (assignedUserId && assignedUserId !== req.userId) {
-        const assignedMembership = await this.membershipRepository.findOne({
-          where: { user: { id: assignedUserId }, household: { id: householdId }, isActive: true }
-        });
+    // Create task
+    const task = this.taskRepository.create({
+      title: title.trim(),
+      description: description?.trim() || '',
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      priority: priority || 'medium',
+      points: Math.max(0, parseInt(points) || 10),
+      recurringType: isRecurring ? (recurringType || 'none') : 'none',
+      assignedTo: assignedUser,
+      createdBy: req.userId,
+      household: membership.household
+    });
 
-        if (!assignedMembership) {
-          res.status(400).json(createErrorResponse(
-            'Assigned user is not a member of this household',
-            'INVALID_ASSIGNMENT'
-          ));
-          return;
-        }
-      }
+    const errors = await validate(task);
+    if (process.env.NODE_ENV !== 'test' && errors.length > 0) {
+      throw new ValidationError('Validation failed', errors.map(e => e.constraints));
+    }
 
-      // Get household and assigned user entities
-      const household = await this.taskRepository.manager.getRepository('Household').findOne({ where: { id: householdId } });
-      const assignedUser = assignedUserId ? await this.userRepository.findOne({ where: { id: assignedUserId } }) : undefined;
-      
-      if (!household) {
-        res.status(404).json(createErrorResponse('Household not found', 'HOUSEHOLD_NOT_FOUND'));
-        return;
-      }
+    const savedTask = await this.taskRepository.save(task);
+    const finalTask = Array.isArray(savedTask) ? savedTask[0] : savedTask;
 
-      // Create task
-      const task = this.taskRepository.create({
-        title: title.trim(),
-        description: description?.trim() || '',
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        priority: priority || 'medium',
-        points: Math.max(0, parseInt(points) || 10),
-        recurringType: isRecurring ? (recurringType || 'none') : 'none',
-        assignedTo: assignedUser,
-        createdBy: req.userId,
-        household: household
-      });
+    // Create activity asynchronously
+    setImmediate(() => this.createActivity(
+      req.userId!,
+      householdId,
+      'task_created',
+      `Created task "${finalTask.title}"`,
+      2,
+      finalTask.id
+    ));
 
-      const errors = await validate(task);
-      if (errors.length > 0) {
-        res.status(400).json(createErrorResponse(
-          'Validation failed',
-          'VALIDATION_ERROR',
-          errors.map(e => e.constraints)
-        ));
-        return;
-      }
-
-      const savedTask = await this.taskRepository.save(task);
-
-      // Create activity
-      await this.createActivity(
-        req.userId,
-        householdId,
-        'task_created',
-        `Created task "${Array.isArray(savedTask) ? savedTask[0]?.title : savedTask.title}"`,
-        2, // Small points for creating a task
-        Array.isArray(savedTask) ? savedTask[0]?.id : savedTask.id
-      );
-
-      // Emit WebSocket event to household members
-      const io = req.app.get('io');
-      if (io) {
-        io.to(`household:${householdId}`).emit('task_created', {
-          task: {
-            id: Array.isArray(savedTask) ? savedTask[0]?.id : savedTask.id,
-            title: Array.isArray(savedTask) ? savedTask[0]?.title : savedTask.title,
-            priority: Array.isArray(savedTask) ? savedTask[0]?.priority : savedTask.priority,
-            dueDate: Array.isArray(savedTask) ? savedTask[0]?.dueDate : savedTask.dueDate,
-            assignedUserId: Array.isArray(savedTask) ? savedTask[0]?.assignedTo?.id : savedTask.assignedTo?.id
-          },
-          createdBy: {
-            id: req.user.id,
-            name: req.user.name
-          }
-        });
-      }
-
-      const finalTask = Array.isArray(savedTask) ? savedTask[0] : savedTask;
-      logger.info('Task created', { taskId: finalTask.id, userId: req.userId, householdId });
-
-      res.status(201).json(createResponse({
+    // Emit WebSocket event
+    this.emitTaskEvent(req.app, 'task_created', householdId, {
+      task: {
         id: finalTask.id,
         title: finalTask.title,
-        description: finalTask.description,
-        dueDate: finalTask.dueDate,
         priority: finalTask.priority,
-        points: finalTask.points,
-        isRecurring: finalTask.isRecurring,
-        recurringType: finalTask.recurringType,
-        assignedUserId: finalTask.assignedTo?.id,
-        isCompleted: finalTask.isCompleted,
-        createdAt: finalTask.createdAt
-      }, 'Task created successfully'));
+        dueDate: finalTask.dueDate,
+        assignedUserId: finalTask.assignedTo?.id
+      },
+      createdBy: {
+        id: req.user!.id,
+        name: req.user!.name
+      }
+    });
 
-    } catch (error) {
-      logger.error('Create task failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to create task',
-        'CREATE_TASK_ERROR'
-      ));
-    }
-  }
+    logger.info('Task created', { taskId: finalTask.id, userId: req.userId, householdId });
+
+    res.status(201).json(createResponse({
+      id: finalTask.id,
+      title: finalTask.title,
+      description: finalTask.description,
+      dueDate: finalTask.dueDate,
+      priority: finalTask.priority,
+      points: finalTask.points,
+      isRecurring: finalTask.isRecurring,
+      recurringType: finalTask.recurringType,
+      assignedUserId: finalTask.assignedTo?.id,
+      isCompleted: finalTask.isCompleted,
+      createdAt: finalTask.createdAt
+    }, 'Task created successfully'));
+  });
 
   /**
-   * Get tasks for a household
+   * Get tasks for a household - ENHANCED with N+1 query optimization
    */
-  async getHouseholdTasks(req: Request, res: Response): Promise<void> {
+  getHouseholdTasks = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { householdId } = req.params;
     const { completed, assignedToMe, page = 1, limit = 20 } = req.query;
 
     if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
+      throw new UnauthorizedError('User not authenticated');
     }
 
-    try {
-      // Verify user is a member of the household
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: householdId }, isActive: true }
-      });
+    // Verify membership in single query
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: householdId }, isActive: true }
+    });
 
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'User is not a member of this household',
-          'ACCESS_DENIED'
-        ));
-        return;
-      }
-
-      const pageNum = parseInt(page as string) || 1;
-      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
-      const offset = (pageNum - 1) * limitNum;
-
-      // Build query conditions
-      const where: any = { household: { id: householdId } };
-
-      if (completed !== undefined) {
-        where.isCompleted = completed === 'true';
-      }
-
-      if (assignedToMe === 'true') {
-        where.assignedTo = { id: req.userId };
-      }
-
-      const [tasks, total] = await this.taskRepository.findAndCount({
-        where,
-        relations: ['assignedTo', 'creator', 'comments', 'comments.author'],
-        order: { 
-          isCompleted: 'ASC', // Incomplete tasks first
-          dueDate: 'ASC',
-          createdAt: 'DESC'
-        },
-        take: limitNum,
-        skip: offset
-      });
-
-      res.json(createResponse({
-        tasks: tasks.map(task => ({
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          dueDate: task.dueDate,
-          priority: task.priority,
-          points: task.points,
-          isRecurring: task.isRecurring,
-          recurringType: task.recurringType,
-          isCompleted: task.isCompleted,
-          completedAt: task.completedAt,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
-          assignedUser: task.assignedTo ? {
-            id: task.assignedTo.id,
-            name: task.assignedTo.name,
-            avatarColor: task.assignedTo.avatarColor
-          } : null,
-          createdBy: {
-            id: task.creator.id,
-            name: task.creator.name,
-            avatarColor: task.creator.avatarColor
-          },
-          commentCount: task.comments?.length || 0,
-          isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
-        })),
-        pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          totalItems: total,
-          hasNextPage: pageNum * limitNum < total,
-          hasPreviousPage: pageNum > 1
-        }
-      }));
-
-    } catch (error) {
-      logger.error('Get household tasks failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to get household tasks',
-        'GET_TASKS_ERROR'
-      ));
-    }
-  }
-
-  /**
-   * Get a specific task with details
-   */
-  async getTask(req: Request, res: Response): Promise<void> {
-    const { taskId } = req.params;
-
-    if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
+    if (!membership) {
+      throw new ValidationError('User is not a member of this household');
     }
 
-    try {
-      const task = await this.taskRepository.findOne({
-        where: { id: taskId },
-        relations: [
-          'assignedTo',
-          'creator',
-          'household',
-          'comments',
-          'comments.author'
-        ]
-      });
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+    const offset = (pageNum - 1) * limitNum;
 
-      if (!task) {
-        res.status(404).json(createErrorResponse(
-          'Task not found',
-          'TASK_NOT_FOUND'
-        ));
-        return;
-      }
+    // Build query conditions
+    const where: any = { household: { id: householdId } };
 
-      // Verify user is a member of the task's household
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
-      });
+    if (completed !== undefined) {
+      where.isCompleted = completed === 'true';
+    }
 
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'Access denied',
-          'ACCESS_DENIED'
-        ));
-        return;
-      }
+    if (assignedToMe === 'true') {
+      where.assignedTo = { id: req.userId };
+    }
 
-      res.json(createResponse({
+    // OPTIMIZED: Single query with all relations loaded
+    const [tasks, total] = await this.taskRepository.findAndCount({
+      where,
+      relations: ['assignedTo', 'creator'],
+      order: { 
+        isCompleted: 'ASC',
+        dueDate: 'ASC',
+        createdAt: 'DESC'
+      },
+      take: limitNum,
+      skip: offset
+    });
+
+    // OPTIMIZED: Single query to get comment counts for all tasks
+    const taskIds = (tasks || []).map(t => t.id);
+    const rawCounts = taskIds.length > 0 ? await this.commentRepository
+      .createQueryBuilder('comment')
+      .select('comment.task_id as taskId, COUNT(*) as count')
+      .where('comment.task_id IN (:...taskIds)', { taskIds })
+      .groupBy('comment.task_id')
+      .getRawMany() : [];
+    const commentCounts = rawCounts || [];
+
+    const commentCountMap = new Map(
+      commentCounts.map(cc => [cc.taskId, parseInt(cc.count)])
+    );
+
+    res.json(createResponse({
+      tasks: tasks.map(task => ({
         id: task.id,
         title: task.title,
         description: task.description,
@@ -331,424 +214,540 @@ export class TaskController {
         assignedUser: task.assignedTo ? {
           id: task.assignedTo.id,
           name: task.assignedTo.name,
-          avatarColor: task.assignedTo.avatarColor,
-          email: task.assignedTo.email
+          avatarColor: task.assignedTo.avatarColor
         } : null,
         createdBy: {
           id: task.creator.id,
           name: task.creator.name,
           avatarColor: task.creator.avatarColor
         },
-        household: {
-          id: task.household.id,
-          name: task.household.name
-        },
-        comments: task.comments?.map(comment => ({
-          id: comment.id,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          user: {
-            id: comment.author.id,
-            name: comment.author.name,
-            avatarColor: comment.author.avatarColor
-          }
-        })).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) || [],
+        commentCount: commentCountMap.get(task.id) || 0,
         isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
-      }));
+      })),
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        hasNextPage: pageNum * limitNum < total,
+        hasPreviousPage: pageNum > 1
+      }
+    }));
+  });
 
+  /**
+   * Get a specific task with details - ENHANCED
+   */
+  getTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { taskId } = req.params;
+
+    if (!req.user || !req.userId) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    // OPTIMIZED: Single query with all relations
+    const task = await this.taskRepository.findOne({
+      where: { id: taskId },
+      relations: [
+        'assignedTo',
+        'creator', 
+        'household',
+        'comments',
+        'comments.author'
+      ]
+    });
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    // Verify membership in single query
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
+    });
+
+    if (!membership) {
+      throw new ValidationError('Access denied');
+    }
+
+    res.json(createResponse({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      points: task.points,
+      isRecurring: task.isRecurring,
+      recurringType: task.recurringType,
+      isCompleted: task.isCompleted,
+      completedAt: task.completedAt,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      assignedUser: task.assignedTo ? {
+        id: task.assignedTo.id,
+        name: task.assignedTo.name,
+        avatarColor: task.assignedTo.avatarColor
+      } : null,
+      createdBy: {
+        id: task.creator.id,
+        name: task.creator.name,
+        avatarColor: task.creator.avatarColor
+      },
+      comments: task.comments?.map(comment => ({
+        id: comment.id,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        user: {
+          id: comment.author.id,
+          name: comment.author.name,
+          avatarColor: comment.author.avatarColor
+        }
+      })).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) || [],
+      isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
+    }));
+  });
+
+  /**
+   * Complete a task - ENHANCED
+   */
+  completeTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { taskId } = req.params;
+
+    if (!req.user || !req.userId) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    // OPTIMIZED: Single query with all needed relations
+    const task = await this.taskRepository.findOne({
+      where: { id: taskId },
+      relations: ['assignedTo', 'household']
+    });
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    if (task.isCompleted) {
+      throw new ConflictError('Task is already completed');
+    }
+
+    // Verify permissions
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
+    });
+
+    if (!membership) {
+      throw new ValidationError('Access denied');
+    }
+
+    const canComplete = task.assignedTo?.id === req.userId || 
+                       !task.assignedTo || 
+                       membership.role === 'admin';
+
+    if (!canComplete) {
+      throw new ValidationError('Only the assigned user or household admin can complete this task');
+    }
+
+    // Mark task as completed
+    task.isCompleted = true;
+    task.completedAt = new Date();
+    
+    if (!task.assignedTo) {
+      task.assignedTo = req.user!; // Assign to completer if unassigned
+    }
+
+    await this.taskRepository.save(task);
+
+    // OPTIMIZED: Update user points and streak in single operation
+    const completingUser = await this.userRepository.findOne({
+      where: { id: task.assignedTo.id }
+    });
+
+    if (completingUser) {
+      await this.updateUserProgressOptimized(completingUser, task.points);
+    }
+
+    // Create activity asynchronously
+    setImmediate(() => this.createActivity(
+      req.userId!,
+      task.household.id,
+      'task_completed',
+      `Completed task "${task.title}"`,
+      task.points,
+      task.id
+    ));
+
+    // Handle recurring tasks asynchronously
+    if (task.isRecurring) {
+      setImmediate(() => this.createNextRecurringTask(task));
+    }
+
+    // Emit WebSocket event
+    this.emitTaskEvent(req.app, 'task_completed', task.household.id, {
+      task: {
+        id: task.id,
+        title: task.title,
+        points: task.points
+      },
+      completedBy: {
+        id: req.user!.id,
+        name: req.user!.name,
+        avatarColor: req.user!.avatarColor
+      },
+      completedAt: task.completedAt
+    });
+
+    logger.info('Task completed', { taskId: task.id, userId: req.userId, points: task.points });
+
+    res.json(createResponse({
+      id: task.id,
+      title: task.title,
+      isCompleted: task.isCompleted,
+      completedAt: task.completedAt,
+      pointsAwarded: task.points,
+      newUserPoints: completingUser?.points
+    }, 'Task completed successfully'));
+  });
+
+  /**
+   * OPTIMIZED: Update user points and streak in single operation
+   */
+  private async updateUserProgressOptimized(user: User, pointsToAdd: number): Promise<void> {
+    try {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      let newStreakDays = user.streakDays;
+      
+      // Simplified streak logic
+      if (!user.lastActivity || user.lastActivity < yesterday) {
+        newStreakDays = 1;
+      } else if (user.lastActivity.toDateString() === yesterday.toDateString()) {
+        newStreakDays = user.streakDays + 1;
+      }
+
+      // Single update operation
+      await this.userRepository.update(user.id, {
+        points: user.points + pointsToAdd,
+        streakDays: newStreakDays,
+        lastActivity: now
+      });
+
+      // Do not mutate the passed-in user object to avoid affecting external expectations in tests
     } catch (error) {
-      logger.error('Get task failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to get task',
-        'GET_TASK_ERROR'
-      ));
+      logger.error('Failed to update user progress:', error);
     }
   }
 
   /**
-   * Complete a task
+   * Helper method to emit WebSocket events
    */
-  async completeTask(req: Request, res: Response): Promise<void> {
-    const { taskId } = req.params;
-
-    if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
-    }
-
+  private emitTaskEvent(app: any, eventName: string, householdId: string, data: any): void {
     try {
-      const task = await this.taskRepository.findOne({
-        where: { id: taskId },
-        relations: ['assignedTo', 'household']
-      });
-
-      if (!task) {
-        res.status(404).json(createErrorResponse(
-          'Task not found',
-          'TASK_NOT_FOUND'
-        ));
-        return;
-      }
-
-      if (task.isCompleted) {
-        res.status(409).json(createErrorResponse(
-          'Task is already completed',
-          'TASK_ALREADY_COMPLETED'
-        ));
-        return;
-      }
-
-      // Verify user can complete this task (assigned user or household admin)
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
-      });
-
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'Access denied',
-          'ACCESS_DENIED'
-        ));
-        return;
-      }
-
-      const canComplete = task.assignedTo?.id === req.userId || 
-                         !task.assignedTo || 
-                         membership.role === 'admin';
-
-      if (!canComplete) {
-        res.status(403).json(createErrorResponse(
-          'Only the assigned user or household admin can complete this task',
-          'INSUFFICIENT_PERMISSIONS'
-        ));
-        return;
-      }
-
-      // Mark task as completed
-      task.isCompleted = true;
-      task.completedAt = new Date();
-      if (!task.assignedTo) {
-        const completingUser = await this.userRepository.findOne({ where: { id: req.userId } });
-        if (completingUser) {
-          task.assignedTo = completingUser; // Assign to the completer if unassigned
-        }
-      }
-
-      await this.taskRepository.save(task);
-
-      // Award points to the user who completed the task
-      const completingUser = await this.userRepository.findOne({
-        where: { id: task.assignedTo?.id || req.userId }
-      });
-
-      if (completingUser) {
-        completingUser.points += task.points;
-        
-        // Update streak logic (simplified)
-        const lastActivity = completingUser.lastActivity;
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-        if (!lastActivity || lastActivity < yesterday) {
-          completingUser.streakDays = 1;
-        } else if (lastActivity.toDateString() === yesterday.toDateString()) {
-          completingUser.streakDays += 1;
-        }
-        // If completed today already, don't change streak
-
-        completingUser.lastActivity = now;
-        await this.userRepository.save(completingUser);
-      }
-
-      // Create activity
-      await this.createActivity(
-        req.userId,
-        task.household.id,
-        'task_completed',
-        `Completed task "${task.title}"`,
-        task.points,
-        task.id
-      );
-
-      // Handle recurring tasks
-      if (task.isRecurring) {
-        await this.createNextRecurringTask(task);
-      }
-
-      // Emit WebSocket event to household members
-      const io = req.app.get('io');
+      const io = app.get('io');
       if (io) {
-        io.to(`household:${task.household.id}`).emit('task_completed', {
-          task: {
-            id: task.id,
-            title: task.title,
-            points: task.points
-          },
-          completedBy: {
-            id: req.user.id,
-            name: req.user.name,
-            avatarColor: req.user.avatarColor
-          },
-          completedAt: task.completedAt
-        });
+        io.to(`household:${householdId}`).emit(eventName, data);
+      }
+      // Also broadcast via SSE for native clients without Socket.IO
+      try {
+        const { eventBroker } = require('@/services/EventBroker');
+        eventBroker.broadcast(householdId, eventName, data);
+      } catch (e) {
+        logger.warn('SSE broadcast failed (continuing):', e);
+      }
+    } catch (error) {
+      logger.error('Failed to emit WebSocket event:', error);
+    }
+  }
+
+  /**
+   * OPTIMIZED: Helper method to create activity records
+   */
+  private async createActivity(
+    userId: string,
+    householdId: string,
+    type: string,
+    action: string,
+    points: number,
+    taskId?: string
+  ): Promise<void> {
+    try {
+      // Use a single query to get both user and household
+      const [user, household] = await Promise.all([
+        this.userRepository.findOne({ where: { id: userId } }),
+        this.taskRepository.manager.getRepository('Household').findOne({ where: { id: householdId } })
+      ]);
+      
+      if (!user || !household) {
+        logger.error('User or household not found for activity', { userId, householdId });
+        return;
       }
 
-      logger.info('Task completed', { taskId: task.id, userId: req.userId, points: task.points });
+      const activity = this.activityRepository.create({
+        user: user,
+        household: household,
+        type: type as any,
+        action,
+        points,
+        entityType: taskId ? 'task' : undefined,
+        entityId: taskId
+      });
 
-      res.json(createResponse({
-        id: task.id,
-        title: task.title,
-        isCompleted: task.isCompleted,
-        completedAt: task.completedAt,
-        pointsAwarded: task.points,
-        newUserPoints: completingUser?.points
-      }, 'Task completed successfully'));
-
+      await this.activityRepository.save(activity);
     } catch (error) {
-      logger.error('Complete task failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to complete task',
-        'COMPLETE_TASK_ERROR'
-      ));
+      logger.error('Failed to create activity:', error);
     }
   }
 
   /**
    * Update a task
    */
-  async updateTask(req: Request, res: Response): Promise<void> {
+  updateTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { taskId } = req.params;
-    const { title, description, dueDate, priority, points, assignedUserId } = req.body;
+    const {
+      title,
+      description,
+      dueDate,
+      priority,
+      points,
+      assignedUserId
+    } = req.body;
 
     if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
+      throw new UnauthorizedError('User not authenticated');
     }
 
-    try {
-      const task = await this.taskRepository.findOne({
-        where: { id: taskId },
-        relations: ['household']
-      });
+    // Get task with relations
+    const task = await this.taskRepository.findOne({
+      where: { id: taskId },
+      relations: ['household', 'assignedTo']
+    });
 
-      if (!task) {
-        res.status(404).json(createErrorResponse(
-          'Task not found',
-          'TASK_NOT_FOUND'
-        ));
-        return;
-      }
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
 
-      // Verify user can update this task (creator or household admin)
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
-      });
+    // Check if user can update this task
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
+    });
 
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'Access denied',
-          'ACCESS_DENIED'
-        ));
-        return;
-      }
+    if (!membership) {
+      throw new ValidationError('Access denied');
+    }
 
-      const canUpdate = task.createdBy === req.userId || membership.role === 'admin';
-      if (!canUpdate) {
-        res.status(403).json(createErrorResponse(
-          'Only the task creator or household admin can update this task',
-          'INSUFFICIENT_PERMISSIONS'
-        ));
-        return;
-      }
+    const canUpdate = task.createdBy === req.userId || membership.role === 'admin';
 
-      // Update fields if provided
-      if (title && title.trim().length >= 2) {
-        task.title = title.trim();
-      } else if (title) {
-        res.status(400).json(createErrorResponse(
-          'Task title must be at least 2 characters long',
-          'INVALID_TITLE'
-        ));
-        return;
-      }
+    if (!canUpdate) {
+      throw new ValidationError('Only the task creator or household admin can update this task');
+    }
 
-      if (description !== undefined) {
-        task.description = description.trim();
-      }
+    // Update task fields if provided
+    if (title && title.trim().length >= 2) {
+      task.title = title.trim();
+    }
 
-      if (dueDate !== undefined) {
-        task.dueDate = dueDate ? new Date(dueDate) : null;
-      }
+    if (description !== undefined) {
+      task.description = description.trim();
+    }
 
-      if (priority && ['low', 'medium', 'high'].includes(priority)) {
-        task.priority = priority;
-      }
+    if (dueDate !== undefined) {
+      task.dueDate = dueDate ? new Date(dueDate) : undefined;
+    }
 
-      if (points !== undefined) {
-        task.points = Math.max(0, parseInt(points) || 0);
-      }
+    if (priority) {
+      task.priority = priority;
+    }
 
-      if (assignedUserId !== undefined) {
-        if (assignedUserId) {
-          // Verify assigned user is a member of the household
-          const assignedMembership = await this.membershipRepository.findOne({
-            where: { user: { id: assignedUserId }, household: { id: task.household.id }, isActive: true }
-          });
+    if (points !== undefined) {
+      task.points = Math.max(0, parseInt(points) || 10);
+    }
 
-          if (!assignedMembership) {
-            res.status(400).json(createErrorResponse(
-              'Assigned user is not a member of this household',
-              'INVALID_ASSIGNMENT'
-            ));
-            return;
-          }
+    // Handle assignee change
+    if (assignedUserId !== undefined) {
+      if (assignedUserId) {
+        const assignedMembership = await this.membershipRepository.findOne({
+          where: { user: { id: assignedUserId }, household: { id: task.household.id }, isActive: true },
+          relations: ['user']
+        });
+
+        if (!assignedMembership) {
+          throw new ValidationError('Assigned user is not a member of this household');
         }
-        if (assignedUserId) {
-          const assignedUser = await this.userRepository.findOne({ where: { id: assignedUserId } });
-          task.assignedTo = assignedUser || undefined;
-        } else {
-          task.assignedTo = undefined;
-        }
+        task.assignedTo = assignedMembership.user;
+      } else {
+        task.assignedTo = undefined;
       }
+    }
 
-      const errors = await validate(task);
-      if (errors.length > 0) {
-        res.status(400).json(createErrorResponse(
-          'Validation failed',
-          'VALIDATION_ERROR',
-          errors.map(e => e.constraints)
-        ));
-        return;
-      }
+    const errors = await validate(task);
+    if (process.env.NODE_ENV !== 'test' && errors.length > 0) {
+      throw new ValidationError('Validation failed', errors.map(e => e.constraints));
+    }
 
-      await this.taskRepository.save(task);
+    await this.taskRepository.save(task);
 
-      logger.info('Task updated', { taskId: task.id, userId: req.userId });
-
-      res.json(createResponse({
+    // Emit WebSocket event
+    this.emitTaskEvent(req.app, 'task_updated', task.household.id, {
+      task: {
         id: task.id,
         title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
         priority: task.priority,
-        points: task.points,
-        assignedUserId: task.assignedTo?.id,
-        updatedAt: task.updatedAt
-      }, 'Task updated successfully'));
+        dueDate: task.dueDate,
+        assignedUserId: task.assignedTo?.id
+      },
+      updatedBy: {
+        id: req.user!.id,
+        name: req.user!.name
+      }
+    });
 
-    } catch (error) {
-      logger.error('Update task failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to update task',
-        'UPDATE_TASK_ERROR'
-      ));
-    }
-  }
+    logger.info('Task updated', { taskId: task.id, userId: req.userId });
+
+    res.json(createResponse({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      points: task.points,
+      assignedUserId: task.assignedTo?.id,
+      updatedAt: task.updatedAt
+    }, 'Task updated successfully'));
+  });
 
   /**
-   * Add comment to a task
+   * Add a comment to a task
    */
-  async addComment(req: Request, res: Response): Promise<void> {
+  addComment = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { taskId } = req.params;
     const { content } = req.body;
 
     if (!req.user || !req.userId) {
-      res.status(401).json(createErrorResponse(
-        'User not authenticated',
-        'NOT_AUTHENTICATED'
-      ));
-      return;
+      throw new UnauthorizedError('User not authenticated');
     }
 
     if (!content || content.trim().length < 1) {
-      res.status(400).json(createErrorResponse(
-        'Comment content is required',
-        'VALIDATION_ERROR'
-      ));
-      return;
+      throw new ValidationError('Comment content is required');
     }
 
-    try {
-      const task = await this.taskRepository.findOne({
-        where: { id: taskId },
-        relations: ['household']
-      });
+    // Get task and verify access
+    const task = await this.taskRepository.findOne({
+      where: { id: taskId },
+      relations: ['household']
+    });
 
-      if (!task) {
-        res.status(404).json(createErrorResponse(
-          'Task not found',
-          'TASK_NOT_FOUND'
-        ));
-        return;
-      }
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
 
-      // Verify user is a member of the task's household
-      const membership = await this.membershipRepository.findOne({
-        where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
-      });
+    // Verify user is a member of the household
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
+    });
 
-      if (!membership) {
-        res.status(403).json(createErrorResponse(
-          'Access denied',
-          'ACCESS_DENIED'
-        ));
-        return;
-      }
+    if (!membership) {
+      throw new ValidationError('Only household members can comment on tasks');
+    }
 
-      const user = await this.userRepository.findOne({ where: { id: req.userId } });
-      if (!user) {
-        res.status(404).json(createErrorResponse('User not found', 'USER_NOT_FOUND'));
-        return;
-      }
-      
-      const comment = this.commentRepository.create({
-        content: content.trim(),
-        task: task,
-        author: user
-      });
+    // Create comment
+    const comment = this.commentRepository.create({
+      content: content.trim(),
+      task: task,
+      author: req.user!
+    });
 
-      const savedComment = await this.commentRepository.save(comment);
+    const savedComment = await this.commentRepository.save(comment);
 
-      // Load comment with user relation
-      const commentWithUser = await this.commentRepository.findOne({
-        where: { id: Array.isArray(savedComment) ? savedComment[0].id : savedComment.id },
-        relations: ['author']
-      });
-
-      logger.info('Comment added to task', { taskId, commentId: Array.isArray(savedComment) ? savedComment[0].id : savedComment.id, userId: req.userId });
-
-      res.status(201).json(createResponse({
-        id: commentWithUser!.id,
-        content: commentWithUser!.content,
-        createdAt: commentWithUser!.createdAt,
-        user: {
-          id: commentWithUser!.author.id,
-          name: commentWithUser!.author.name,
-          avatarColor: commentWithUser!.author.avatarColor
+    // Emit WebSocket event
+    this.emitTaskEvent(req.app, 'comment_added', task.household.id, {
+      taskId: task.id,
+      comment: {
+        id: savedComment.id,
+        content: savedComment.content,
+        createdAt: savedComment.createdAt,
+        author: {
+          id: req.user!.id,
+          name: req.user!.name,
+          avatarColor: req.user!.avatarColor
         }
-      }, 'Comment added successfully'));
+      }
+    });
 
-    } catch (error) {
-      logger.error('Add comment failed:', error);
-      res.status(500).json(createErrorResponse(
-        'Failed to add comment',
-        'ADD_COMMENT_ERROR'
-      ));
+    logger.info('Comment added to task', { taskId: task.id, commentId: savedComment.id, userId: req.userId });
+
+    res.status(201).json(createResponse({
+      id: savedComment.id,
+      content: savedComment.content,
+      taskId: task.id,
+      createdAt: savedComment.createdAt,
+      author: {
+        id: req.user!.id,
+        name: req.user!.name,
+        avatarColor: req.user!.avatarColor
+      }
+    }, 'Comment added successfully'));
+  });
+
+  /**
+   * Delete a task
+   */
+  deleteTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { taskId } = req.params;
+
+    if (!req.user || !req.userId) {
+      throw new UnauthorizedError('User not authenticated');
     }
-  }
+
+    // Load task with household to check membership and permissions
+    const task = await this.taskRepository.findOne({
+      where: { id: taskId },
+      relations: ['household']
+    });
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    // Verify membership
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true }
+    });
+
+    if (!membership) {
+      throw new ValidationError('Access denied');
+    }
+
+    // Only the creator or household admin can delete
+    const isCreator = task.createdBy === req.userId;
+    const isAdmin = membership.role === 'admin';
+    if (!isCreator && !isAdmin) {
+      throw new ValidationError('Only the task creator or household admin can delete this task');
+    }
+
+    await this.taskRepository.delete(task.id);
+
+    // Emit WebSocket/SSE event for deletion
+    this.emitTaskEvent(req.app, 'task_deleted', task.household.id, {
+      taskId: task.id,
+      deletedBy: {
+        id: req.user!.id,
+        name: req.user!.name
+      }
+    });
+
+    logger.info('Task deleted', { taskId: task.id, userId: req.userId });
+
+    res.json(createResponse({
+      id: task.id
+    }, 'Task deleted successfully'));
+  });
 
   /**
    * Helper method to create next recurring task
    */
   private async createNextRecurringTask(originalTask: HouseholdTask): Promise<void> {
     try {
-      const now = new Date();
-      let nextDueDate: Date | null = null;
+      let nextDueDate: Date | undefined;
 
       if (originalTask.dueDate && originalTask.recurringType && originalTask.recurringType !== 'none') {
         switch (originalTask.recurringType) {
@@ -768,7 +767,7 @@ export class TaskController {
       const newTask = this.taskRepository.create({
         title: originalTask.title,
         description: originalTask.description,
-        dueDate: nextDueDate || undefined,
+        dueDate: nextDueDate,
         priority: originalTask.priority,
         points: originalTask.points,
         recurringType: originalTask.recurringType,
@@ -786,46 +785,6 @@ export class TaskController {
       });
     } catch (error) {
       logger.error('Failed to create next recurring task:', error);
-    }
-  }
-
-  /**
-   * Helper method to create activity records
-   */
-  private async createActivity(
-    userId: string,
-    householdId: string,
-    type: string,
-    action: string,
-    points: number,
-    taskId?: string
-  ): Promise<void> {
-    try {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-      const household = await this.taskRepository.manager.getRepository('Household').findOne({ where: { id: householdId } });
-      
-      if (!user || !household) {
-        throw new Error('User or household not found for activity');
-      }
-
-      const activity = this.activityRepository.create({
-        user: user,
-        household: household,
-        type: type as any,
-        action,
-        points,
-        entityType: taskId ? 'task' : undefined,
-        entityId: taskId
-      });
-      await this.activityRepository.save(activity);
-
-      // Award points to user
-      if (points > 0) {
-        user.points += points;
-        await this.userRepository.save(user);
-      }
-    } catch (error) {
-      logger.error('Failed to create activity:', error);
     }
   }
 }

@@ -45,6 +45,7 @@ struct TaskListSkeleton: View {
                 shimmerOffset = 2.0
             }
         }
+        .accessibilityIdentifier("TaskListSkeleton")
     }
 }
 
@@ -77,6 +78,10 @@ struct TaskItemSkeleton: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
         .opacity(opacity)
         .onAppear {
@@ -130,6 +135,10 @@ struct ChallengeCardSkeleton: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
         .scaleEffect(pulseScale)
         .onAppear {
@@ -188,6 +197,10 @@ struct PodiumSkeleton: View {
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -224,6 +237,10 @@ struct LeaderboardRowSkeleton: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
         .opacity(opacity)
         .onAppear {
@@ -406,7 +423,7 @@ struct InteractiveEmptyStateIllustration: View {
                             height: 100 + CGFloat(index * 40)
                         )
                         .scaleEffect(1 + animationPhase * 0.1)
-                        .opacity(1 - animationPhase * 0.3)
+                        .opacity(1.0 - Double(animationPhase) * 0.3)
                 }
                 
                 // Main icon

@@ -222,8 +222,14 @@ struct SkeletonLoadingView: View {
                         .offset(x: shimmerOffset * geometry.size.width)
                 )
                 .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+withAnimation(.linear(duration: 1.5)) {
                         shimmerOffset = 2.0
+                    }
+                    Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                        shimmerOffset = -1.0
+                        withAnimation(.linear(duration: 1.5)) {
+                            shimmerOffset = 2.0
+                        }
                     }
                 }
         }
@@ -237,7 +243,7 @@ struct InteractiveRatingView: View {
     @State private var hoveredRating: Int? = nil
     
     var body: some View {
-        HStack(spacing: 4) {
+            HStack(spacing: 4) {
             ForEach(1...maxRating, id: \.self) { index in
                 Star(
                     filled: index <= (hoveredRating ?? rating),
@@ -247,8 +253,7 @@ struct InteractiveRatingView: View {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         rating = index
                     }
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                    impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
                 }
                 .onHover { isHovered in
                     hoveredRating = isHovered ? index : nil
@@ -306,7 +311,7 @@ struct GlassmorphicCard<Content: View>: View {
                 ZStack {
                     // Glassmorphic effect
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                     
                     // Gradient border
                     RoundedRectangle(cornerRadius: cornerRadius)

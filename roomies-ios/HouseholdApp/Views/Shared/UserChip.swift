@@ -6,7 +6,10 @@ struct UserChip: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
+            action()
+        }) {
             HStack(spacing: 8) {
                 // User Avatar/Initial
                 Circle()
@@ -29,8 +32,12 @@ struct UserChip: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.gray.opacity(0.1))
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke((isSelected ? Color.accentColor : Color.gray).opacity(0.3), lineWidth: 1)
+                    )
+                    .shadow(color: (isSelected ? Color.accentColor : .gray).opacity(0.25), radius: 8, x: 0, y: 4)
             )
         }
         .buttonStyle(PlainButtonStyle())

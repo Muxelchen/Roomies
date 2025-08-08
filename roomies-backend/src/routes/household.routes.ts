@@ -15,9 +15,7 @@ router.use(authenticateToken);
  * @access  Private
  * @body    { name: string, description?: string }
  */
-router.post('/', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.createHousehold(req, res);
-}));
+router.post('/', householdController.createHousehold);
 
 /**
  * @route   POST /api/households/join
@@ -25,18 +23,14 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
  * @access  Private
  * @body    { inviteCode: string }
  */
-router.post('/join', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.joinHousehold(req, res);
-}));
+router.post('/join', householdController.joinHousehold);
 
 /**
  * @route   GET /api/households/current
  * @desc    Get current user's household
  * @access  Private
  */
-router.get('/current', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.getCurrentHousehold(req, res);
-}));
+router.get('/current', householdController.getCurrentHousehold);
 
 /**
  * @route   PUT /api/households/:householdId
@@ -44,27 +38,21 @@ router.get('/current', asyncHandler(async (req: Request, res: Response) => {
  * @access  Private (Admin)
  * @body    { name?: string, description?: string }
  */
-router.put('/:householdId', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.updateHousehold(req, res);
-}));
+router.put('/:householdId', householdController.updateHousehold);
 
 /**
  * @route   POST /api/households/leave
  * @desc    Leave current household
  * @access  Private
  */
-router.post('/leave', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.leaveHousehold(req, res);
-}));
+router.post('/leave', householdController.leaveHousehold);
 
 /**
  * @route   GET /api/households/:householdId/members
  * @desc    Get household members
  * @access  Private (Members only)
  */
-router.get('/:householdId/members', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.getMembers(req, res);
-}));
+router.get('/:householdId/members', householdController.getMembers);
 
 /**
  * @route   PUT /api/households/:householdId/members/:memberId/role
@@ -72,8 +60,6 @@ router.get('/:householdId/members', asyncHandler(async (req: Request, res: Respo
  * @access  Private (Admin)
  * @body    { role: 'admin' | 'member' }
  */
-router.put('/:householdId/members/:memberId/role', asyncHandler(async (req: Request, res: Response) => {
-  await householdController.updateMemberRole(req, res);
-}));
+router.put('/:householdId/members/:memberId/role', householdController.updateMemberRole);
 
 export default router;

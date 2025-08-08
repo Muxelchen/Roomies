@@ -8,6 +8,10 @@ struct EnhancedTextField: View {
     var keyboardType: UIKeyboardType = .default
     var autocapitalization: UITextAutocapitalizationType = .sentences
     var onCommit: (() -> Void)? = nil
+    var textContentType: UITextContentType? = nil
+    var disableAutocorrection: Bool = false
+    var errorMessage: String? = nil
+    var isValid: Bool = true
     
     @FocusState private var isFocused: Bool
     
@@ -27,6 +31,8 @@ struct EnhancedTextField: View {
                         .textFieldStyle(PlainTextFieldStyle())
                         .keyboardType(keyboardType)
                         .textInputAutocapitalization(autocapitalization)
+                        .textContentType(textContentType)
+                        .disableAutocorrection(disableAutocorrection)
                         .onSubmit {
                             onCommit?()
                         }
@@ -36,6 +42,8 @@ struct EnhancedTextField: View {
                         .textFieldStyle(PlainTextFieldStyle())
                         .keyboardType(keyboardType)
                         .textInputAutocapitalization(autocapitalization)
+                        .textContentType(textContentType)
+                        .disableAutocorrection(disableAutocorrection)
                         .onSubmit {
                             onCommit?()
                         }
@@ -45,14 +53,32 @@ struct EnhancedTextField: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.systemBackground))
-                    .stroke(
-                        isFocused ? Color.accentColor : Color.gray.opacity(0.3),
-                        lineWidth: isFocused ? 2 : 1
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [borderColor, borderColor.opacity(0.4)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: isFocused ? 2 : 1
+                            )
                     )
+                    .shadow(color: borderColor.opacity(0.2), radius: 8, x: 0, y: 4)
             )
             .animation(.easeInOut(duration: 0.2), value: isFocused)
+
+            if let errorMessage = errorMessage, !isValid {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .accessibilityLabel("Error: \(errorMessage)")
+            }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(title))
+        .accessibilityHint(Text(placeholder))
     }
 }
 
@@ -82,6 +108,14 @@ extension EnhancedTextField {
         self.placeholder = placeholder
         self.keyboardType = keyboardType
         self.onCommit = onCommit
+    }
+}
+
+// MARK: - Private helpers
+extension EnhancedTextField {
+    private var borderColor: Color {
+        if !isValid { return .red }
+        return isFocused ? Color.accentColor : Color.gray.opacity(0.3)
     }
 }
 

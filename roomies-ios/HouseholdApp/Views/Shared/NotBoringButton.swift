@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct NotBoringButton: View {
     let title: String
     let action: () -> Void
     let style: ButtonStyle
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPressed = false
     @State private var glowIntensity: Double = 0.5
     
@@ -39,12 +41,13 @@ struct NotBoringButton: View {
     
     var body: some View {
         Button(action: {
-            triggerHapticFeedback()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             performPressAnimation()
             action()
         }) {
             Text(title)
-                .font(.system(.title2, design: .rounded, weight: .bold))
+                .font(.system(.headline, design: .rounded))
+                .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .padding(.horizontal, 32)
                 .padding(.vertical, 16)
@@ -72,22 +75,23 @@ struct NotBoringButton: View {
         .scaleEffect(isPressed ? 0.95 : 1.0)
         .shadow(
             color: style.shadowColor,
-            radius: isPressed ? 8 : 16,
+            radius: isPressed ? 6 : 10,
             x: 0,
             y: isPressed ? 4 : 8
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .frame(minHeight: 44)
+        .contentShape(Capsule())
+        .accessibilityLabel(Text(title))
+        .accessibilityHint(Text("Activates \(title)"))
+        .accessibilityAddTraits(.isButton)
         .onAppear {
             startGlowAnimation()
         }
     }
     
-    private func triggerHapticFeedback() {
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-    }
-    
     private func performPressAnimation() {
+        guard !reduceMotion else { return }
         withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
             isPressed = true
         }
@@ -101,6 +105,7 @@ struct NotBoringButton: View {
     
     private func startGlowAnimation() {
         // Single subtle glow animation instead of repeatForever
+        guard !reduceMotion else { return }
         withAnimation(.easeInOut(duration: 1.0)) {
             glowIntensity = 0.8
         }
@@ -112,16 +117,18 @@ struct FloatingActionButton: View {
     let icon: String
     let action: () -> Void
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isFloating = false
     @State private var glowRadius: CGFloat = 8
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonPress(context: .floatingActionButton)
             
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+            if !reduceMotion {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                 // Bounce effect
+            }
             }
             action()
         }) {
@@ -147,11 +154,18 @@ struct FloatingActionButton: View {
                 )
         }
         .offset(y: isFloating ? -1 : 1)
+        .frame(minWidth: 56, minHeight: 56)
+        .contentShape(Circle())
+        .accessibilityLabel(Text("Add"))
+        .accessibilityHint(Text("Creates a new item"))
+        .accessibilityAddTraits(.isButton)
         .onAppear {
             // Single subtle float animation instead of repeatForever
-            withAnimation(.easeInOut(duration: 0.8)) {
-                isFloating = true
-                glowRadius = 12
+            if !reduceMotion {
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    isFloating = true
+                    glowRadius = 12
+                }
             }
         }
     }

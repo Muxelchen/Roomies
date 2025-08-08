@@ -26,7 +26,7 @@ struct SuperLazyStoreView: View {
             // Beautiful gradient background
             LinearGradient(
                 colors: [
-                    Color(UIColor.systemBackground),
+                    .clear,
                     Color.purple.opacity(0.1),
                     Color.blue.opacity(0.05)
                 ],
@@ -175,7 +175,7 @@ struct SuperLazyStoreView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+                .fill(Color(UIColor.secondarySystemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
         )
     }
@@ -206,7 +206,7 @@ struct SuperLazyStoreView_Previews: PreviewProvider {
     static var previews: some View {
         SuperLazyStoreView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(GameificationManager.shared)
             .environmentObject(LocalizationManager.shared)
     }

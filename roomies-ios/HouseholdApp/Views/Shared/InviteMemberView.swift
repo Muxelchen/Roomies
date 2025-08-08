@@ -8,7 +8,9 @@ struct InviteMemberView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                VStack(spacing: 30) {
                 // Header
                 VStack(spacing: 16) {
                     Image(systemName: "person.badge.plus")
@@ -39,14 +41,21 @@ struct InviteMemberView: View {
                             .fontWeight(.bold)
                             .tracking(2)
                         
-                        Button(action: copyInviteCode) {
+                    Button(action: copyInviteCode) {
                             Image(systemName: "doc.on.doc")
                                 .foregroundColor(.blue)
                         }
                     }
                     .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(UIColor.secondarySystemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.blue.opacity(0.25), lineWidth: 1)
+                            )
+                            .shadow(color: Color.blue.opacity(0.15), radius: 8, x: 0, y: 4)
+                    )
                     
                     Text("Code copied!")
                         .font(.caption)
@@ -57,6 +66,7 @@ struct InviteMemberView: View {
                 // Action Buttons
                 VStack(spacing: 16) {
                     Button("Show QR Code") {
+                        PremiumAudioHapticSystem.playModalPresent()
                         showingQRCode = true
                     }
                     .font(.headline)
@@ -66,6 +76,7 @@ struct InviteMemberView: View {
                     .cornerRadius(25)
                     
                     Button("Share Invitation") {
+                        PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         shareInvite()
                     }
                     .font(.headline)
@@ -94,8 +105,11 @@ struct InviteMemberView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                )
+                }
             }
             .padding()
             .navigationTitle("Invitation")
@@ -115,11 +129,7 @@ struct InviteMemberView: View {
     
     private func copyInviteCode() {
         UIPasteboard.general.string = household.inviteCode
-        // TODO: Show success animation/feedback
-        if UserDefaults.standard.bool(forKey: "hapticFeedback") {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
-        }
+        PremiumAudioHapticSystem.playSuccess()
     }
     
     private func shareInvite() {

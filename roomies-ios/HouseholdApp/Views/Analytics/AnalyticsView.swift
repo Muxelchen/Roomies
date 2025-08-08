@@ -46,7 +46,9 @@ struct AnalyticsView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                VStack(spacing: 0) {
                 // Enhanced Timeframe Picker
                 RoomiesAnalyticsTabPicker(selectedTimeframe: $selectedTimeframe)
                     .padding(.horizontal)
@@ -61,16 +63,8 @@ struct AnalyticsView: View {
                         EnhancedEmptyAnalyticsView()
                     }
                 }
-                .background(
-                    LinearGradient(
-                        colors: [
-                            Color(UIColor.systemBackground),
-                            selectedTimeframe.color.opacity(0.02)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                
+                }
             }
             .navigationTitle("Analytics Dashboard")
             .navigationBarTitleDisplayMode(.large)
@@ -151,8 +145,11 @@ struct RoomiesAnalyticsTabPicker: View {
         .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.tertiarySystemBackground))
-                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -167,8 +164,7 @@ struct RoomiesTimeframeButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 6) {
@@ -381,15 +377,12 @@ struct EnhancedSummaryCard: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                 valueScale = 1.2
             }
-            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     valueScale = 1.0
                 }
             }
-            
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
         }) {
             VStack(spacing: 12) {
                 // Enhanced Icon with glow
@@ -430,7 +423,6 @@ struct EnhancedSummaryCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(UIColor.secondarySystemBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: isPressed ? 4 : 8, x: 0, y: isPressed ? 2 : 4)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(color.opacity(0.2), lineWidth: 1)
@@ -453,9 +445,14 @@ struct EnhancedSummaryCard: View {
                 cardScale = 1.0
             }
             
-            // Icon bounce animation
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(animationDelay + 0.5)) {
+            // Icon bounce animation (single cycle)
+            withAnimation(.easeInOut(duration: 1.2).delay(animationDelay + 0.5)) {
                 iconBounce = 1.1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + animationDelay + 1.7) {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    iconBounce = 1.0
+                }
             }
         }
     }
@@ -614,7 +611,10 @@ struct EnhancedProductivityChartView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.blue.opacity(0.15), lineWidth: 1)
+                )
         )
         .scaleEffect(chartScale)
         .opacity(chartOpacity)
@@ -678,18 +678,14 @@ struct EnhancedLoadingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(40)
         .onAppear {
-            // Rotation animation
-            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+            // Single-cycle animations to avoid battery drain
+            withAnimation(.linear(duration: 2.0)) {
                 loadingRotation = 360
             }
-            
-            // Pulse animation
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 1.0)) {
                 pulseScale = 1.2
             }
-            
-            // Text opacity animation
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 1.2)) {
                 textOpacity = 1.0
             }
         }
@@ -767,8 +763,13 @@ struct EnhancedEmptyAnalyticsView: View {
                 iconScale = 1.0
             }
             
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5)) {
+            withAnimation(.easeInOut(duration: 1.2).delay(0.5)) {
                 iconBounce = 1.1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.7) {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    iconBounce = 1.0
+                }
             }
             
             withAnimation(.easeIn(duration: 0.5).delay(0.4)) {
@@ -940,9 +941,14 @@ struct CompletionRatesView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
@@ -996,9 +1002,14 @@ struct UserPerformanceView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -1073,9 +1084,14 @@ struct TaskDistributionView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -1151,9 +1167,14 @@ struct TimeAnalysisView: View {
             .frame(maxWidth: .infinity)
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
     
     private func dayOfWeekName(_ dayNumber: Int) -> String {
@@ -1192,9 +1213,14 @@ struct PredictionsView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }
 

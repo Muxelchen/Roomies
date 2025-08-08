@@ -14,6 +14,7 @@ API_BASE="http://localhost:3000/api"
 TOKEN=""
 USER_ID=""
 HOUSEHOLD_ID=""
+EMAIL="test$(date +%s)@example.com"
 
 # Function to make API calls and check status
 test_endpoint() {
@@ -66,10 +67,10 @@ echo -e "\n${BLUE}1. Health Check${NC}"
 test_endpoint "GET" "/../../health" "" "200" "Health endpoint"
 
 echo -e "\n${BLUE}2. Authentication Tests${NC}"
-test_endpoint "POST" "/auth/register" '{"email":"test@example.com","password":"testpass123","name":"Test User"}' "201" "User registration"
-test_endpoint "POST" "/auth/login" '{"email":"test@example.com","password":"testpass123"}' "200" "User login"
+test_endpoint "POST" "/auth/register" '{"email":"'$EMAIL'","password":"Testpass123","name":"Test User"}' "201" "User registration"
+test_endpoint "POST" "/auth/login" '{"email":"'$EMAIL'","password":"Testpass123"}' "200" "User login"
 test_endpoint "GET" "/auth/me" "" "200" "Get current user (authenticated)"
-test_endpoint "POST" "/auth/register" '{"email":"test@example.com","password":"testpass123","name":"Test User"}' "409" "Duplicate user registration (should fail)"
+test_endpoint "POST" "/auth/register" '{"email":"'$EMAIL'","password":"Testpass123","name":"Test User"}' "409" "Duplicate user registration (should fail)"
 
 echo -e "\n${BLUE}3. User Profile Tests${NC}"
 test_endpoint "GET" "/users/profile" "" "200" "Get user profile"
@@ -80,6 +81,11 @@ test_endpoint "GET" "/users/badges" "" "200" "Get user badges"
 echo -e "\n${BLUE}4. Household Management Tests${NC}"
 test_endpoint "POST" "/households" '{"name":"Test Household","description":"A test household for API testing"}' "201" "Create household"
 test_endpoint "GET" "/households/current" "" "200" "Get current household"
+# Fallback: capture household ID from current household if not set by creation
+if [ -z "$HOUSEHOLD_ID" ] && [ ! -z "$TOKEN" ]; then
+    body=$(curl -s -H "Authorization: Bearer $TOKEN" "$API_BASE/households/current")
+    HOUSEHOLD_ID=$(echo "$body" | jq -r '.data.id // empty')
+fi
 test_endpoint "POST" "/households" '{"name":"Another Household"}' "409" "Create second household (should fail - user already in household)"
 
 if [ ! -z "$HOUSEHOLD_ID" ]; then
@@ -97,15 +103,15 @@ else
 fi
 
 echo -e "\n${BLUE}6. Error Handling Tests${NC}"
-test_endpoint "GET" "/auth/me" "" "401" "Unauthenticated request (reset token)"
 TOKEN=""
+test_endpoint "GET" "/auth/me" "" "401" "Unauthenticated request (after token reset)"
 test_endpoint "GET" "/users/profile" "" "401" "Protected route without auth"
 test_endpoint "POST" "/auth/login" '{"email":"wrong@email.com","password":"wrongpass"}' "401" "Invalid login"
 test_endpoint "POST" "/households" '{"name":"A"}' "401" "Unauthenticated create household"
 
 echo -e "\n${BLUE}7. Validation Tests${NC}"
 # Re-login for validation tests
-test_endpoint "POST" "/auth/login" '{"email":"test@example.com","password":"testpass123"}' "200" "Re-login for validation tests"
+test_endpoint "POST" "/auth/login" '{"email":"'$EMAIL'","password":"Testpass123"}' "200" "Re-login for validation tests"
 test_endpoint "POST" "/auth/register" '{}' "400" "Empty registration data"
 test_endpoint "POST" "/households" '{}' "400" "Empty household data"
 if [ ! -z "$HOUSEHOLD_ID" ]; then

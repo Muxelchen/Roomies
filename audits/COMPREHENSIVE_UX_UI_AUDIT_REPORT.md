@@ -442,6 +442,10 @@ This audit provides an exhaustive analysis of the Roomies app's user experience 
 2. **Personalization**
    - User avatars
    - Theme selection
+   - Enhanced color system:
+     - Page-specific color variations
+     - Custom color intensity controls
+     - Color inheritance from tab bar
    - Custom celebrations
 
 3. **Advanced Features**
@@ -1367,6 +1371,26 @@ The Roomies app demonstrates strong adherence to the "Not Boring" premium design
 - ✅ Leaderboard: Red (competitive, achievement)
 - ✅ Profile: Indigo (personal, identity)
 
+#### **Enhanced Color System Requirements:**
+- **Theme Selection** (preserve existing):
+  - Keep current theme selection system
+  - Maintain preset theme options
+  - Support theme switching
+
+- **Page-Specific Color Variations**:
+  - Each view inherits its tab bar color with subtle variations
+  - Dashboard: Slightly more saturated blue for content emphasis
+  - Tasks: Deeper green for content areas
+  - Store: Richer purple for premium feel
+  - Challenges: Warmer orange for engagement
+  - Leaderboard: More vibrant red for excitement
+  - Profile: Deeper indigo for personalization
+
+- **Color Customization**:
+  - Allow users to adjust color intensity per view
+  - Remember user color preferences
+  - Maintain color relationship with tab bar
+
 #### **Micro-Interactions:**
 - ✅ Haptic feedback on all interactions
 - ✅ Spring physics with proper parameters
@@ -1417,6 +1441,14 @@ The Roomies app demonstrates strong adherence to the "Not Boring" premium design
 - Excellent completion feedback
 - Good filtering and organization
 - Helpful empty states
+
+#### **New Feature Requirement:**
+- **Smart Task Recommendations**:
+  - Implement contextual task suggestions based on user inputs
+  - Example: "Clean toilet" should suggest related tasks like "Clean bathroom"
+  - Use machine learning to improve suggestions over time
+  - Consider common household task patterns
+  - Build a recommendation engine that learns from household habits
 
 #### **⚠️ Minor Issues:**
 - Filter state not preserved
@@ -1473,11 +1505,18 @@ The Roomies app demonstrates strong adherence to the "Not Boring" premium design
    - Fix state preservation issues
    - Implement consistent modal dismiss patterns
 
-### **SHORT TERM (Week 3-4)**
+### SHORT TERM (Week 3-4)
 3. **Performance Optimizations**
    - Optimize particle animations for battery life
    - Implement lazy loading for long lists
    - Add performance monitoring
+
+4. **Smart Task Recommendations**
+   - Design and implement recommendation engine
+   - Create task relationship mapping system
+   - Build machine learning model for suggestions
+   - Add contextual task suggestions UI
+   - Implement feedback loop for suggestion quality
 
 4. **Content Improvements**
    - Replace placeholder content with real data

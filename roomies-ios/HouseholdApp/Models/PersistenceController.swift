@@ -237,7 +237,7 @@ class PersistenceController: ObservableObject, @unchecked Sendable {
         
         // FIXED: Use async instead of sync to prevent deadlock
         DispatchQueue.main.async {
-            AuthenticationManager.shared.signOut()
+            IntegratedAuthenticationManager.shared.signOut()
         }
         
         let backgroundContext = container.newBackgroundContext()
@@ -367,7 +367,7 @@ class PersistenceController: ObservableObject, @unchecked Sendable {
     nonisolated private func resetAllDataSync() {
         // FIXED: Use async instead of sync to prevent deadlock
         DispatchQueue.main.async {
-            AuthenticationManager.shared.signOut()
+            IntegratedAuthenticationManager.shared.signOut()
             GameificationManager.shared.currentUserPoints = 0
         }
         

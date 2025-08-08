@@ -35,7 +35,7 @@ struct EnhancedFilterChip: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? filter.color : Color(UIColor.tertiarySystemBackground))
+                    .fill(isSelected ? filter.color : .ultraThinMaterial)
                     .shadow(
                         color: isSelected ? filter.color.opacity(0.4) : Color.black.opacity(0.05),
                         radius: isSelected ? 8 : 4,
@@ -46,7 +46,7 @@ struct EnhancedFilterChip: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(
-                        isSelected ? Color.white.opacity(0.3) : Color.clear,
+                        isSelected ? Color.white.opacity(0.3) : Color.gray.opacity(0.12),
                         lineWidth: 1
                     )
             )
@@ -196,9 +196,14 @@ struct EnhancedEmptyTasksView: View {
             textOpacity = 1.0
         }
         
-        // Floating animation
-        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.8)) {
+        // Floating animation (single cycle to reduce battery usage)
+        withAnimation(.easeInOut(duration: 1.5).delay(0.8)) {
             floatingOffset = -10
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.3) {
+            withAnimation(.easeInOut(duration: 1.5)) {
+                floatingOffset = 0
+            }
         }
         
         // Show particles
@@ -270,7 +275,7 @@ struct EmptyStateParticle: View {
                 let angle = Double.random(in: 0...(2 * .pi))
                 let distance = CGFloat.random(in: 60...100)
                 
-                withAnimation(.easeOut(duration: 2.0).delay(delay).repeatForever(autoreverses: false)) {
+                withAnimation(.easeOut(duration: 2.0).delay(delay)) {
                     offset = CGSize(
                         width: cos(angle) * distance,
                         height: sin(angle) * distance
@@ -391,8 +396,7 @@ struct SwipeActionButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             Image(systemName: icon)
@@ -467,7 +471,7 @@ struct TaskStatsCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.tertiarySystemBackground))
+                .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(color.opacity(0.2), lineWidth: 1)

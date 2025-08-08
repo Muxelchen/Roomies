@@ -69,7 +69,7 @@ class NotificationManager: NSObject, ObservableObject {
         ]
         
         // Schedule notification for each member (except current user)
-        let currentUserId = AuthenticationManager.shared.currentUser?.id
+        let currentUserId = IntegratedAuthenticationManager.shared.currentUser?.id
         
         for membership in memberships {
             guard let member = membership.user,
@@ -194,7 +194,7 @@ class NotificationManager: NSObject, ObservableObject {
         guard hasPermission else { return }
         
         // Count pending tasks for current user
-        guard let currentUser = AuthenticationManager.shared.currentUser else { return }
+        guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else { return }
         
         let assignedTasks = currentUser.assignedTasks?.allObjects as? [HouseholdTask] ?? []
         let pendingTasks = assignedTasks.filter { !$0.isCompleted }

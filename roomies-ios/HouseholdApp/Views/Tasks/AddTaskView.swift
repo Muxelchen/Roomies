@@ -1,6 +1,12 @@
 import SwiftUI
 import CoreData
 import AudioToolbox
+import UIKit
+ 
+// Global helper to hide the keyboard from anywhere in SwiftUI views
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
 
 // MARK: - Enhanced Interactive Components
 struct AnimatedPointsStepper: View {
@@ -21,8 +27,7 @@ struct AnimatedPointsStepper: View {
                         points -= 5
                         triggerPulse()
                         // ✅ FIX: Remove reference to missing NotBoringSoundManager
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }) {
                     Image(systemName: "minus.circle.fill")
@@ -61,8 +66,7 @@ struct AnimatedPointsStepper: View {
                         triggerPulse()
                         triggerPointsAnimation()
                         // ✅ FIX: Remove reference to missing NotBoringSoundManager
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
@@ -112,8 +116,7 @@ struct AnimatedPriorityPicker: View {
                             selectedPriority = priority
                         }
                         // ✅ FIX: Remove reference to missing NotBoringSoundManager
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }
             }
@@ -138,14 +141,26 @@ struct PriorityChip: View {
                     .font(.system(.caption, design: .rounded, weight: .semibold))
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? priority.color.opacity(0.2) : Color(UIColor.secondarySystemBackground))
-                    .overlay(
+                Group {
+                    if isSelected {
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(isSelected ? priority.color : Color.clear, lineWidth: 2)
-                    )
+                            .fill(priority.color.opacity(0.2))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(priority.color, lineWidth: 2)
+                            )
+                    } else {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(UIColor.secondarySystemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                            )
+                    }
+                }
             )
             .foregroundColor(isSelected ? priority.color : .primary)
             .scaleEffect(isPressed ? 0.95 : 1.0)
@@ -160,14 +175,14 @@ struct PriorityChip: View {
 
 struct FloatingCreateButton: View {
     let isEnabled: Bool
+    let isEditing: Bool
     let action: () -> Void
     @State private var isGlowing = false
     @State private var pulseScale: CGFloat = 1.0
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .heavy)
             
             withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
                 pulseScale = 0.95
@@ -182,7 +197,7 @@ struct FloatingCreateButton: View {
             HStack(spacing: 8) {
                 Image(systemName: "plus.circle.fill")
                     .font(.title3)
-                Text("Create Task")
+                Text(isEditing ? "Update Task" : "Create Task")
                     .font(.system(.headline, design: .rounded, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -204,14 +219,16 @@ struct FloatingCreateButton: View {
         .disabled(!isEnabled)
         .onAppear {
             if isEnabled {
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                // Single glow animation to prevent battery drain
+                withAnimation(.easeInOut(duration: 2.0)) {
                     isGlowing = true
                 }
             }
         }
         .onChange(of: isEnabled) { _, enabled in
             if enabled {
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                // Single glow animation to prevent battery drain
+                withAnimation(.easeInOut(duration: 2.0)) {
                     isGlowing = true
                 }
             } else {
@@ -226,8 +243,11 @@ struct FloatingCreateButton: View {
 struct AddTaskView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var notificationManager: NotificationManager
+    
+    // Optional task for editing
+    let taskToEdit: HouseholdTask?
     
     @State private var title = ""
     @State private var description = ""
@@ -243,6 +263,16 @@ struct AddTaskView: View {
     // ✅ FIX: Change from FocusState to regular State to match component expectations
     @State private var isTaskNameFocused: Bool = false
     @State private var isTaskDescriptionFocused: Bool = false
+    
+    // Computed property to determine if we're editing
+    private var isEditing: Bool {
+        taskToEdit != nil
+    }
+    
+    // Initialize with optional task for editing
+    init(taskToEdit: HouseholdTask? = nil) {
+        self.taskToEdit = taskToEdit
+    }
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \User.name, ascending: true)],
@@ -299,7 +329,7 @@ struct AddTaskView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                backgroundGradient
+                PremiumScreenBackground(sectionColor: .tasks, style: .minimal)
                 mainContent
                 successAnimationOverlay
             }
@@ -310,17 +340,11 @@ struct AddTaskView: View {
                 hideKeyboard()
             }
         }
+        .accessibilityIdentifier("AddTaskView")
     }
     
     // ✅ FIX: Break down complex view into smaller computed properties to help SwiftUI compiler
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: [Color(UIColor.systemBackground), Color.blue.opacity(0.02)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
-    }
+    // Removed backgroundGradient in favor of PremiumScreenBackground
     
     private var mainContent: some View {
         ScrollView {
@@ -345,11 +369,40 @@ struct AddTaskView: View {
                 )
                 .symbolEffect(.pulse.byLayer, options: .repeating)
             
-            Text("Create New Task")
+            Text(isEditing ? "Edit Task" : "Create New Task")
                 .font(.system(.title, design: .rounded, weight: .bold))
                 .foregroundColor(.primary)
         }
         .padding(.top, 20)
+        .onAppear {
+            setupViewForEditing()
+        }
+    }
+    
+    // Setup view for editing if taskToEdit is provided
+    private func setupViewForEditing() {
+        guard let task = taskToEdit else { return }
+        
+        title = task.title ?? ""
+        description = task.taskDescription ?? ""
+        points = Int(task.points)
+        dueDate = task.dueDate ?? Date()
+        hasDueDate = task.dueDate != nil
+        
+        // Map priority
+        switch task.priority {
+        case "Low":
+            selectedPriority = .low
+        case "High":
+            selectedPriority = .high
+        default:
+            selectedPriority = .medium
+        }
+        
+        // Set assigned user if available
+        if let assignedTo = task.assignedTo {
+            assignedUserIDs.insert(assignedTo.objectID)
+        }
     }
     
     private var formCardsSection: some View {
@@ -363,54 +416,70 @@ struct AddTaskView: View {
     }
     
     private var taskDetailsCard: some View {
-        NotBoringCard {
-            VStack(spacing: 16) {
-                HStack {
-                    Image(systemName: "doc.text.fill")
-                        .foregroundColor(.blue)
-                    Text("Task Details")
-                        .font(.system(.headline, design: .rounded, weight: .semibold))
-                    Spacer()
-                }
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "doc.text.fill")
+                    .foregroundColor(.blue)
+                Text("Task Details")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                Spacer()
+            }
+            
+            VStack(spacing: 12) {
+                EnhancedTextField(
+                    title: "Title",
+                    text: $title,
+                    isFocused: $isTaskNameFocused,
+                    icon: "pencil.circle.fill"
+                )
                 
-                VStack(spacing: 12) {
-                    EnhancedTextField(
-                        title: "Title",
-                        text: $title,
-                        isFocused: $isTaskNameFocused,
-                        icon: "pencil.circle.fill"
-                    )
-                    
-                    EnhancedTextField(
-                        title: "Description (optional)",
-                        text: $description,
-                        isFocused: $isTaskDescriptionFocused,
-                        icon: "text.alignleft",
-                        isMultiline: true
-                    )
-                }
+                EnhancedTextField(
+                    title: "Description (optional)",
+                    text: $description,
+                    isFocused: $isTaskDescriptionFocused,
+                    icon: "text.alignleft",
+                    isMultiline: true
+                )
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+        )
     }
     
     private var settingsCard: some View {
-        NotBoringCard {
-            VStack(spacing: 20) {
-                HStack {
-                    Image(systemName: "slider.horizontal.3")
-                        .foregroundColor(.orange)
-                    Text("Settings")
-                        .font(.system(.headline, design: .rounded, weight: .semibold))
-                    Spacer()
-                }
-                
-                VStack(spacing: 16) {
-                    AnimatedPointsStepper(points: $points)
-                    AnimatedPriorityPicker(selectedPriority: $selectedPriority)
-                    recurrenceSection
-                }
+        VStack(spacing: 20) {
+            HStack {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundColor(.orange)
+                Text("Settings")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                Spacer()
+            }
+            
+            VStack(spacing: 16) {
+                AnimatedPointsStepper(points: $points)
+                AnimatedPriorityPicker(selectedPriority: $selectedPriority)
+                recurrenceSection
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+        )
     }
     
     private var recurrenceSection: some View {
@@ -427,8 +496,7 @@ struct AddTaskView: View {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             recurringType = type
                         }
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }
             }
@@ -438,19 +506,27 @@ struct AddTaskView: View {
     @ViewBuilder
     private var assignmentCard: some View {
         if !users.isEmpty {
-            NotBoringCard {
-                VStack(spacing: 16) {
-                    HStack {
-                        Image(systemName: "person.2.fill")
-                            .foregroundColor(.green)
-                        Text("Assignment")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                        Spacer()
-                    }
-                    
-                    userSelectionGrid
+            VStack(spacing: 16) {
+                HStack {
+                    Image(systemName: "person.2.fill")
+                        .foregroundColor(.green)
+                    Text("Assignment")
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                    Spacer()
                 }
+                
+                userSelectionGrid
             }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+            )
         }
     }
     
@@ -486,37 +562,49 @@ struct AddTaskView: View {
     }
     
     private var dueDateCard: some View {
-        NotBoringCard {
-            VStack(spacing: 16) {
-                HStack {
-                    Image(systemName: "calendar.badge.clock")
-                        .foregroundColor(.purple)
-                    Text("Due Date")
-                        .font(.system(.headline, design: .rounded, weight: .semibold))
-                    Spacer()
-                    
-                    Toggle("", isOn: $hasDueDate)
-                        .toggleStyle(SwitchToggleStyle(tint: .purple))
-                }
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "calendar.badge.clock")
+                    .foregroundColor(.purple)
+                Text("Due Date")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                Spacer()
                 
-                if hasDueDate {
-                    DatePicker("Due on", selection: $dueDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(GraphicalDatePickerStyle())
-                        .transition(.scale.combined(with: .opacity))
-                        .onAppear {
-                            if dueDate < Date() {
-                                dueDate = Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
-                            }
+                Toggle("", isOn: $hasDueDate)
+                    .toggleStyle(SwitchToggleStyle(tint: .purple))
+            }
+            
+            if hasDueDate {
+                DatePicker("Due on", selection: $dueDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+                    .datePickerStyle(GraphicalDatePickerStyle())
+                    .transition(.scale.combined(with: .opacity))
+                    .onAppear {
+                        if dueDate < Date() {
+                            dueDate = Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
                         }
-                }
+                    }
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+        )
     }
     
     private var actionButtonsSection: some View {
         VStack(spacing: 16) {
-            FloatingCreateButton(isEnabled: !title.isEmpty && !isCreating) {
-                createTask()
+            FloatingCreateButton(isEnabled: !title.isEmpty && !isCreating, isEditing: isEditing) {
+                if isEditing {
+                    updateTask()
+                } else {
+                    createTask()
+                }
             }
             
             Button("Cancel") {
@@ -542,7 +630,7 @@ struct AddTaskView: View {
                         .foregroundColor(.green)
                         .modifier(CompatibleBounceEffect())
                     
-                    Text("Task Created!")
+                    Text(isEditing ? "Task Updated!" : "Task Created!")
                         .font(.system(.title, design: .rounded, weight: .bold))
                         .foregroundColor(.white)
                 }
@@ -551,10 +639,7 @@ struct AddTaskView: View {
         }
     }
     
-    // Add function to hide keyboard
-    private func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
+    // (moved) hideKeyboard is now a global helper at file scope
     
     private func createTask() {
         guard !isCreating else { return }
@@ -565,76 +650,126 @@ struct AddTaskView: View {
             showSuccessAnimation = true
         }
         
-        // ✅ FIX: Use AudioServices fallback instead of NotBoringSoundManager to avoid scope issues
-        AudioServicesPlaySystemSound(1057) // Task completion sound
+        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
         
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+        Task { @MainActor in
+            // Map UI priority to IntegratedTaskManager priority
+            let managerPriority: IntegratedTaskManager.TaskPriority = {
+                switch selectedPriority {
+                case .low: return .low
+                case .medium: return .medium
+                case .high: return .high
+                }
+            }()
+            
+            // Map recurring selection
+            let isRecurringTask = recurringType != .none
+            let managerRecurring: IntegratedTaskManager.RecurringType? = {
+                switch recurringType {
+                case .daily: return .daily
+                case .weekly: return .weekly
+                case .monthly: return .monthly
+                case .none: return nil
+                }
+            }()
+            
+            // Determine assignee id
+            var assignedUserId: String? = nil
+            if let firstSelectedUserId = assignedUserIDs.first,
+               let assignedUser = users.first(where: { $0.objectID == firstSelectedUserId }) {
+                assignedUserId = assignedUser.id?.uuidString
+            } else {
+                assignedUserId = authManager.currentUser?.id?.uuidString
+            }
+            
+            do {
+                // Normalize priority casing to match backend expectations (lowercase)
+                let createdTask = try await IntegratedTaskManager.shared.createTask(
+                    title: title,
+                    description: description.isEmpty ? nil : description,
+                    dueDate: hasDueDate ? dueDate : nil,
+                    priority: managerPriority,
+                    points: points,
+                    assignedUserId: assignedUserId,
+                    isRecurring: isRecurringTask,
+                    recurringType: managerRecurring
+                )
+                
+                // Schedule reminder if task has due date
+                if hasDueDate {
+                    NotificationManager.shared.scheduleTaskReminder(task: createdTask)
+                }
+                
+                // Update badge count
+                NotificationManager.shared.updateBadgeCount()
+                
+                // Dismiss after brief animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    dismiss()
+                }
+            } catch {
+                print("Error creating task via IntegratedTaskManager: \(error)")
+                isCreating = false
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showSuccessAnimation = false
+                }
+            }
+        }
+    }
+    
+    private func updateTask() {
+        guard let task = taskToEdit, !isCreating else { return }
+        isCreating = true
+        
+        // Show success animation
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            showSuccessAnimation = true
+        }
+        
+        // Audio feedback
+        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation {
-                let newTask = HouseholdTask(context: viewContext)
-                newTask.id = UUID()
-                newTask.title = title
-                newTask.taskDescription = description.isEmpty ? nil : description
-                newTask.points = Int32(points)
-                newTask.priority = selectedPriority.rawValue
-                newTask.recurringType = recurringType.rawValue
-                newTask.isCompleted = false
-                newTask.createdAt = Date()
+                // Update task properties
+                task.title = title
+                task.taskDescription = description.isEmpty ? nil : description
+                task.points = Int32(points)
+                task.priority = selectedPriority.rawValue
+                task.recurringType = recurringType.rawValue
                 
-                // ✅ FIX: Properly assign single user instead of multiple users (Core Data model limitation)
+                // Update assignment
                 if let firstSelectedUserId = assignedUserIDs.first,
                    let assignedUser = users.first(where: { $0.objectID == firstSelectedUserId }) {
-                    newTask.assignedTo = assignedUser
-                    print("✅ Task assigned to user: \(assignedUser.name ?? "Unknown")")
+                    task.assignedTo = assignedUser
+                    print("✅ Task reassigned to user: \(assignedUser.name ?? "Unknown")")
                 } else {
                     // Assign to current user if no specific assignment
-                    newTask.assignedTo = authManager.currentUser
+                    task.assignedTo = authManager.currentUser
                     print("✅ Task assigned to current user: \(authManager.currentUser?.name ?? "Unknown")")
                 }
                 
+                // Update due date
                 if hasDueDate {
-                    newTask.dueDate = dueDate
-                }
-                
-                // Improved household assignment logic
-                if let currentUser = AuthenticationManager.shared.currentUser {
-                    if let memberships = currentUser.householdMemberships?.allObjects as? [UserHouseholdMembership],
-                       let household = memberships.first?.household {
-                        newTask.household = household
-                        print("✅ Task assigned to household: \(household.name ?? "Unknown")")
-                    } else {
-                        let householdRequest: NSFetchRequest<Household> = Household.fetchRequest()
-                        do {
-                            let households = try viewContext.fetch(householdRequest)
-                            if let household = households.first {
-                                newTask.household = household
-                                print("✅ Task assigned to fallback household: \(household.name ?? "Unknown")")
-                            } else {
-                                print("⚠️ WARNING: No household found - task created without household assignment")
-                            }
-                        } catch {
-                            print("❌ ERROR: Failed to find household: \(error)")
-                        }
+                    task.dueDate = dueDate
+                    // Schedule new reminder
+                    if let taskId = task.id {
+                        NotificationManager.shared.cancelTaskReminder(taskId: taskId)
+                        NotificationManager.shared.scheduleTaskReminder(task: task)
                     }
                 } else {
-                    print("⚠️ WARNING: No current user - task created without household assignment")
+                    // Remove due date and cancel reminder
+                    if let taskId = task.id {
+                        NotificationManager.shared.cancelTaskReminder(taskId: taskId)
+                    }
+                    task.dueDate = nil
                 }
                 
                 do {
                     try viewContext.save()
                     
-                    // Log task assignment instead of using ActivityTracker
-                    LoggingManager.shared.info("Task assigned: \(newTask.title ?? "Unknown") assigned to \(newTask.assignedTo?.name ?? "Unknown")", category: "Tasks")
-                    
-                    // TODO: Re-enable CloudKit sync when CloudSyncManager is properly integrated
-                    // await CloudSyncManager.shared.syncTask(newTask)
-                    
-                    // Schedule reminder if task has due date
-                    if hasDueDate {
-                        NotificationManager.shared.scheduleTaskReminder(task: newTask)
-                    }
+                    // Log task update
+                    LoggingManager.shared.info("Task updated: \(task.title ?? "Unknown") assigned to \(task.assignedTo?.name ?? "Unknown")", category: "Tasks")
                     
                     // Update badge count
                     NotificationManager.shared.updateBadgeCount()
@@ -644,7 +779,7 @@ struct AddTaskView: View {
                         dismiss()
                     }
                 } catch {
-                    print("Error saving task: \(error)")
+                    print("Error updating task: \(error)")
                     isCreating = false
                     withAnimation(.easeOut(duration: 0.3)) {
                         showSuccessAnimation = false
@@ -692,6 +827,15 @@ struct EnhancedTextField: View {
                     .onTapGesture {
                         isFocused = true
                     }
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") {
+                                isFocused = false
+                                hideKeyboard()
+                            }
+                        }
+                    }
             } else {
                 TextField("", text: $text)
                     .textFieldStyle(PlainTextFieldStyle())
@@ -706,6 +850,15 @@ struct EnhancedTextField: View {
                     )
                     .onTapGesture {
                         isFocused = true
+                    }
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") {
+                                isFocused = false
+                                hideKeyboard()
+                            }
+                        }
                     }
             }
         }
@@ -788,8 +941,7 @@ struct CompatibleBounceEffect: ViewModifier {
         content
             .scaleEffect(isAnimating ? 1.1 : 1.0)
             .animation(
-                Animation.spring(response: 0.3, dampingFraction: 0.6)
-                    .repeatForever(autoreverses: true),
+                Animation.spring(response: 0.3, dampingFraction: 0.6),
                 value: isAnimating
             )
             .onAppear {

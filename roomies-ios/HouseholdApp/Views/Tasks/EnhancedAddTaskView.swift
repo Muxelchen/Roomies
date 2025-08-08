@@ -5,7 +5,7 @@ import CoreData
 struct EnhancedAddTaskView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     
     @State private var title = ""
     @State private var description = ""
@@ -187,9 +187,16 @@ struct EnhancedAddTaskView: View {
         // Start sparkle animation when form is valid
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             if isFormValid {
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                withAnimation(.easeInOut(duration: 1.0)) {
                     sparkleAnimation = true
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        sparkleAnimation = false
+                    }
+                }
+            }
             }
         }
     }
@@ -205,40 +212,36 @@ struct EnhancedAddTaskView: View {
         
         PremiumAudioHapticSystem.playTaskComplete(context: .taskCreation)
         
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            let newTask = HouseholdTask(context: viewContext)
-            newTask.id = UUID()
-            newTask.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-            newTask.taskDescription = description.isEmpty ? nil : description.trimmingCharacters(in: .whitespacesAndNewlines)
-            newTask.points = Int32(points)
-            newTask.dueDate = dueDate
-            newTask.createdAt = Date()
-            newTask.isCompleted = false
-            newTask.assignedTo = selectedAssignee
+        Task { @MainActor in
+            // Map UI priority to integrated priority
+            let managerPriority: IntegratedTaskManager.TaskPriority = {
+                switch selectedPriority {
+                case .low: return .low
+                case .medium: return .medium
+                case .high, .urgent: return .high
+                }
+            }()
             
-            // Assign to household
-            if let currentUser = authManager.currentUser,
-               let memberships = currentUser.householdMemberships?.allObjects as? [UserHouseholdMembership],
-               let household = memberships.first?.household {
-                newTask.household = household
-            }
+            let assignedUserId = selectedAssignee?.id?.uuidString ?? authManager.currentUser?.id?.uuidString
             
             do {
-                try viewContext.save()
-                
-                LoggingManager.shared.info(
-                    "Task created: \(newTask.title ?? "Unknown") assigned to \(selectedAssignee?.name ?? "Unknown")",
-                    category: "Tasks"
+                _ = try await IntegratedTaskManager.shared.createTask(
+                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                    description: description.isEmpty ? nil : description.trimmingCharacters(in: .whitespacesAndNewlines),
+                    dueDate: dueDate,
+                    priority: managerPriority,
+                    points: points,
+                    assignedUserId: assignedUserId,
+                    isRecurring: false,
+                    recurringType: nil
                 )
                 
-                // Show success and dismiss
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     dismiss()
                 }
-                
             } catch {
                 PremiumAudioHapticSystem.playError(context: .systemError)
-                print("❌ Failed to create task: \(error)")
+                print("❌ Failed to create task via IntegratedTaskManager: \(error)")
             }
         }
     }
@@ -309,8 +312,15 @@ struct RoomiesTaskCreationHeader: View {
         }
         .padding(.horizontal)
         .onAppear {
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                glowIntensity = 0.6
+Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    glowIntensity = 0.6
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        glowIntensity = 0.3
+                    }
+                }
             }
         }
     }
@@ -344,7 +354,7 @@ struct RoomiesEnhancedTextField: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(
@@ -404,7 +414,7 @@ struct RoomiesEnhancedTextEditor: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
@@ -574,8 +584,8 @@ struct PriorityChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Image(systemName: priority.icon)
-                    .font(.system(size: 14, weight: .semibold))
+                Image(systemName: "flag.fill")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(isSelected ? .white : priority.color)
                 
                 Text(priority.rawValue)
@@ -584,6 +594,7 @@ struct PriorityChip: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .frame(minHeight: 44)
             .background(
                 Group {
                     if isSelected {
@@ -658,7 +669,7 @@ struct RoomiesDateSelector: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.blue.opacity(0.3), lineWidth: 1)
@@ -729,7 +740,7 @@ struct RoomiesAssigneeSelector: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.purple.opacity(0.3), lineWidth: 1)
@@ -766,10 +777,14 @@ struct RoomiesAssigneeSelector: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.tertiarySystemBackground))
-                )
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                    )
+            )
                 .transition(.scale.combined(with: .opacity))
             }
         }
@@ -875,7 +890,7 @@ struct RoomiesCloseButton: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 32, height: 32)
+ .frame(width: 44, height: 44)
                     .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                 
                 Image(systemName: "xmark")
@@ -898,5 +913,5 @@ struct RoomiesCloseButton: View {
 #Preview {
     EnhancedAddTaskView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(IntegratedAuthenticationManager.shared)
 }

@@ -32,7 +32,9 @@ struct AddChallengeView: View {
     
     var body: some View {
         NavigationView {
-            Form {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .challenges, style: .minimal)
+                Form {
                 Section("Challenge Details") {
                     TextField("Title", text: $title)
                         .focused($titleFieldFocused)
@@ -84,9 +86,12 @@ struct AddChallengeView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("New Challenge")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color(UIColor.secondarySystemBackground), for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -125,9 +130,8 @@ struct AddChallengeView: View {
             newChallenge.createdAt = Date()
             newChallenge.dueDate = Calendar.current.date(byAdding: .day, value: duration, to: Date())
             
-            // TODO: Assign to current household
             // Assign to current household if available
-            if let currentUser = AuthenticationManager.shared.currentUser {
+            if let currentUser = IntegratedAuthenticationManager.shared.currentUser {
                 // First try to get household from current user's memberships
                 if let memberships = currentUser.householdMemberships?.allObjects as? [UserHouseholdMembership],
                    let household = memberships.first?.household {

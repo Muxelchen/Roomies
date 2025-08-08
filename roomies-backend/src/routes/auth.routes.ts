@@ -1,8 +1,12 @@
 import express, { Request, Response } from 'express';
 import { AuthController } from '@/controllers/AuthController';
-import { authRateLimiter } from '@/middleware/rateLimiter';
+import { 
+  authRateLimiter, 
+  passwordResetRateLimiter 
+} from '@/middleware/rateLimiter.simple';
 import { asyncHandler, createResponse } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
+import { validateRequest, schemas } from '@/middleware/validation';
 
 const router = express.Router();
 const authController = new AuthController();
@@ -16,8 +20,7 @@ router.get('/health', (req: Request, res: Response) => {
   res.json(createResponse({ status: 'healthy' }, 'API is working'));
 });
 
-// Apply rate limiting to all auth routes
-router.use(authRateLimiter);
+// Note: Rate limiting is applied per-route for granular control
 
 /**
  * @route   POST /api/auth/register
@@ -25,9 +28,11 @@ router.use(authRateLimiter);
  * @access  Public
  * @body    { email: string, password: string, name: string }
  */
-router.post('/register', asyncHandler(async (req: Request, res: Response) => {
-  await authController.register(req, res);
-}));
+router.post('/register', 
+  authRateLimiter,  // 5 attempts per 15 minutes
+  validateRequest(schemas.register),
+  authController.register
+);
 
 /**
  * @route   POST /api/auth/login
@@ -35,9 +40,11 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
  * @access  Public
  * @body    { email: string, password: string }
  */
-router.post('/login', asyncHandler(async (req: Request, res: Response) => {
-  await authController.login(req, res);
-}));
+router.post('/login', 
+  authRateLimiter,  // 5 attempts per 15 minutes
+  validateRequest(schemas.login),
+  authController.login
+);
 
 /**
  * @route   POST /api/auth/refresh
@@ -45,27 +52,30 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
  * @access  Public
  * @body    { refreshToken: string }
  */
-router.post('/refresh', asyncHandler(async (req: Request, res: Response) => {
-  await authController.refreshToken(req, res);
-}));
+router.post('/refresh', 
+  validateRequest(schemas.refreshToken),
+  authController.refreshToken
+);
 
 /**
  * @route   POST /api/auth/logout
  * @desc    Logout user (invalidate token)
  * @access  Private
  */
-router.post('/logout', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
-  await authController.logout(req, res);
-}));
+router.post('/logout', 
+  authenticateToken, 
+  authController.logout
+);
 
 /**
  * @route   GET /api/auth/me
  * @desc    Get current user profile
  * @access  Private
  */
-router.get('/me', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
-  await authController.getCurrentUser(req, res);
-}));
+router.get('/me', 
+  authenticateToken, 
+  authController.getCurrentUser
+);
 
 /**
  * @route   POST /api/auth/forgot-password
@@ -73,9 +83,11 @@ router.get('/me', authenticateToken, asyncHandler(async (req: Request, res: Resp
  * @access  Public
  * @body    { email: string }
  */
-router.post('/forgot-password', asyncHandler(async (req: Request, res: Response) => {
-  await authController.forgotPassword(req, res);
-}));
+router.post('/forgot-password', 
+  passwordResetRateLimiter,  // 3 attempts per hour
+  validateRequest(schemas.forgotPassword),
+  authController.forgotPassword
+);
 
 /**
  * @route   POST /api/auth/reset-password
@@ -83,9 +95,11 @@ router.post('/forgot-password', asyncHandler(async (req: Request, res: Response)
  * @access  Public
  * @body    { token: string, newPassword: string }
  */
-router.post('/reset-password', asyncHandler(async (req: Request, res: Response) => {
-  await authController.resetPassword(req, res);
-}));
+router.post('/reset-password', 
+  passwordResetRateLimiter,  // 3 attempts per hour
+  // TODO: Add reset password schema when implementing
+  authController.resetPassword
+);
 
 /**
  * @route   POST /api/auth/change-password
@@ -93,17 +107,20 @@ router.post('/reset-password', asyncHandler(async (req: Request, res: Response) 
  * @access  Private
  * @body    { currentPassword: string, newPassword: string }
  */
-router.post('/change-password', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
-  await authController.changePassword(req, res);
-}));
+router.post('/change-password', 
+  authenticateToken,
+  validateRequest(schemas.changePassword),
+  authController.changePassword
+);
 
 /**
  * @route   DELETE /api/auth/account
  * @desc    Delete user account
  * @access  Private
  */
-router.delete('/account', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
-  await authController.deleteAccount(req, res);
-}));
+router.delete('/account', 
+  authenticateToken, 
+  authController.deleteAccount
+);
 
 export default router;

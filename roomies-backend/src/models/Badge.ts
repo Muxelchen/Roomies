@@ -41,7 +41,7 @@ export class Badge {
   requirement!: number; // The threshold to earn this badge
 
   @Column({ 
-    type: 'enum', 
+    type: 'simple-enum', 
     enum: ['task_completion', 'points_earned', 'household_join', 'streak', 'challenge_completion', 'reward_redemption', 'social', 'special'],
     default: 'task_completion' 
   })

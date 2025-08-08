@@ -10,8 +10,7 @@ struct RecurrenceChip: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 8) {
@@ -25,10 +24,10 @@ struct RecurrenceChip: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.blue : Color(UIColor.tertiarySystemBackground))
+                    .fill(isSelected ? Color.blue : Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
+                            .stroke(isSelected ? Color.blue.opacity(0.3) : Color.gray.opacity(0.12), lineWidth: 1)
                     )
             )
             .foregroundColor(isSelected ? .white : .primary)
@@ -55,8 +54,7 @@ struct UserChip: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 8) {
@@ -82,10 +80,10 @@ struct UserChip: View {
             .frame(minWidth: 80)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.blue : Color(UIColor.tertiarySystemBackground))
+                    .fill(isSelected ? Color.blue : Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
+                            .stroke(isSelected ? Color.blue.opacity(0.3) : Color.gray.opacity(0.12), lineWidth: 1)
                     )
             )
             .foregroundColor(isSelected ? .white : .primary)
@@ -188,7 +186,7 @@ struct EnhancedTextField: View {
 // MARK: - Store Components
 struct EnhancedPointsHeaderView: View {
     @EnvironmentObject private var gameificationManager: GameificationManager
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var pointsScale: CGFloat = 1.0
     @State private var starRotation: Double = 0
     
@@ -299,8 +297,7 @@ struct FloatingActionButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             Image(systemName: icon)

@@ -26,7 +26,9 @@ struct HouseholdManagerView: View {
     
     var body: some View {
         // ✅ FIX: Remove NavigationView to prevent nesting conflicts
-        VStack(spacing: 0) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+            VStack(spacing: 0) {
             if let household = currentHousehold {
                 // Current Household Header
                 HouseholdHeaderView(household: household)
@@ -55,6 +57,7 @@ struct HouseholdManagerView: View {
                     showingCreateHousehold: $showingCreateHousehold,
                     showingJoinHousehold: $showingJoinHousehold
                 )
+            }
             }
         }
         .navigationTitle("Manage Household")
@@ -132,7 +135,14 @@ struct HouseholdHeaderView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.secondarySystemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.blue.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -246,8 +256,15 @@ struct InvitationsTabView: View {
                     }
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue.opacity(0.25), lineWidth: 1)
+                        )
+                        .shadow(color: Color.blue.opacity(0.15), radius: 8, x: 0, y: 4)
+                )
                 
                 Text("Share this code with friends and family")
                     .font(.caption)
@@ -255,13 +272,20 @@ struct InvitationsTabView: View {
                     .multilineTextAlignment(.center)
             }
             .padding()
-            .background(Color(UIColor.systemBackground))
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: Color.blue.opacity(0.15), radius: 10, x: 0, y: 6)
+            )
             
             // Share Options
             VStack(spacing: 12) {
                 Button("Show QR Code") {
+                    PremiumAudioHapticSystem.playModalPresent()
                     showingQRCode = true
                 }
                 .font(.headline)
@@ -271,6 +295,7 @@ struct InvitationsTabView: View {
                 .cornerRadius(25)
                 
                 Button("Share Invitation") {
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
                     shareInvite()
                 }
                 .font(.headline)
@@ -290,11 +315,7 @@ struct InvitationsTabView: View {
     
     private func copyInviteCode() {
         UIPasteboard.general.string = household.inviteCode
-        // Show success feedback using haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
-        
-        // Log the action
+        PremiumAudioHapticSystem.playSuccess()
         LoggingManager.shared.info("Invite code copied to clipboard", category: LoggingManager.Category.general.rawValue)
     }
     

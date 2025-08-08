@@ -28,7 +28,7 @@ export class Activity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'enum', enum: [
+  @Column({ type: 'simple-enum', enum: [
     'task_completed', 'task_created', 'task_assigned',
     'reward_redeemed', 'challenge_joined', 'challenge_completed',
     'member_joined', 'member_left', 'household_created',

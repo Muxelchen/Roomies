@@ -89,7 +89,11 @@ struct RoomiesStreakCounterView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.orange.opacity(0.2), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: Color.orange.opacity(0.25), radius: 10, x: 0, y: 5)
         )
         .onAppear {
             startAnimations()

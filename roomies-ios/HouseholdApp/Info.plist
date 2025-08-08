@@ -79,8 +79,6 @@
 	<string>Roomies needs photo library access to select task completion photos and manage household memories.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Roomies uses location to help organize tasks by room and provide location-based reminders.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Roomies uses Face ID to secure your household data and provide quick authentication.</string>
 	<key>NSCalendarUsageDescription</key>
 	<string>Roomies needs calendar access to sync household tasks with your calendar and set reminders for due dates.</string>
 	<key>NSRemindersUsageDescription</key>
@@ -96,5 +94,28 @@
 	<false/>
 	<key>MTLGPUFamilyApple1</key>
 	<false/>
+    <!-- ✅ Allow local HTTP for development (ATS exceptions for localhost) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+            <key>127.0.0.1</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
 </dict>
 </plist>

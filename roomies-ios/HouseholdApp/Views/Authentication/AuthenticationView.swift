@@ -1,590 +1,255 @@
 import SwiftUI
-
-// Namespace conflict resolution
-
+// Authentication screen wired to IntegratedAuthenticationManager.signIn/signUp
 struct AuthenticationView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
-    @EnvironmentObject private var localizationManager: LocalizationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    
     @State private var isSignUp = false
+    @State private var name = ""
     @State private var email = ""
     @State private var password = ""
-    @State private var confirmPassword = ""
-    @State private var name = ""
-    @State private var showingPassword = false
-    @State private var isLoading = false
-    @State private var logoRotation: Double = 0
-    @State private var formSlideOffset: CGFloat = 50
-    @State private var formOpacity: Double = 0
-    @State private var particleAnimation = false
+    @State private var showPassword = false
+    
+    private var isPrimaryActionDisabled: Bool {
+        if isSignUp {
+            return !(authManager.isValidName(name) && authManager.isValidEmail(email) && authManager.isValidPassword(password))
+        } else {
+            return !(authManager.isValidEmail(email) && !password.isEmpty)
+        }
+    }
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Animated background with floating elements
-                RoomiesAuthBackground()
+                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
                 
-                ScrollView {
-                    VStack(spacing: 40) {
-                        Spacer(minLength: 60)
-                        
-                        // Enhanced App Logo with animations
-                        VStack(spacing: 20) {
-                            ZStack {
-                                // Glowing background effect
-                                Circle()
-                                    .fill(
-                                        RadialGradient(
-                                            colors: [
-                                                Color.blue.opacity(0.3),
-                                                Color.purple.opacity(0.2),
-                                                Color.clear
-                                            ],
-                                            center: .center,
-                                            startRadius: 30,
-                                            endRadius: 80
-                                        )
-                                    )
-                                    .frame(width: 140, height: 140)
-                                    .blur(radius: 10)
-                                    .scaleEffect(particleAnimation ? 1.2 : 0.8)
-                                
-                                // Main logo circle
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color.blue, Color.purple],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 120, height: 120)
-                                    .overlay(
-                                        Image(systemName: "house.fill")
-                                            .font(.system(size: 50, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .rotationEffect(.degrees(logoRotation))
-                                    )
-                                    .shadow(color: .blue.opacity(0.4), radius: 20, x: 0, y: 10)
-                            }
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.3)) {
-                                    logoRotation += 360
-                                }
-                            }
-                            
-                            VStack(spacing: 8) {
-                                Text(localizationManager.localizedString("app.name"))
-                                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [.blue, .purple],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                
-                                Text("Make household management fun!")
-                                    .font(.system(.headline, design: .rounded, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        // Enhanced Form with slide-in animation
-                        VStack(spacing: 24) {
-                            // Form toggle with smooth animation
-                            RoomiesSegmentedControl(isSignUp: $isSignUp)
-                            
-                            // Form fields with staggered animations
-                            VStack(spacing: 20) {
-                                if isSignUp {
-                                    RoomiesTextField(
-                                        title: localizationManager.localizedString("auth.name"),
-                                        text: $name,
-                                        icon: "person.fill",
-                                        keyboardType: .default,
-                                        isSecure: false
-                                    )
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                                        removal: .move(edge: .leading).combined(with: .opacity)
-                                    ))
-                                }
-                                
-                                RoomiesTextField(
-                                    title: localizationManager.localizedString("auth.email"),
-                                    text: $email,
-                                    icon: "envelope.fill",
-                                    keyboardType: .emailAddress,
-                                    isSecure: false
-                                )
-                                
-                                RoomiesTextField(
-                                    title: localizationManager.localizedString("auth.password"),
-                                    text: $password,
-                                    icon: "lock.fill",
-                                    keyboardType: .default,
-                                    isSecure: !showingPassword,
-                                    showPasswordToggle: true,
-                                    showingPassword: $showingPassword
-                                )
-                                
-                                if isSignUp {
-                                    RoomiesTextField(
-                                        title: localizationManager.localizedString("auth.confirm_password"),
-                                        text: $confirmPassword,
-                                        icon: "lock.fill",
-                                        keyboardType: .default,
-                                        isSecure: true
-                                    )
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                                        removal: .move(edge: .leading).combined(with: .opacity)
-                                    ))
-                                }
-                            }
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isSignUp)
-                            
-                            // Error Message with animation
-                            if !authManager.errorMessage.isEmpty {
-                                RoomiesErrorMessage(message: authManager.errorMessage)
-                                    .transition(.scale.combined(with: .opacity))
-                            }
-                            
-                            // Enhanced Action Button
-                            RoomiesActionButton(
-                                title: isSignUp ? 
-                                    localizationManager.localizedString("auth.sign_up") : 
-                                    localizationManager.localizedString("auth.sign_in"),
-                                isLoading: isLoading,
-                                isEnabled: isFormValid,
-                                action: performAuthentication
-                            )
-                            
-                            // Demo Login Button - Only in Debug Mode
-                            #if DEBUG
-                            if !isSignUp {
-                                RoomiesDemoButton(action: quickDemoLogin)
-                            }
-                            #endif
-                            
-                            // Toggle Mode Button
-                            Button(action: { 
-                                withAnimation(.spring()) {
-                                    isSignUp.toggle()
-                                }
-                            }) {
-                                Text(isSignUp ? 
-                                     localizationManager.localizedString("auth.have_account") :
-                                     localizationManager.localizedString("auth.no_account"))
-                                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        .padding(.horizontal, 30)
-                        .offset(y: formSlideOffset)
-                        .opacity(formOpacity)
-                        .onAppear {
-                            withAnimation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.3)) {
-                                formSlideOffset = 0
-                                formOpacity = 1
-                            }
-                        }
-                        
-                        Spacer(minLength: 60)
+                VStack(spacing: 20) {
+                    authHeader
+                    authModePicker
+                    authFormCard
+                    
+                    if !authManager.errorMessage.isEmpty {
+                        Text(authManager.errorMessage)
+                            .font(.system(.footnote, design: .rounded))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                     }
+                    
+                    VStack(spacing: 12) {
+                        PremiumButton(isSignUp ? "Create account" : "Sign in", icon: "arrow.right.circle.fill", sectionColor: .profile) {
+                            PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                            if isSignUp {
+                                authManager.signUp(
+                                    email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    password: password,
+                                    name: name.trimmingCharacters(in: .whitespacesAndNewlines)
+                                )
+                            } else {
+                                authManager.signIn(
+                                    email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    password: password
+                                )
+                            }
+                        }
+                        .disabled(isPrimaryActionDisabled || authManager.isLoading)
+                        
+                        Button {
+                            PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            authManager.demoSignIn()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "wand.and.stars")
+                                Text("Try Demo (Skip Sign-In)")
+                            }
+                            .font(.system(.subheadline, design: .rounded))
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(UIColor.secondarySystemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .disabled(authManager.isLoading)
+                        .buttonStyle(.plain)
+                        
+                        Button {
+                            PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.8)) {
+                                isSignUp.toggle()
+                            }
+                        } label: {
+                            Text(isSignUp ? "Already have an account? Sign in" : "New here? Create an account")
+                                .font(.system(.subheadline, design: .rounded))
+                                .fontWeight(.medium)
+                        }
+                        .disabled(authManager.isLoading)
+                    }
+                }
+                .padding(22)
+                .frame(maxWidth: 520)
+                
+                if authManager.isLoading {
+                    Color.black.opacity(0.05).ignoresSafeArea()
+                    ProgressView()
+                        .scaleEffect(1.4)
+                        .progressViewStyle(CircularProgressViewStyle())
                 }
             }
             .navigationBarHidden(true)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                    particleAnimation = true
-                }
-            }
         }
     }
-    
-    private var isFormValid: Bool {
-        // ✅ FIXED: Use inline validation for input validation
-        if isSignUp {
-            return isValidEmail(email) && 
-                   isValidPassword(password) && 
-                   isValidName(name) && 
-                   password == confirmPassword && 
-                   !confirmPassword.isEmpty
-        } else {
-            return isValidEmail(email) && !password.isEmpty
-        }
-    }
-    
-    private func performAuthentication() {
-        guard !email.isEmpty && !password.isEmpty else {
-            authManager.errorMessage = "Please fill in all fields"
-            return
-        }
-        
-        if isSignUp {
-            guard !name.isEmpty else {
-                authManager.errorMessage = "Please enter your name"
-                return
-            }
-            
-            guard isValidEmail(email) else {
-                authManager.errorMessage = "Please enter a valid email address"
-                return
-            }
-            
-            guard isValidPassword(password) else {
-                authManager.errorMessage = "Password must be at least 6 characters long and contain both letters and numbers"
-                return
-            }
-            
-            guard password == confirmPassword else {
-                authManager.errorMessage = "Passwords do not match"
-                return
-            }
-        }
-        
-        isLoading = true
-        authManager.errorMessage = ""
-        
-        // ✅ FIX: Use Task instead of blocking DispatchQueue.main.asyncAfter
-        Task {
-            // Small delay for UI feedback without blocking
-            try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-            
-            await MainActor.run {
-                if self.isSignUp {
-                    self.authManager.signUp(email: self.email.trimmingCharacters(in: .whitespacesAndNewlines), 
-                                           password: self.password, 
-                                           name: self.name.trimmingCharacters(in: .whitespacesAndNewlines))
-                } else {
-                    self.authManager.signIn(email: self.email.trimmingCharacters(in: .whitespacesAndNewlines), 
-                                           password: self.password)
-                }
-                self.isLoading = false
-            }
-        }
-    }
-    
-    private func quickDemoLogin() {
-        isLoading = true
-        authManager.errorMessage = ""
-        
-        // Automatisch mit Demo-Daten einloggen
-        email = "admin@demo.com"
-        password = "demo123"
-        
-        // ✅ FIX: Remove incorrect Task usage that could cause crashes
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.authManager.signIn(email: "admin@demo.com", password: "demo123")
-            self.isLoading = false
-        }
-    }
-    
-    // MARK: - Inline Validation Methods
-    
-    private func isValidEmail(_ email: String) -> Bool {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Basic checks
-        guard !trimmedEmail.isEmpty,
-              trimmedEmail.contains("@"),
-              trimmedEmail.contains(".") else {
-            return false
-        }
-        
-        // Regex pattern for email validation
-        let emailRegex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
-        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
-        
-        return emailPredicate.evaluate(with: trimmedEmail)
-    }
-    
-    private func isValidPassword(_ password: String) -> Bool {
-        let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Check minimum length
-        guard trimmedPassword.count >= 6 else {
-            return false
-        }
-        
-        // Check for at least one letter
-        let letterRegex = ".*[a-zA-Z]+.*"
-        let letterPredicate = NSPredicate(format: "SELF MATCHES %@", letterRegex)
-        guard letterPredicate.evaluate(with: trimmedPassword) else {
-            return false
-        }
-        
-        // Check for at least one number
-        let numberRegex = ".*[0-9]+.*"
-        let numberPredicate = NSPredicate(format: "SELF MATCHES %@", numberRegex)
-        guard numberPredicate.evaluate(with: trimmedPassword) else {
-            return false
-        }
-        
-        return true
-    }
-    
-    private func isValidName(_ name: String) -> Bool {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Check length
-        guard trimmedName.count >= 2,
-              trimmedName.count <= 50 else {
-            return false
-        }
-        
-        // Check for valid characters (letters, spaces, hyphens, apostrophes)
-        let nameRegex = #"^[a-zA-Z\s\-']+$"#
-        let namePredicate = NSPredicate(format: "SELF MATCHES %@", nameRegex)
-        
-        return namePredicate.evaluate(with: trimmedName)
-    }
-}
 
-struct AuthenticationView_Previews: PreviewProvider {
-    static var previews: some View {
-        AuthenticationView()
-            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
-            .environmentObject(LocalizationManager.shared)
-    }
-}
-
-// MARK: - Enhanced Authentication Components
-
-struct RoomiesAuthBackground: View {
-    var body: some View {
-        // Clean gradient background without floating elements
-        LinearGradient(
-            colors: [
-                Color(UIColor.systemBackground),
-                Color.blue.opacity(0.05),
-                Color.purple.opacity(0.03)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
-    }
-}
-
-
-struct RoomiesSegmentedControl: View {
-    @Binding var isSignUp: Bool
+    // MARK: - Subviews
+    private var accentColor: Color { PremiumDesignSystem.SectionColor.profile.primary }
     
-    var body: some View {
-        HStack(spacing: 0) {
-            Button("Sign In") {
-                withAnimation(.spring()) {
-                    isSignUp = false
-                }
-            }
-            .font(.system(.headline, design: .rounded, weight: .semibold))
-            .foregroundColor(isSignUp ? .secondary : .white)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(isSignUp ? Color.clear : Color.blue)
-            )
-            
-            Button("Sign Up") {
-                withAnimation(.spring()) {
-                    isSignUp = true
-                }
-            }
-            .font(.system(.headline, design: .rounded, weight: .semibold))
-            .foregroundColor(isSignUp ? .white : .secondary)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(isSignUp ? Color.blue : Color.clear)
-            )
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 25)
-                .fill(Color(UIColor.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 25)
-                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-        )
-    }
-}
-
-struct RoomiesTextField: View {
-    let title: String
-    @Binding var text: String
-    let icon: String
-    let keyboardType: UIKeyboardType
-    let isSecure: Bool
-    var showPasswordToggle: Bool = false
-    @Binding var showingPassword: Bool
-    
-    init(title: String, text: Binding<String>, icon: String, keyboardType: UIKeyboardType = .default, isSecure: Bool = false, showPasswordToggle: Bool = false, showingPassword: Binding<Bool>? = nil) {
-        self.title = title
-        self._text = text
-        self.icon = icon
-        self.keyboardType = keyboardType
-        self.isSecure = isSecure
-        self.showPasswordToggle = showPasswordToggle
-        self._showingPassword = showingPassword ?? .constant(false)
-    }
-    
-    var body: some View {
-        HStack(spacing: 16) {
+    private var authHeader: some View {
+        VStack(spacing: 10) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 44, height: 44)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.blue)
+                Circle()
+                    .stroke(
+                        AngularGradient(
+                            colors: [accentColor.opacity(0.5), accentColor.opacity(0.2), accentColor.opacity(0.6)],
+                            center: .center
+                        ),
+                        lineWidth: 6
+                    )
+                    .frame(width: 92, height: 92)
+                    .shadow(color: accentColor.opacity(0.08), radius: 10, x: 0, y: 4)
+                Circle()
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .frame(width: 72, height: 72)
+                    .overlay(
+                        Image(systemName: "house.fill")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(LinearGradient(colors: [accentColor, accentColor.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    )
+            }
+            .padding(.bottom, 2)
+            
+            Text(isSignUp ? "Create your Roomies account" : "Welcome back")
+                .font(.system(.title2, design: .rounded))
+                .fontWeight(.bold)
+            Text(isSignUp ? "Sign up to start managing your household" : "Sign in to continue")
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    private var authModePicker: some View {
+        HStack(spacing: 8) {
+            modeChip(title: "Sign In", isSelected: !isSignUp) { isSignUp = false }
+            modeChip(title: "Sign Up", isSelected: isSignUp) { isSignUp = true }
+        }
+        .padding(.horizontal, 6)
+    }
+    
+    private func modeChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
+            withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.8)) { action() }
+        }) {
+            Text(title)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundColor(isSelected ? .white : .primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(isSelected ? accentColor : Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    isSelected ? Color.clear : Color(UIColor.separator).opacity(0.2),
+                                    lineWidth: 1
+                                )
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var authFormCard: some View {
+        VStack(spacing: 14) {
+            if isSignUp {
+                TextField("Name", text: $name)
+                    .textContentType(.name)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled(true)
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(UIColor.secondarySystemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                            )
+                    )
             }
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(.caption, design: .rounded, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    if isSecure && !showingPassword {
-                        SecureField("", text: $text)
+            TextField("Email", text: $email)
+                .keyboardType(.emailAddress)
+                .textContentType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                        )
+                )
+            
+            HStack {
+                Group {
+                    if showPassword {
+                        TextField("Password", text: $password)
+                            .textContentType(.password)
                     } else {
-                        TextField("", text: $text)
-                            .keyboardType(keyboardType)
-                            .autocapitalization(keyboardType == .emailAddress ? .none : .words)
-                            .disableAutocorrection(keyboardType == .emailAddress)
-                    }
-                    
-                    if showPasswordToggle {
-                        Button(action: { 
-                            showingPassword.toggle()
-                        }) {
-                            Image(systemName: showingPassword ? "eye.slash.fill" : "eye.fill")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
+                        SecureField("Password", text: $password)
+                            .textContentType(.password)
                     }
                 }
-                .font(.system(.body, design: .rounded))
+                Button(action: { withAnimation(reduceMotion ? .none : .easeInOut) { showPassword.toggle() } }) {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .foregroundColor(.secondary)
+                }
             }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                    )
+            )
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            LinearGradient(
+                                colors: [accentColor.opacity(0.14), accentColor.opacity(0.06)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 )
+                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
         )
-    }
-}
-
-struct RoomiesErrorMessage: View {
-    let message: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
-            
-            Text(message)
-                .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundColor(.red)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.1))
-        )
-    }
-}
-
-struct RoomiesActionButton: View {
-    let title: String
-    let isLoading: Bool
-    let isEnabled: Bool
-    let action: () -> Void
-    
-    @State private var isPressed = false
-    
-    var body: some View {
-        Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            action()
-        }) {
-            HStack(spacing: 12) {
-                if isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.9)
-                } else {
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.title3)
-                }
-                
-                Text(title)
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(
-                        LinearGradient(
-                            colors: isEnabled ? [.blue, .purple] : [.gray, .gray],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .shadow(color: isEnabled ? .blue.opacity(0.4) : .clear, radius: 12, x: 0, y: 6)
-            )
-        }
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .disabled(!isEnabled || isLoading)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
-        .onLongPressGesture(minimumDuration: 0) {
-            // Do nothing
-        } onPressingChanged: { pressing in
-            withAnimation(.spring()) {
-                isPressed = pressing
-            }
-        }
-    }
-}
-
-struct RoomiesDemoButton: View {
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.title3)
-                
-                Text("Demo Login")
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(
-                        LinearGradient(
-                            colors: [.green, .mint],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
-            )
-        }
     }
 }

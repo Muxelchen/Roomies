@@ -10,7 +10,9 @@ struct PremiumAudioSettingsView: View {
     
     var body: some View {
         NavigationView {
-            Form {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+                Form {
                 // MARK: - Audio Controls Section
                 Section(header: Label("Audio Controls", systemImage: "speaker.wave.3")) {
                     // Master Audio Toggle
@@ -288,6 +290,7 @@ struct PremiumAudioSettingsView: View {
                         }
                     }
                     .foregroundColor(.primary)
+                }
                 }
             }
             .navigationTitle("Premium Audio")

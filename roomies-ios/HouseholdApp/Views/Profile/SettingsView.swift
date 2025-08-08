@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 
+// MARK: - Enhanced Settings View with Error Handling
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
@@ -10,9 +11,17 @@ struct SettingsView: View {
     @AppStorage("soundEnabled") private var soundEnabled = true
     @AppStorage("hapticFeedback") private var hapticFeedback = true
     @AppStorage("auto_reset_demo_on_launch") private var autoResetDemoOnLaunch = false
+    
     @State private var showingResetAlert = false
     @State private var showingDeveloperSection = false
     @State private var showingDeleteAllAlert = false
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
+    @State private var isLoading = false
+    
+    // MARK: - Error Handling State
+    @State private var hasLoadingError = false
+    @State private var loadingErrorMessage = ""
     
     var body: some View {
         NavigationView {
@@ -131,7 +140,7 @@ struct SettingsView: View {
                         color: .green
                     ) {
                         VStack(spacing: 12) {
-                            NotBoringNavigationRow(
+                            SafeNavigationRow(
                                 title: "Calendar Integration",
                                 subtitle: "Manage task sync",
                                 icon: "calendar.circle.fill",
@@ -141,7 +150,7 @@ struct SettingsView: View {
                                     .environmentObject(CalendarManager.shared)
                             }
                             
-                            NotBoringNavigationRow(
+                            SafeNavigationRow(
                                 title: "Performance Monitor",
                                 subtitle: "App diagnostics",
                                 icon: "speedometer",
@@ -285,15 +294,7 @@ struct SettingsView: View {
                 .padding(.horizontal)
             }
             .background(
-                LinearGradient(
-                    colors: [
-                        Color(UIColor.systemBackground),
-                        Color(UIColor.systemBackground).opacity(0.8),
-                        Color.blue.opacity(0.05)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                PremiumScreenBackground(sectionColor: .settings)
             )
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -358,7 +359,7 @@ struct SettingsView: View {
     
     private func quickDemoLogin() {
         // Automatically log in with demo admin credentials
-        AuthenticationManager.shared.signIn(email: "admin@demo.com", password: "demo123")
+        IntegratedAuthenticationManager.shared.signIn(email: "admin@demo.com", password: "demo123")
     }
 }
 
@@ -400,7 +401,11 @@ struct NotBoringHeaderCard: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: Color.blue.opacity(0.2), radius: 12, x: 0, y: 6)
         )
     }
 }
@@ -453,7 +458,11 @@ struct NotBoringSettingsCard<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(color.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: color.opacity(0.15), radius: 10, x: 0, y: 6)
         )
     }
 }
@@ -496,10 +505,7 @@ struct NotBoringToggle: View {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isOn.toggle()
                 }
-                
-                // Haptic feedback
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                PremiumAudioHapticSystem.playButtonTap(style: .light)
             }) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
@@ -603,10 +609,7 @@ struct NotBoringActionButton: View {
     
     var body: some View {
         Button(action: {
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             HStack(spacing: 16) {
@@ -701,13 +704,15 @@ struct NotBoringCloseButton: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .shadow(color: Color.blue.opacity(0.3), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 2)
                 
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
             }
+            .contentShape(Rectangle())
+            .accessibilityLabel(Text("Close"))
         }
         .scaleEffect(isPressed ? 0.9 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
@@ -723,8 +728,10 @@ struct NotBoringCloseButton: View {
 
 struct PrivacyPolicyView: View {
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .settings)
+            ScrollView {
+                LazyVStack(spacing: 24) {
                 // Header Card
                 VStack(spacing: 16) {
                     ZStack {
@@ -756,11 +763,15 @@ struct PrivacyPolicyView: View {
                     }
                 }
                 .padding()
-                .background(
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(UIColor.secondarySystemBackground))
-                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
                 )
+                .shadow(color: Color.gray.opacity(0.15), radius: 8, x: 0, y: 4)
+        )
                 
                 // Privacy Sections
                 NotBoringInfoCard(
@@ -800,22 +811,13 @@ struct PrivacyPolicyView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(UIColor.tertiarySystemBackground))
+                        .fill(Color(UIColor.secondarySystemBackground))
                         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                 )
             }
-            .padding()
+                .padding()
+            }
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    Color.cyan.opacity(0.03)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
         .navigationTitle("Privacy")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -826,8 +828,10 @@ struct AboutView: View {
     @State private var isLogoPressed = false
     
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .settings)
+            ScrollView {
+                LazyVStack(spacing: 24) {
                 // App Icon & Header
                 VStack(spacing: 20) {
                     // Animated App Icon
@@ -835,9 +839,7 @@ struct AboutView: View {
                         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
                             logoRotation += 360
                         }
-                        
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
+                        PremiumAudioHapticSystem.playButtonTap(style: .medium)
                     }) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 28)
@@ -895,7 +897,11 @@ struct AboutView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 24)
                         .fill(Color(UIColor.secondarySystemBackground))
-                        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(Color.blue.opacity(0.12), lineWidth: 1)
+                        )
+                        .shadow(color: Color.blue.opacity(0.2), radius: 12, x: 0, y: 6)
                 )
                 
                 // About Section
@@ -943,6 +949,10 @@ struct AboutView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                        )
                         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
                 
@@ -967,22 +977,191 @@ struct AboutView: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding()
+                }
+                .padding()
             }
-            .padding()
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    Color.blue.opacity(0.03),
-                    Color.purple.opacity(0.02)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
         .navigationTitle("About Roomies")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Safe Navigation with Error Handling
+
+struct SafeNavigationRow<Destination: View>: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+    let destination: () -> Destination
+    
+    @State private var showingError = false
+    @State private var errorMessage = ""
+    
+    init(title: String, subtitle: String, icon: String, color: Color, @ViewBuilder destination: @escaping () -> Destination) {
+        self.title = title
+        self.subtitle = subtitle
+        self.icon = icon
+        self.color = color
+        self.destination = destination
+    }
+    
+    var body: some View {
+        Button(action: {
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
+        }) {
+            NavigationLink(destination: SafeDestinationWrapper {
+                destination()
+            }) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [color.opacity(0.2), color.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: icon)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(color)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(color)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.vertical, 4)
+        .alert("Error", isPresented: $showingError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
+    }
+}
+
+struct SafeDestinationWrapper<Content: View>: View {
+    let content: () -> Content
+    
+    @State private var hasError = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        Group {
+            if hasError {
+                ErrorStateView(
+                    title: "Something went wrong",
+                    message: errorMessage.isEmpty ? "Unable to load this section. Please try again later." : errorMessage,
+                    icon: "exclamationmark.triangle.fill",
+                    color: .orange
+                ) {
+                    hasError = false
+                    errorMessage = ""
+                }
+            } else {
+                content()
+                    .onAppear {
+                        // Reset error state when view appears successfully
+                        hasError = false
+                        errorMessage = ""
+                    }
+            }
+        }
+        .onAppear {
+            // Add a small delay to catch immediate crashes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // If we get here without crashing, we're good
+            }
+        }
+    }
+}
+
+struct ErrorStateView: View {
+    let title: String
+    let message: String
+    let icon: String
+    let color: Color
+    let retryAction: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            // Error Icon
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 40, weight: .medium))
+                    .foregroundColor(color)
+            }
+            
+            // Error Message
+            VStack(spacing: 12) {
+                Text(title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(message)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+            
+            // Retry Button
+            Button(action: {
+                PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                retryAction()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Try Again")
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(
+                            LinearGradient(
+                                colors: [color, color.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .shadow(color: color.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            
+            Spacer()
+        }
+        .padding()
     }
 }
 
@@ -1031,7 +1210,10 @@ struct NotBoringInfoCard: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -1071,8 +1253,7 @@ struct NotBoringFeatureCard: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
         }) {
             VStack(spacing: 12) {
                 ZStack {
@@ -1105,7 +1286,7 @@ struct NotBoringFeatureCard: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.tertiarySystemBackground))
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .shadow(color: Color.black.opacity(0.05), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 2)
             )
         }

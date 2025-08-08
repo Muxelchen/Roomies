@@ -3,6 +3,7 @@ import CoreData
 
 struct ProfileView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("currentUserName") private var currentUserName = "User"
     @AppStorage("currentUserId") private var currentUserId = ""
     @State private var showingHouseholdManager = false
@@ -13,7 +14,8 @@ struct ProfileView: View {
     
     var body: some View {
         ZStack {
-            // Background with animated particles
+            PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+            // Background with animated particles (subtle)
             RoomiesAnimatedBackground()
             
             ScrollView {
@@ -41,17 +43,7 @@ struct ProfileView: View {
                 .padding(.horizontal)
             }
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    Color.blue.opacity(0.03),
-                    Color.purple.opacity(0.02)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .background(Color.clear)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showingHouseholdManager) {
@@ -64,8 +56,10 @@ struct ProfileView: View {
             StatisticsView()
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                showingFloatingParticles = true
+            if !reduceMotion {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    showingFloatingParticles = true
+                }
             }
         }
     }
@@ -76,6 +70,7 @@ struct ProfileView: View {
 struct RoomiesAnimatedBackground: View {
     @State private var particles: [FloatingParticle] = []
     @State private var animateParticles = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         ZStack {
@@ -88,7 +83,6 @@ struct RoomiesAnimatedBackground: View {
                     .scaleEffect(animateParticles ? 1.2 : 0.8)
                     .animation(
                         .easeInOut(duration: Double.random(in: 2...4))
-                        .repeatForever(autoreverses: true)
                         .delay(particle.delay),
                         value: animateParticles
                     )
@@ -96,8 +90,10 @@ struct RoomiesAnimatedBackground: View {
         }
         .onAppear {
             generateParticles()
-            withAnimation {
-                animateParticles = true
+            if !reduceMotion {
+                withAnimation {
+                    animateParticles = true
+                }
             }
         }
     }
@@ -136,8 +132,7 @@ struct RoomiesStreakCounterView: View {
                 flameScale = flameScale == 1.0 ? 1.3 : 1.0
             }
             
-            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .heavy)
         }) {
             HStack(spacing: 16) {
                 // Animated Flame
@@ -210,8 +205,14 @@ struct RoomiesStreakCounterView: View {
             )
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            // Streak animation - single pulse to prevent battery drain
+            withAnimation(.easeInOut(duration: 1.5)) {
                 streakAnimation = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 1.5)) {
+                    streakAnimation = false
+                }
             }
         }
     }
@@ -221,6 +222,7 @@ struct EnhancedProfileHeaderView: View {
     @AppStorage("currentUserName") private var currentUserName = "User"
     @State private var profileScale: CGFloat = 0.9
     @State private var shimmerAnimation = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         VStack(spacing: 16) {
@@ -279,12 +281,22 @@ struct EnhancedProfileHeaderView: View {
         }
         .padding(.vertical, 20)
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.8)) {
                 profileScale = 1.0
             }
             
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                shimmerAnimation = true
+            // Shimmer animation - reduce/eliminate under Reduce Motion
+            if !reduceMotion {
+                Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+                    withAnimation(.easeInOut(duration: 2.0)) {
+                        shimmerAnimation = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.easeInOut(duration: 2.0)) {
+                            shimmerAnimation = false
+                        }
+                    }
+                }
             }
         }
     }
@@ -302,8 +314,7 @@ struct EnhancedStatCardView: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
         }) {
             VStack(spacing: 12) {
                 // Enhanced Icon with glow
@@ -342,7 +353,7 @@ struct EnhancedStatCardView: View {
             .padding(.vertical, 20)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(UIColor.tertiarySystemBackground))
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(color.opacity(0.3), lineWidth: 1)
@@ -366,9 +377,15 @@ struct EnhancedStatCardView: View {
                 cardScale = 1.0
             }
             
-            // Icon bounce animation
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(Double.random(in: 0.5...1.5))) {
+            // Icon bounce animation - single animation to prevent battery drain
+            let delay = Double.random(in: 0.5...1.5)
+            withAnimation(.easeInOut(duration: 2.0).delay(delay)) {
                 iconBounce = 1.1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0 + delay) {
+                withAnimation(.easeInOut(duration: 2.0)) {
+                    iconBounce = 1.0
+                }
             }
         }
     }
@@ -433,7 +450,10 @@ struct EnhancedStatisticsGridView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -504,7 +524,10 @@ struct EnhancedRecentBadgesView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -588,9 +611,14 @@ struct EnhancedBadgeView: View {
                 badgeScale = 1.0
             }
             
-            // Glow animation
-            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true).delay(1.0 + animationDelay)) {
+            // Glow animation - single pulse to prevent battery drain
+            withAnimation(.easeInOut(duration: 3.0).delay(1.0 + animationDelay)) {
                 badgeGlow = 0.8
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0 + animationDelay) {
+                withAnimation(.easeInOut(duration: 3.0)) {
+                    badgeGlow = 0.3
+                }
             }
         }
     }
@@ -653,8 +681,7 @@ struct RoomiesMenuCard: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             HStack(spacing: 16) {
@@ -703,6 +730,10 @@ struct RoomiesMenuCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                    )
                     .shadow(color: Color.black.opacity(0.1), radius: isPressed ? 4 : 8, x: 0, y: isPressed ? 2 : 4)
             )
         }

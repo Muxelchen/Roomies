@@ -3,6 +3,8 @@ import CoreData
 
 struct LeaderboardView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var selectedPeriod: TimePeriod = .week
     
     enum TimePeriod: String, CaseIterable {
@@ -33,11 +35,15 @@ struct LeaderboardView: View {
     private var users: FetchedResults<User>
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .leaderboard)
+            VStack(spacing: 0) {
             // Enhanced Period Picker
             RoomiesLeaderboardTabPicker(selectedPeriod: $selectedPeriod)
                 .padding(.horizontal)
                 .padding(.top, 10)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text("Time period"))
             
             if users.isEmpty {
                 EnhancedEmptyLeaderboardView()
@@ -79,7 +85,7 @@ struct LeaderboardView: View {
                                         EnhancedLeaderboardRowView(
                                             user: user,
                                             rank: index + 1,
-                                            isCurrentUser: false, // TODO: Check if current user
+                                            isCurrentUser: user == authManager.currentUser,
                                             animationDelay: Double(index) * 0.05
                                         )
                                     }
@@ -91,18 +97,9 @@ struct LeaderboardView: View {
                     .padding(.bottom, 20)
                 }
             }
+            }
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    selectedPeriod.color.opacity(0.03)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .navigationTitle("Leaderboard")
+            .navigationTitle("Leaderboard")
         .navigationBarTitleDisplayMode(.large)
     }
 }
@@ -112,6 +109,7 @@ struct LeaderboardView: View {
 struct RoomiesLeaderboardTabPicker: View {
     @Binding var selectedPeriod: LeaderboardView.TimePeriod
     @Namespace private var periodAnimation
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         HStack(spacing: 0) {
@@ -121,17 +119,22 @@ struct RoomiesLeaderboardTabPicker: View {
                     isSelected: selectedPeriod == period,
                     namespace: periodAnimation
                 ) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedPeriod = period
                     }
                 }
+                .accessibilityLabel(Text(period.rawValue))
+                .accessibilityValue(Text(selectedPeriod == period ? "Selected" : ""))
             }
         }
         .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.tertiarySystemBackground))
-                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -146,8 +149,7 @@ struct RoomiesPeriodButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 6) {
@@ -161,6 +163,8 @@ struct RoomiesPeriodButton: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
             .background(
                 Group {
                     if isSelected {
@@ -294,9 +298,13 @@ struct Enhanced3DPodiumView: View {
             // Initialize animation array
             podiumAnimation = Array(repeating: 0.8, count: users.count)
             
-            // Crown rotation animation
-            withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
-                crownRotation = 360
+            // Crown rotation animation - single finite rotation honoring Reduce Motion
+            if UIAccessibility.isReduceMotionEnabled {
+                crownRotation = 0
+            } else {
+                withAnimation(.linear(duration: 2.0)) {
+                    crownRotation += 360
+                }
             }
             
             // Staggered podium animations
@@ -336,8 +344,7 @@ struct Enhanced3DPodiumPositionView: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             // TODO: Navigate to user profile
         }) {
             VStack(spacing: 12) {
@@ -456,9 +463,14 @@ struct Enhanced3DPodiumPositionView: View {
             }
         }
         .onAppear {
-            // Glow animation
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(animationDelay)) {
+            // Glow animation - single pulse to prevent battery drain
+            withAnimation(.easeInOut(duration: 2.0).delay(animationDelay)) {
                 avatarGlow = 0.6
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0 + animationDelay) {
+                withAnimation(.easeInOut(duration: 2.0)) {
+                    avatarGlow = 0.3
+                }
             }
         }
     }
@@ -490,8 +502,7 @@ struct EnhancedLeaderboardRowView: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             // TODO: Navigate to user profile
         }) {
             HStack(spacing: 16) {
@@ -593,13 +604,13 @@ struct EnhancedLeaderboardRowView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isCurrentUser ? Color.blue.opacity(0.1) : Color(UIColor.secondarySystemBackground))
+                    .fill(Color(UIColor.secondarySystemBackground))
                     .shadow(color: Color.black.opacity(0.05), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
-                                isCurrentUser ? Color.blue.opacity(0.3) : Color.clear,
-                                lineWidth: isCurrentUser ? 1 : 0
+                                isCurrentUser ? Color.blue.opacity(0.3) : Color.gray.opacity(0.12),
+                                lineWidth: 1
                             )
                     )
             )
@@ -755,8 +766,14 @@ struct EnhancedEmptyLeaderboardView: View {
                 iconScale = 1.0
             }
             
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5)) {
+            // Icon bounce - single animation to prevent battery drain
+            withAnimation(.easeInOut(duration: 1.0).delay(0.5)) {
                 iconBounce = 1.1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    iconBounce = 1.0
+                }
             }
             
             withAnimation(.easeIn(duration: 0.5).delay(0.4)) {

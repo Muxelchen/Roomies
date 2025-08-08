@@ -4,7 +4,7 @@ import CoreData
 struct CreateHouseholdView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     
     @State private var householdName = ""
     @State private var userName = ""
@@ -21,7 +21,9 @@ struct CreateHouseholdView: View {
     
     var body: some View {
         NavigationView {
-            Form {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+                Form {
                 Section("Household Details") {
                     TextField("Household Name", text: $householdName)
                         .autocapitalization(.words)
@@ -77,7 +79,7 @@ struct CreateHouseholdView: View {
                     Toggle("Use Cloud Sync", isOn: $useCloudSync)
                     
                     if useCloudSync {
-                        Text("This will sync your household data across all your devices using CloudKit.")
+                        Text("This will sync your household data across all your devices.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else {
@@ -102,6 +104,7 @@ struct CreateHouseholdView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     }
+                }
                 }
             }
             .navigationTitle("Create Household")
@@ -134,44 +137,53 @@ struct CreateHouseholdView: View {
     private var isFormValid: Bool {
         return !householdName.isEmpty &&
                !userName.isEmpty &&
-               authManager.isValidEmail(email) &&
-               authManager.isValidPassword(password) &&
+                authManager.isValidEmail(email) &&
+                authManager.isValidPassword(password) &&
                password == confirmPassword
     }
     
     private func createHousehold() async {
         isCreating = true
+        defer { isCreating = false }
         
         do {
-            // First, register the admin user
-            let newUser = try await authManager.registerUser(email: email, password: password, name: userName)
-            newUser.avatarColor = selectedAvatarColor
+            // Ensure we have an authenticated admin user; create account if needed
+            if !authManager.isAuthenticated || authManager.currentUser == nil {
+                authManager.signUp(
+                    email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                    password: password,
+                    name: userName.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
+                try await waitForAuthentication()
+            }
             
-            // Create household
-            let newHousehold = Household(context: viewContext)
-            newHousehold.id = UUID()
-            newHousehold.name = householdName
-            newHousehold.inviteCode = generateInviteCode()
-            newHousehold.createdAt = Date()
+            guard let user = authManager.currentUser else {
+                throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Could not authenticate user"])
+            }
             
-            // Create admin membership
-            let membership = UserHouseholdMembership(context: viewContext)
-            membership.id = UUID()
-            membership.user = newUser
-            membership.household = newHousehold
-            membership.role = "admin"
-            membership.joinedAt = Date()
-            
-            // Update UserDefaults
-            UserDefaults.standard.set(newHousehold.id?.uuidString, forKey: "currentHouseholdId")
-            
-            try viewContext.save()
-            
-            // Update GameificationManager
-            GameificationManager.shared.currentUserPoints = newUser.points
-            
-            // Create initial sample tasks for the household
-            await createInitialTasks(household: newHousehold, user: newUser)
+            if NetworkManager.shared.isOnline {
+                // Call integrated API-backed creation path
+                authManager.createHousehold(name: householdName)
+            } else {
+                // Create household locally with invite code and membership
+                let localHousehold = Household(context: viewContext)
+                localHousehold.id = UUID()
+                localHousehold.name = householdName
+                localHousehold.inviteCode = generateInviteCode()
+                localHousehold.createdAt = Date()
+
+                let membership = UserHouseholdMembership(context: viewContext)
+                membership.id = UUID()
+                membership.user = user
+                membership.household = localHousehold
+                membership.role = "admin"
+                membership.joinedAt = Date()
+
+                try viewContext.save()
+                
+                // Seed initial tasks for local household only
+                await createInitialTasks(household: localHousehold, user: user)
+            }
             
             await MainActor.run {
                 dismiss()
@@ -181,9 +193,20 @@ struct CreateHouseholdView: View {
             await MainActor.run {
                 errorMessage = error.localizedDescription
                 showingError = true
-                isCreating = false
             }
         }
+    }
+
+    private func waitForAuthentication(timeoutSeconds: Double = 10.0) async throws {
+        let steps = Int(timeoutSeconds * 10)
+        for _ in 0..<steps {
+            if authManager.isAuthenticated, authManager.currentUser != nil { return }
+            if !authManager.errorMessage.isEmpty {
+                throw NSError(domain: "Auth", code: 400, userInfo: [NSLocalizedDescriptionKey: authManager.errorMessage])
+            }
+            try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+        }
+        throw NSError(domain: "Auth", code: 408, userInfo: [NSLocalizedDescriptionKey: "Authentication timed out. Please try again."])
     }
     
     private func generateInviteCode() -> String {
@@ -231,6 +254,6 @@ struct CreateHouseholdView_Previews: PreviewProvider {
     static var previews: some View {
         CreateHouseholdView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
     }
 }

@@ -95,7 +95,7 @@ class CloudSyncManager: ObservableObject {
             household.createdAt = householdRecord["createdAt"] as? Date ?? Date()
             
             // Add current user as member
-            if let currentUser = AuthenticationManager.shared.currentUser {
+            if let currentUser = IntegratedAuthenticationManager.shared.currentUser {
                 let membership = UserHouseholdMembership(context: context)
                 membership.id = UUID()
                 membership.user = currentUser

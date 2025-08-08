@@ -4,10 +4,10 @@ import PhotosUI
 import AVKit
 import AudioToolbox
 
-// MARK: - Missing Components
+// MARK: - Premium Components (Phase 4 Integration)
 
-// Enhanced Filter Chip Component
-struct EnhancedFilterChip: View {
+// Premium Filter Chip Component (Phase 4 Upgrade)
+struct PremiumFilterChip: View {
     let filter: TasksView.TaskFilter
     let isSelected: Bool
     let taskCount: Int
@@ -15,29 +15,38 @@ struct EnhancedFilterChip: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: filter.filterIcon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(filter.filterColor)
                 Text(filter.rawValue)
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundColor(isSelected ? .white : .primary)
+                    .foregroundColor(isSelected ? filter.filterColor : .primary)
                 
                 if taskCount > 0 {
                     Text("\(taskCount)")
                         .font(.system(.caption2, design: .rounded, weight: .bold))
-                        .foregroundColor(isSelected ? .white.opacity(0.9) : .secondary)
+                        .foregroundColor(filter.filterColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(filter.filterColor.opacity(0.12))
+                        )
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(minHeight: 40)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? filter.filterColor : Color(UIColor.secondarySystemBackground))
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(Color(UIColor.secondarySystemBackground))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(isSelected ? filter.filterColor.opacity(0.5) : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 25)
+                    .stroke(filter.filterColor.opacity(isSelected ? 0.6 : 0.25), lineWidth: isSelected ? 2 : 1)
             )
         }
-        .scaleEffect(isSelected ? 1.05 : 1.0)
+        .scaleEffect(isSelected ? 1.03 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 }
@@ -47,13 +56,14 @@ struct LiquidSwipeIndicator: View {
     let selectedIndex: Int
     let itemCount: Int
     let itemWidth: CGFloat
+    let accentColor: Color
     
     var body: some View {
         GeometryReader { geometry in
             RoundedRectangle(cornerRadius: 2)
                 .fill(
                     LinearGradient(
-                        colors: [Color.blue, Color.purple],
+                        colors: [accentColor, accentColor.opacity(0.7)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -65,23 +75,40 @@ struct LiquidSwipeIndicator: View {
     }
 }
 
-// Enhanced Empty Tasks View
-struct EnhancedEmptyTasksView: View {
+// Premium Empty Tasks View (Phase 4 Upgrade)
+struct PremiumEmptyTasksView: View {
     let filter: TasksView.TaskFilter
-    @State private var animateIcon = false
     
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
             
-            Image(systemName: emptyStateIcon)
-                .font(.system(size: 60))
-                .foregroundColor(filter.filterColor.opacity(0.6))
-                .scaleEffect(animateIcon ? 1.1 : 0.9)
-                .animation(
-                    .easeInOut(duration: 2.0),
-                    value: animateIcon
-                )
+            // Animated icon with contextual glow
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                sectionColor.opacity(0.2),
+                                Color.clear
+                            ],
+                            center: .center,
+                            startRadius: 20,
+                            endRadius: 80
+                        )
+                    )
+                    .frame(width: 160, height: 160)
+                
+                Image(systemName: emptyStateIcon)
+                    .font(.system(size: 60, weight: .medium, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [sectionColor, sectionColor.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
             
             VStack(spacing: 8) {
                 Text(emptyStateTitle)
@@ -96,9 +123,6 @@ struct EnhancedEmptyTasksView: View {
             }
             
             Spacer()
-        }
-        .onAppear {
-            animateIcon = true
         }
     }
     
@@ -144,6 +168,19 @@ struct EnhancedEmptyTasksView: View {
             return "Tap the + button to create your first task."
         }
     }
+    
+    private var sectionColor: Color {
+        switch filter {
+        case .completed:
+            return .green
+        case .overdue:
+            return .red
+        case .myTasks:
+            return .indigo
+        default:
+            return .blue
+        }
+    }
 }
 
 // Glassmorphic Card Component
@@ -160,21 +197,12 @@ struct GlassmorphicCard<Content: View>: View {
         content
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(UIColor.systemBackground).opacity(0.9))
-                    .background(
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.1),
-                                        Color.white.opacity(0.05)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
             )
     }
 }
@@ -194,6 +222,237 @@ extension TasksView.TaskFilter {
         case .myTasks:
             return .purple
         }
+    }
+
+    var filterIcon: String {
+        switch self {
+        case .all:
+            return "list.bullet.rectangle"
+        case .pending:
+            return "clock"
+        case .completed:
+            return "checkmark.circle"
+        case .overdue:
+            return "exclamationmark.circle"
+        case .myTasks:
+            return "person.crop.circle"
+        }
+    }
+}
+
+// Premium Task Card with Enhanced Interactions
+struct PremiumTaskCard: View {
+    @ObservedObject var task: HouseholdTask
+    let animationDelay: Double
+    let onComplete: () -> Void
+    let onLongPress: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    @State private var scaleEffect: CGFloat = 0.9
+    @State private var opacity: Double = 0
+    @State private var hasAppeared = false
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDragging = false
+    @State private var hapticTriggered = false
+    @State private var cardWidth: CGFloat = 0
+    
+    private let actionThreshold: CGFloat = 80
+    private let deleteThreshold: CGFloat = 350 // Much higher threshold for safety
+    
+    private var dragColor: Color {
+        if dragOffset > actionThreshold && !task.isCompleted {
+            return .green
+        } else if dragOffset < -deleteThreshold {
+            return .red
+        } else if dragOffset < -actionThreshold {
+            return .blue
+        } else {
+            return .clear
+        }
+    }
+    
+    private var backgroundOpacity: Double {
+        let progress = min(abs(dragOffset) / actionThreshold, 1.0)
+        return progress * 0.15
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .center) {
+                // Store geometry size for use in gestures
+                Color.clear.onAppear {
+                    cardWidth = geometry.size.width
+                }
+                // Background color indicator
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(dragColor)
+                    .opacity(backgroundOpacity)
+                    .animation(.easeInOut(duration: 0.2), value: dragColor)
+                
+                // Action indicators (more subtle)
+                HStack {
+                    // Left side actions - only show delete for far swipe
+                    if dragOffset < -20 {
+                        Spacer()
+                        VStack(spacing: 4) {
+                            Image(systemName: "trash")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            Text("Delete")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.red)
+                        .opacity(min(abs(dragOffset) / deleteThreshold, 1.0))
+                        .scaleEffect(isDragging && abs(dragOffset) > deleteThreshold ? 1.3 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragging)
+                        .padding(.trailing, 30)
+                    }
+                    
+                    // Right side action
+                    if dragOffset > 20 && !task.isCompleted {
+                        VStack(spacing: 4) {
+                            Image(systemName: "checkmark")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            Text("Done")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.green)
+                        .opacity(min(dragOffset / actionThreshold, 1.0))
+                        .scaleEffect(isDragging ? 1.1 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragging)
+                        .padding(.leading, 30)
+                        Spacer()
+                    }
+                }
+                
+                // Main task card
+                GlassmorphicCard(cornerRadius: 25) {
+                    PremiumTaskRowView(task: task) {
+                        onComplete()
+                    }
+                }
+                .offset(x: dragOffset)
+                .scaleEffect(scaleEffect)
+                .opacity(opacity)
+                .rotation3DEffect(
+                    .degrees(Double(dragOffset / 20)),
+                    axis: (x: 0, y: 1, z: 0),
+                    perspective: 1.0
+                )
+                .animation(isDragging ? nil : .spring(response: 0.4, dampingFraction: 0.8), value: dragOffset)
+            }
+            .frame(height: 100) // Fixed height for consistency
+        }
+        .frame(height: 100)
+        .onAppear {
+            guard !hasAppeared else { return }
+            hasAppeared = true
+            
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(animationDelay)) {
+                scaleEffect = 1.0
+                opacity = 1.0
+            }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                .onChanged { value in
+                    let translation = value.translation
+                    
+                    // Only start horizontal drag if the gesture is significantly more horizontal than vertical
+                    // AND we haven't started dragging yet, or we're already in a horizontal drag
+                    if !isDragging {
+                        // Only start if it's clearly horizontal (2:1 ratio) and meets minimum distance
+                        if abs(translation.width) > abs(translation.height) * 2.0 && abs(translation.width) > 20 {
+                            isDragging = true
+                        } else {
+                            // Let ScrollView handle vertical gestures
+                            return
+                        }
+                    }
+                    
+                    let horizontalTranslation = translation.width
+                    
+                    // Apply resistance at edges
+                    if abs(horizontalTranslation) > actionThreshold {
+                        let overflow = abs(horizontalTranslation) - actionThreshold
+                        let resistance = 1.0 - min(overflow / 200, 0.6)
+                        dragOffset = horizontalTranslation * resistance
+                    } else {
+                        dragOffset = horizontalTranslation
+                    }
+                    
+                    // Haptic feedback at threshold
+                    if abs(dragOffset) > actionThreshold && !hapticTriggered {
+                        PremiumAudioHapticSystem.playButtonTap(style: .light)
+                        hapticTriggered = true
+                    }
+                    
+                    // Much stronger haptic at delete threshold
+                    if abs(dragOffset) > deleteThreshold && hapticTriggered {
+                        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
+                        hapticTriggered = false // Reset to prevent continuous haptics
+                    }
+                }
+                .onEnded { value in
+                    isDragging = false
+                    hapticTriggered = false
+                    
+                    let translation = value.translation.width
+                    let velocity = value.predictedEndTranslation.width
+                    
+                    // Only process if this was actually a horizontal drag
+                    guard abs(value.translation.width) > abs(value.translation.height) else {
+                        // Reset position if it wasn't a clear horizontal drag
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
+                        return
+                    }
+                    
+                    // More restrictive conditions for actions
+                    if translation > actionThreshold {
+                        // Complete/uncomplete task (swipe right)
+                        PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                        
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            dragOffset = cardWidth
+                            opacity = 0
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            onComplete()
+                        }
+                    } else if translation < -deleteThreshold && abs(velocity) > 400 {
+                        // Delete task (swipe far left with high velocity)
+                        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
+                        
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            dragOffset = -cardWidth
+                            opacity = 0
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            onDelete()
+                        }
+                    } else {
+                        // Spring back
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
+                    }
+                }
+        )
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.6)
+                .onEnded { _ in
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                    onEdit() // Long press now triggers edit
+                }
+        )
     }
 }
 // MARK: - Missing Animation Components
@@ -361,6 +620,7 @@ struct ParticleModel {
 
 struct TasksView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedFilter: TaskFilter = .all
     @State private var showingAddTask = false
     @State private var showingTaskPhoto = false
@@ -390,6 +650,11 @@ struct TasksView: View {
     private var allTasks: FetchedResults<HouseholdTask>
     
     private var filteredTasks: [HouseholdTask] {
+        // UITest hook to force empty tasks list for deterministic UI testing
+        if ProcessInfo.processInfo.arguments.contains("UITEST_FORCE_EMPTY_TASKS") {
+            return []
+        }
+        
         let tasks = Array(allTasks)
         
         switch selectedFilter {
@@ -406,26 +671,17 @@ struct TasksView: View {
             }
         case .myTasks:
             // ✅ FIXED: Filter by current user
-            guard let currentUser = AuthenticationManager.shared.currentUser else {
+            guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else {
                 return []
             }
-            return tasks.filter { $0.assignedTo == currentUser }
+            return tasks.filter { !$0.isCompleted && $0.assignedTo == currentUser }
         }
     }
     
     var body: some View {
         ZStack {
-            // Animated background
-            LinearGradient(
-                colors: [
-                    Color(UIColor.systemBackground),
-                    selectedFilter.filterColor.opacity(0.03)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.5), value: selectedFilter)
+            PremiumScreenBackground(sectionColor: premiumSectionColorForFilter)
+                .animation(reduceMotion ? .none : .easeInOut(duration: 0.5), value: selectedFilter)
             
             VStack(spacing: 0) {
                 // Enhanced filter picker with liquid indicator
@@ -445,12 +701,22 @@ struct TasksView: View {
                     FloatingActionButton(icon: "plus") {
                         showingAddTask = true
                     }
+                    .accessibilityLabel(Text("Add task"))
+                    .accessibilityHint(Text("Opens task creation"))
+                    .accessibilityIdentifier("FloatingActionButton")
                     .padding(.trailing, 20)
                     .padding(.bottom, 100) // Above tab bar
                 }
             }
             .sheet(isPresented: $showingAddTask) {
-                AddTaskView()
+                if let taskToEdit = selectedTask {
+                    AddTaskView(taskToEdit: taskToEdit)
+                        .onDisappear {
+                            selectedTask = nil
+                        }
+                } else {
+                    AddTaskView()
+                }
             }
             .sheet(isPresented: $showingTaskPhoto) {
                 if let task = selectedTask {
@@ -459,19 +725,33 @@ struct TasksView: View {
                 }
             }
             
-            // Completion Animation Overlay
+            // Skeleton Overlay while refreshing
+            if isRefreshing {
+                Color.black.opacity(0.02).ignoresSafeArea()
+                VStack(spacing: 12) {
+                    TaskListSkeleton()
+                        .padding(.top, 20)
+                }
+                .transition(.opacity)
+            }
+            
+            // Completion Animation Overlay + Confetti
             if showingCompletionAnimation {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
-                    .transition(.opacity)
+                    .transition(reduceMotion ? .identity : .opacity)
                 
                 TaskCompletionAnimation {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        showingCompletionAnimation = false
-                        showingPointsAnimation = true
-                    }
+                        withAnimation(reduceMotion ? .none : .easeOut(duration: 0.3)) {
+                            showingCompletionAnimation = false
+                            showingPointsAnimation = true
+                        }
                 }
-                .transition(.scale.combined(with: .opacity))
+                .transition(reduceMotion ? .identity : .scale.combined(with: .opacity))
+                .overlay(
+                    PremiumConfettiView(isActive: true, sectionColor: .tasks)
+                        .allowsHitTesting(false)
+                )
             }
             
             // Points Animation Overlay
@@ -479,13 +759,13 @@ struct TasksView: View {
                 VStack {
                     Spacer()
                     PointsEarnedAnimation(points: earnedPoints) {
-                        withAnimation(.easeOut(duration: 0.3)) {
+                        withAnimation(reduceMotion ? .none : .easeOut(duration: 0.3)) {
                             showingPointsAnimation = false
                         }
                     }
                     Spacer()
                 }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(reduceMotion ? .identity : .move(edge: .bottom).combined(with: .opacity))
             }
         }
     }
@@ -493,28 +773,33 @@ struct TasksView: View {
     // MARK: - Computed Properties for Body Components
     
     private var enhancedFilterPickerView: some View {
-        VStack(spacing: 12) {
+        ZStack(alignment: .bottom) {
+            // Chips row
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(TaskFilter.allCases, id: \.self) { filter in
-                        EnhancedFilterChip(
+                        PremiumFilterChip(
                             filter: filter,
                             isSelected: selectedFilter == filter,
                             taskCount: getTaskCount(for: filter)
                         ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.7)) {
                                 selectedFilter = filter
                                 filterAnimationTrigger.toggle()
                             }
                             
-                            // Premium audio haptic feedback for filter switching
-                            PremiumAudioHapticSystem.playFilterSwitch(context: .taskFilterChange)
+                            // Premium haptic feedback
+                            PremiumAudioHapticSystem.playButtonTap(style: .light)
                         }
+                        .accessibilityLabel(Text("Filter: \(filter.rawValue)"))
+                        .accessibilityHint(Text("Shows tasks filtered by \(filter.rawValue)"))
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
+                .padding(.bottom, 10) // reserve space for indicator
             }
             
-            // Liquid indicator below filters
+            // Indicator anchored to the bottom of the chip row area so it doesn't jump
             GeometryReader { geometry in
                 let itemWidth = (geometry.size.width - CGFloat(TaskFilter.allCases.count - 1) * 12) / CGFloat(TaskFilter.allCases.count)
                 let selectedIndex = TaskFilter.allCases.firstIndex(of: selectedFilter) ?? 0
@@ -522,8 +807,10 @@ struct TasksView: View {
                 LiquidSwipeIndicator(
                     selectedIndex: selectedIndex,
                     itemCount: TaskFilter.allCases.count,
-                    itemWidth: itemWidth
+                    itemWidth: itemWidth,
+                    accentColor: selectedFilter.filterColor
                 )
+                .frame(height: 4)
             }
             .frame(height: 4)
         }
@@ -548,7 +835,10 @@ struct TasksView: View {
                 return !task.isCompleted && dueDate < Date()
             }.count
         case .myTasks:
-            return allTasks.count // TODO: Filter by current user
+            guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else {
+                return 0
+            }
+            return allTasks.filter { !$0.isCompleted && $0.assignedTo == currentUser }.count
         }
     }
     
@@ -565,36 +855,116 @@ struct TasksView: View {
     private var tasksContentView: some View {
         Group {
             if filteredTasks.isEmpty {
-                EnhancedEmptyTasksView(filter: selectedFilter)
-                    .transition(.asymmetric(
-                        insertion: .scale.combined(with: .opacity),
-                        removal: .opacity
-                    ))
+                // Keep layout consistent with list by using a ScrollView in both cases
+                ScrollView {
+                    VStack(spacing: 0) {
+                        premiumTasksEmptyState
+                            .frame(maxWidth: .infinity, alignment: .top)
+                            .padding(.top, 8)
+                    }
+                }
+                .refreshable { await refreshTasks() }
             } else {
-                enhancedTasksList
+                premiumTasksList
             }
         }
     }
     
-    private var enhancedTasksList: some View {
+    private var premiumTasksEmptyState: some View {
+        PremiumEmptyState(
+            icon: emptyIconForFilter,
+            title: emptyTitleForFilter,
+            message: emptyMessageForFilter,
+            actionTitle: "Create Task",
+            sectionColor: sectionColorForSelectedFilter,
+            action: { showingAddTask = true }
+        )
+    }
+    
+    private var emptyIconForFilter: String {
+        switch selectedFilter {
+        case .completed: return "checkmark.circle"
+        case .overdue: return "clock.badge.exclamationmark"
+        case .myTasks: return "person.crop.circle"
+        case .pending: return "checklist"
+        case .all: return "checklist"
+        }
+    }
+    
+    private var emptyTitleForFilter: String {
+        switch selectedFilter {
+        case .completed: return "No Completed Tasks"
+        case .overdue: return "No Overdue Tasks"
+        case .pending: return "No Pending Tasks"
+        case .myTasks: return "No Tasks Assigned to You"
+        case .all: return "No Tasks Yet"
+        }
+    }
+    
+    private var emptyMessageForFilter: String {
+        switch selectedFilter {
+        case .completed: return "Check off some tasks to see them here."
+        case .overdue: return "Great job! Nothing overdue right now."
+        case .pending: return "Everything is done. Time to add more!"
+        case .myTasks: return "No tasks assigned to you yet. Create one or ask a roommate to assign."
+        case .all: return "Tap Create Task to start organizing your household."
+        }
+    }
+
+    private var sectionColorForSelectedFilter: PremiumDesignSystem.SectionColor {
+        switch selectedFilter {
+        case .all: return .tasks
+        case .pending: return .challenges // orange feel
+        case .completed: return .leaderboard // red? Use green -> map via tasks
+        case .overdue: return .leaderboard
+        case .myTasks: return .profile
+        }
+    }
+    
+    private var premiumTasksList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(Array(filteredTasks.enumerated()), id: \.element.id) { index, task in
-                    GlassmorphicCard(cornerRadius: 16) {
-                        EnhancedTaskRowView(task: task) {
-                            completeTaskWithAnimation(task)
-                        }
+                    PremiumTaskCard(
+                        task: task, 
+                        animationDelay: Double(index) * 0.05
+                    ) {
+                        completeTaskWithAnimation(task)
+                    } onLongPress: {
+                        editTask(task) // Long press triggers edit
+                    } onEdit: {
+                        editTask(task)
+                    } onDelete: {
+                        deleteTask(task)
                     }
-                    .padding(.horizontal)
-                    .transition(.asymmetric(
+                    .padding(.horizontal, 16)
+                    .swipeActions(edge: .trailing) {
+                        Button {
+                            completeTaskWithAnimation(task)
+                        } label: {
+                            Image(systemName: task.isCompleted ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
+                        }
+                        .tint(.green)
+                    }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            deleteTask(task)
+                        } label: {
+                            Image(systemName: "trash.fill")
+                        }
+                        .tint(.red)
+                        
+                        Button {
+                            editTask(task)
+                        } label: {
+                            Image(systemName: "pencil.circle.fill")
+                        }
+                        .tint(.blue)
+                    }
+                    .transition(reduceMotion ? .identity : .asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .scale.combined(with: .opacity)
                     ))
-                    .animation(
-                        .spring(response: 0.4, dampingFraction: 0.8)
-                        .delay(Double(index) * 0.05),
-                        value: filterAnimationTrigger
-                    )
                 }
             }
             .padding(.vertical, 8)
@@ -602,10 +972,29 @@ struct TasksView: View {
         .refreshable {
             await refreshTasks()
         }
+        .highPriorityGesture(
+            // Give ScrollView higher priority for vertical gestures
+            DragGesture()
+                .onChanged { _ in }
+                .onEnded { _ in }
+        )
+        .onAppear {
+            // UITest hook to deterministically show refresh skeleton overlay
+            if ProcessInfo.processInfo.arguments.contains("UITEST_FORCE_TASKS_REFRESHING") {
+                isRefreshing = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeOut(duration: 0.2)) { isRefreshing = false }
+                }
+            }
+        }
     }
     
     private var tasksList: some View {
         enhancedTasksList
+    }
+    
+    private var enhancedTasksList: some View {
+        premiumTasksList
     }
     
     private func refreshTasks() async {
@@ -626,67 +1015,96 @@ struct TasksView: View {
     }
     
     private func completeTaskWithAnimation(_ task: HouseholdTask) {
-        guard let currentUser = AuthenticationManager.shared.currentUser else { 
+        guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else { 
             print("Error: No current user found")
             return 
         }
         
-        // ✅ FIX: Check if task is already completed to prevent double completion
-        guard !task.isCompleted else {
-            print("Warning: Task is already completed")
-            return
+        // Handle both completion and un-completion
+        let wasCompleted = task.isCompleted
+        
+        if !wasCompleted {
+            // Store task info for completion animation
+            completedTask = task
+            earnedPoints = Int(task.points)
         }
         
-        // Store task info for animation
-        completedTask = task
-        earnedPoints = Int(task.points)
-        
         withAnimation {
-            task.isCompleted = true
-            task.completedAt = Date()
-            task.completedBy = currentUser
+            task.isCompleted.toggle()
+            
+            if task.isCompleted {
+                // Completing task
+                task.completedAt = Date()
+                task.completedBy = currentUser
+            } else {
+                // Un-completing task
+                task.completedAt = nil
+                task.completedBy = nil
+            }
             
             // ✅ FIX: Save context BEFORE awarding points to prevent race condition
             do {
                 try viewContext.save()
-                print("✅ DEBUG: Task completion saved successfully for: \(task.title ?? "Unknown task")")
                 
-                // Award points AFTER successful save using GameificationManager
-                GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
-                
-                // Track daily task completion for streaks
-                completedTasksToday += 1
-                let _ = completedTasksToday > 0 && completedTasksToday % 3 == 0  // isStreak
-                let _ = completedTasksToday > 0 && completedTasksToday % 10 == 0  // isMilestone
-                
-                // Premium audio haptic feedback for task completion with context
-                PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
-                
-                // Log task completion instead of using ActivityTracker
-                LoggingManager.shared.info("Task completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
-                
-                // ✅ FIXED: CloudKit sync enabled with proper error handling
-                Task {
-                    // CloudKit sync will be handled by CloudSyncManager when available
-                    // await CloudSyncManager.shared.syncTask(task)
-                    LoggingManager.shared.info("Task sync queued for: \(task.title ?? "Unknown")", category: "Sync")
+                if task.isCompleted && !wasCompleted {
+                    // Task was just completed
+                    print("✅ DEBUG: Task completion saved successfully for: \(task.title ?? "Unknown task")")
+                    
+                        // Award points AFTER successful save using GameificationManager
+                        GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
+                    
+                    // Track daily task completion for streaks
+                    completedTasksToday += 1
+                    let _ = completedTasksToday > 0 && completedTasksToday % 3 == 0  // isStreak
+                    let _ = completedTasksToday > 0 && completedTasksToday % 10 == 0  // isMilestone
+                    
+                    // Premium audio haptic feedback for task completion with context
+                    PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
+                    
+                    // Log task completion instead of using ActivityTracker
+                    LoggingManager.shared.info("Task completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
+                    
+                    // Premium feedback for completion
+                    PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
+                    
+                    // Start animation sequence
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showingCompletionAnimation = true
+                    }
+                    
+                } else if !task.isCompleted && wasCompleted {
+                    // Task was un-completed
+                    print("✅ DEBUG: Task un-completion saved successfully for: \(task.title ?? "Unknown task")")
+                    
+                        // ✅ FIX: Deduct points when un-completing to prevent infinite points exploit
+                        GameificationManager.shared.deductPoints(from: currentUser, points: Int32(task.points), reason: "task_uncompleted")
+                    
+                    // Premium feedback for un-completion
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                    
+                    // Premium feedback already provided above
+                    
+                    // Log task un-completion
+                    LoggingManager.shared.info("Task un-completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
                 }
                 
-                // Schedule task reminder cancellation
+                // Trigger integrated sync to backend when online
+                Task {
+                    await IntegratedTaskManager.shared.syncTasks()
+                }
+                
+                // Schedule/cancel task reminder based on completion status
                 if let taskId = task.id {
-                    NotificationManager.shared.cancelTaskReminder(taskId: taskId)
+                    if task.isCompleted {
+                        NotificationManager.shared.cancelTaskReminder(taskId: taskId)
+                    } else if let dueDate = task.dueDate, dueDate > Date() {
+                        // Re-schedule reminder if task was un-completed and has future due date
+                        NotificationManager.shared.scheduleTaskReminder(task: task)
+                    }
                 }
                 
                 // Update badge count
                 NotificationManager.shared.updateBadgeCount()
-                
-                // Keep existing audio for compatibility
-                AudioServicesPlaySystemSound(1057) // Task completion sound
-                
-                // Start animation sequence
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    showingCompletionAnimation = true
-                }
                 
             } catch {
                 print("❌ ERROR: Failed to save task completion: \(error)")
@@ -694,18 +1112,67 @@ struct TasksView: View {
                 PremiumAudioHapticSystem.playError(context: .systemError)
                 
                 // Revert the change if save fails
-                task.isCompleted = false
-                task.completedAt = nil
-                task.completedBy = nil
+                task.isCompleted = wasCompleted
+                if wasCompleted {
+                    task.completedAt = Date() // Restore previous state
+                    task.completedBy = currentUser
+                } else {
+                    task.completedAt = nil
+                    task.completedBy = nil
+                }
             }
         }
     }
     
     // MARK: - Private Methods
     
+    private func editTask(_ task: HouseholdTask) {
+        selectedTask = task
+        showingAddTask = true // Reuse the add task view for editing
+        PremiumAudioHapticSystem.playButtonTap(style: .medium)
+        print("Edit task: \(task.title ?? "Unknown")")
+    }
+    
+    private func deleteTask(_ task: HouseholdTask) {
+        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            viewContext.delete(task)
+            
+            do {
+                try viewContext.save()
+                print("✅ Task deleted successfully: \(task.title ?? "Unknown task")")
+                
+                // Log task deletion
+                LoggingManager.shared.info("Task deleted: \(task.title ?? "Unknown")", category: "Tasks")
+                
+                // Premium success
+                PremiumAudioHapticSystem.playSuccess()
+                
+            } catch {
+                print("❌ ERROR: Failed to delete task: \(error)")
+                
+                // Premium error
+                PremiumAudioHapticSystem.playError()
+            }
+        }
+    }
+    
     private func showPhotoForTask(_ task: HouseholdTask) {
         selectedTask = task
         showingTaskPhoto = true
+    }
+}
+
+extension TasksView {
+    private var premiumSectionColorForFilter: PremiumDesignSystem.SectionColor {
+        switch selectedFilter {
+        case .all: return .tasks
+        case .pending: return .tasks
+        case .completed: return .tasks
+        case .overdue: return .tasks
+        case .myTasks: return .tasks
+        }
     }
 }
 
@@ -721,15 +1188,22 @@ struct FilterChip: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color(UIColor.secondarySystemBackground))
+                .background(
+                    Group {
+                        if isSelected {
+                            Capsule().fill(Color.blue)
+                        } else {
+                            Capsule().fill(Color(UIColor.secondarySystemBackground))
+                        }
+                    }
+                )
                 .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(20)
         }
     }
 }
 
-// MARK: - Enhanced Task Row with "Not Boring" Design
-struct EnhancedTaskRowView: View {
+// MARK: - Premium Task Row (Phase 4 Integration)
+struct PremiumTaskRowView: View {
     @ObservedObject var task: HouseholdTask
     let onComplete: () -> Void
     
@@ -769,7 +1243,7 @@ struct EnhancedTaskRowView: View {
                 .shadow(color: task.isCompleted ? Color.green.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
             }
             .buttonStyle(PlainButtonStyle())
-            .disabled(task.isCompleted || isCompleting)
+            .disabled(isCompleting)
             
             // Task Content
             VStack(alignment: .leading, spacing: 8) {
@@ -843,12 +1317,14 @@ struct EnhancedTaskRowView: View {
                 }
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .opacity(task.isCompleted ? 0.7 : 1.0)
         .animation(.easeInOut(duration: 0.3), value: task.isCompleted)
     }
     
     private func triggerCompletionAnimation() {
-        guard !task.isCompleted && !isCompleting else { return }
+        guard !isCompleting else { return }
         
         isCompleting = true
         
@@ -866,7 +1342,7 @@ struct EnhancedTaskRowView: View {
             }
         }
         
-        // Complete task after animation
+        // Toggle task completion after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             onComplete()
             isCompleting = false

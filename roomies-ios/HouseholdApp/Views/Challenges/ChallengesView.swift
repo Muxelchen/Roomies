@@ -41,7 +41,9 @@ struct ChallengesView: View {
     private var completedChallenges: FetchedResults<Challenge>
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .challenges, style: .minimal)
+            VStack(spacing: 0) {
             // Enhanced Tab Picker with "Not Boring" design
             RoomiesTabPicker(selectedTab: $selectedTab)
                 .padding(.horizontal)
@@ -114,16 +116,7 @@ struct ChallengesView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 20)
             }
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(UIColor.systemBackground),
-                        selectedTab.color.opacity(0.02)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            }
         }
         .navigationTitle("Challenges")
         .navigationBarTitleDisplayMode(.large)
@@ -163,8 +156,11 @@ struct RoomiesTabPicker: View {
         .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.tertiarySystemBackground))
-                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
         )
     }
 }
@@ -179,8 +175,7 @@ struct RoomiesTabButton: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .light)
             action()
         }) {
             HStack(spacing: 8) {
@@ -278,8 +273,7 @@ struct EnhancedChallengeCardView: View {
     
     var body: some View {
         Button(action: {
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             // TODO: Navigate to challenge detail
         }) {
             VStack(spacing: 0) {
@@ -420,6 +414,48 @@ struct EnhancedChallengeCardView: View {
                             .font(.system(.caption, design: .rounded, weight: .medium))
                             .foregroundColor(.secondary)
                     }
+
+                    if !isCompleted {
+                        Spacer()
+                        Button(action: {
+                            PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                            Task {
+                                if let challengeId = challenge.id?.uuidString {
+                                    do {
+                                        _ = try await NetworkManager.shared.joinChallenge(challengeId: challengeId)
+                                    } catch {
+                                        // Fallback: join locally
+                                        await MainActor.run {
+                                            if let currentUser = IntegratedAuthenticationManager.shared.currentUser,
+                                               let context = challenge.managedObjectContext {
+                                                let participants = (challenge.participants as? Set<User>) ?? []
+                                                if !participants.contains(currentUser) {
+                                                    let mutable = NSMutableSet(set: challenge.participants ?? NSSet())
+                                                    mutable.add(currentUser)
+                                                    challenge.participants = mutable
+                                                    try? context.save()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "person.badge.plus")
+                                    .font(.caption)
+                                Text("Join")
+                                    .font(.system(.caption, design: .rounded, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            )
+                        }
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -429,7 +465,6 @@ struct EnhancedChallengeCardView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: isPressed ? 4 : 8, x: 0, y: isPressed ? 2 : 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(cardColor.opacity(0.2), lineWidth: 1)
@@ -634,10 +669,15 @@ struct EnhancedSampleChallengeCard: View {
                         }
                     }
                     
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                    
-                    // TODO: Implement join challenge
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+
+                    // Trigger backend join using a mock sample challenge id when wired to live data
+                    Task {
+                        if let householdId = UserDefaults.standard.string(forKey: "currentHouseholdId") {
+                            // Refresh list (no-op for sample card)
+                            _ = try? await NetworkManager.shared.listChallenges(householdId: householdId)
+                        }
+                    }
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
@@ -670,7 +710,6 @@ struct EnhancedSampleChallengeCard: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(UIColor.secondarySystemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: isPressed ? 4 : 8, x: 0, y: isPressed ? 2 : 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(Color.purple.opacity(0.2), lineWidth: 1)
@@ -807,10 +846,7 @@ struct RoomiesAddButton: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                 rotation += 180
             }
-            
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             action()
         }) {
             ZStack {

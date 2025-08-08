@@ -6,6 +6,7 @@ struct OnboardingView: View {
     @EnvironmentObject private var localizationManager: LocalizationManager
     @State private var pageOffset: CGFloat = 0
     @State private var contentOpacity: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var onboardingPages: [OnboardingPage] {
         [
@@ -52,7 +53,7 @@ struct OnboardingView: View {
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                    .animation(.spring(response: 0.8, dampingFraction: 0.8), value: currentPage)
+                    .animation(reduceMotion ? .none : .spring(response: 0.8, dampingFraction: 0.8), value: currentPage)
                 }
                 
                 // Custom Page Indicator
@@ -73,7 +74,10 @@ struct OnboardingView: View {
                             title: localizationManager.localizedString("onboarding.next"),
                             icon: "arrow.right",
                             isPrimary: true,
-                            action: nextPage
+                            action: {
+                                PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                                nextPage()
+                            }
                         )
                     }
                     
@@ -87,7 +91,7 @@ struct OnboardingView: View {
                 .padding(.bottom, 50)
                 .opacity(contentOpacity)
                 .onAppear {
-                    withAnimation(.easeIn(duration: 1.0).delay(0.5)) {
+                    withAnimation(reduceMotion ? .none : .easeIn(duration: 1.0).delay(0.5)) {
                         contentOpacity = 1
                     }
                 }
@@ -96,19 +100,17 @@ struct OnboardingView: View {
     }
     
     private func nextPage() {
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .light)
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.8)) {
             currentPage += 1
         }
     }
     
     private func completeOnboarding() {
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .medium)
         
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.8)) {
             hasCompletedOnboarding = true
         }
     }
@@ -126,6 +128,7 @@ struct OnboardingPage {
 
 struct RoomiesOnboardingBackground: View {
     let currentPage: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var backgroundColors: [Color] {
         switch currentPage {
@@ -141,7 +144,7 @@ struct RoomiesOnboardingBackground: View {
             // Animated gradient background
             LinearGradient(
                 colors: [
-                    Color(UIColor.systemBackground),
+                    .clear,
                     backgroundColors[0],
                     backgroundColors[1]
                 ],
@@ -149,7 +152,7 @@ struct RoomiesOnboardingBackground: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.8), value: currentPage)
+            .animation(reduceMotion ? .none : .easeInOut(duration: 0.8), value: currentPage)
         }
     }
 }
@@ -276,6 +279,7 @@ struct EnhancedOnboardingPageView: View {
 struct RoomiesPageIndicator: View {
     let currentPage: Int
     let totalPages: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     var body: some View {
         HStack(spacing: 12) {
@@ -286,9 +290,11 @@ struct RoomiesPageIndicator: View {
                         width: index == currentPage ? 24 : 8,
                         height: 8
                     )
-                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: currentPage)
+                    .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.8), value: currentPage)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Page \(currentPage + 1) of \(totalPages)"))
     }
 }
 

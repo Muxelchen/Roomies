@@ -135,5 +135,18 @@ Temporary Items
 roomies-backend/node_modules/
 roomies-backend/dist/
 roomies-backend/.env
+roomies-backend/.env.aws
+roomies-backend/.env.production
+roomies-backend/.env.local
 roomies-backend/*.log
 roomies-backend/npm-debug.log*
+roomies-backend/uploads/
+
+# AWS Credentials & Keys (NEVER COMMIT THESE!)
+roomies-backend/*.pem
+roomies-backend/roomies-key.pem
+roomies-backend/aws-credentials
+.env.aws
+.env.production
+*.pem
+aws-credentials

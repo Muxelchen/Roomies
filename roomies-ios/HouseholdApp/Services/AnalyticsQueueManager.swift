@@ -331,7 +331,7 @@ extension AnalyticsManager {
                    properties: [String: String] = [:]) {
         
         // Get current user and household IDs
-        let userId = AuthenticationManager.shared.currentUser?.id?.uuidString
+        let userId = IntegratedAuthenticationManager.shared.currentUser?.id?.uuidString
         let householdId = currentHousehold?.id?.uuidString
         
         // Create event

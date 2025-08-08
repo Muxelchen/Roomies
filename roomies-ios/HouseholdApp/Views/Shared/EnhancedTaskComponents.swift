@@ -107,12 +107,11 @@ struct GlassmorphicCard<Content: View>: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(UIColor.systemBackground))
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                    )
             )
     }
 }

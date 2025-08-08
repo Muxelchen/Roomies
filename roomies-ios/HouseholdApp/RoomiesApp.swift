@@ -8,6 +8,12 @@ struct RoomiesApp: App {
     let persistenceController = PersistenceController.shared
     
     init() {
+        // Ensure premium audio/haptics default to ON for new installs
+        UserDefaults.standard.register(defaults: [
+            "premiumAudioEnabled": true,
+            "premiumHapticEnabled": true
+        ])
+
         // Initialize core services directly without UserDefaultsManager dependency
         initializeCoreServices()
         
@@ -26,7 +32,7 @@ struct RoomiesApp: App {
     private func initializeCoreServices() {
         // Initialize essential services only - don't reference UserDefaultsManager
         _ = PersistenceController.shared
-        _ = AuthenticationManager.shared
+        _ = IntegratedAuthenticationManager.shared
         _ = NotificationManager.shared
         _ = GameificationManager.shared
         _ = PerformanceManager.shared
@@ -42,7 +48,7 @@ struct RoomiesApp: App {
         WindowGroup {
         ContentView()
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(GameificationManager.shared)
             .environmentObject(LocalizationManager.shared)
             .environmentObject(CalendarManager.shared)

@@ -1,8 +1,9 @@
 import SwiftUI
+import AVFoundation
 
 // ✅ ENHANCED: "Not Boring" ContentView with beautiful animations and floating elements
 struct ContentView: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var localizationManager: LocalizationManager
     @EnvironmentObject private var premiumAudioSystem: PremiumAudioHapticSystem
     @State private var isLoading = true
@@ -11,6 +12,8 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
+            PremiumScreenBackground(sectionColor: authManager.isAuthenticated ? .dashboard : .profile, style: .minimal)
+                .ignoresSafeArea()
             // Animated background gradient (keeping this, it's just colors)
             AnimatedBackgroundView()
                 .ignoresSafeArea()
@@ -66,6 +69,12 @@ struct ContentView: View {
                                     timeOfDay: timeOfDay,
                                     hasUrgentTasks: false // Could integrate with actual task data
                                 )
+                            }
+                            // Start real-time household sync
+                            HouseholdSyncService.shared.connect()
+                            if let household = authManager.getCurrentUserHousehold(),
+                               let householdId = household.id?.uuidString {
+                                HouseholdSyncService.shared.joinHouseholdRoom(householdId)
                             }
                         }
                 } else {
@@ -495,12 +504,11 @@ struct AnimatedBackgroundView: View {
     
     var body: some View {
         ZStack {
-            // Base gradient
+            // Base gradient (keep subtle color layer; remove flat system background)
             LinearGradient(
                 colors: [
-                    Color(UIColor.systemBackground),
-                    Color(UIColor.systemBackground).opacity(0.8),
-                    Color.blue.opacity(0.05)
+                    Color.blue.opacity(0.02),
+                    Color.purple.opacity(0.02)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -564,7 +572,7 @@ struct MainTabView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
-            .environmentObject(AuthenticationManager.shared)
+            .environmentObject(IntegratedAuthenticationManager.shared)
             .environmentObject(LocalizationManager.shared)
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }

@@ -36,10 +36,10 @@ export class HouseholdTask {
   @Column({ name: 'is_completed', default: false })
   isCompleted!: boolean;
 
-  @Column({ type: 'enum', enum: ['low', 'medium', 'high'], default: 'medium' })
+  @Column({ type: 'simple-enum', enum: ['low', 'medium', 'high'], default: 'medium' })
   priority!: TaskPriority;
 
-  @Column({ name: 'recurring_type', type: 'enum', enum: ['none', 'daily', 'weekly', 'monthly'], default: 'none' })
+  @Column({ name: 'recurring_type', type: 'simple-enum', enum: ['none', 'daily', 'weekly', 'monthly'], default: 'none' })
   recurringType!: RecurringType;
 
   @Column({ name: 'due_date', nullable: true })

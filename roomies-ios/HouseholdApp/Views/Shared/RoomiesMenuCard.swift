@@ -12,7 +12,10 @@ struct RoomiesMenuCard: View {
     @State private var iconBounce: CGFloat = 1.0
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
+            action()
+        }) {
             HStack(spacing: 16) {
                 // Icon with animated background
                 ZStack {
@@ -49,7 +52,11 @@ struct RoomiesMenuCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(UIColor.secondarySystemBackground))
-                    .shadow(color: Color.black.opacity(0.08), radius: isPressed ? 4 : 12, x: 0, y: isPressed ? 2 : 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(color.opacity(0.2), lineWidth: 1)
+                    )
+                    .shadow(color: color.opacity(0.25), radius: isPressed ? 6 : 12, x: 0, y: isPressed ? 2 : 6)
             )
         }
         .scaleEffect(isPressed ? 0.97 : cardScale)

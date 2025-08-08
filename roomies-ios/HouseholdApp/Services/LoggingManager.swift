@@ -44,6 +44,8 @@ class LoggingManager {
         case initialization = "Initialization"
         case calendar = "Calendar"
         case performance = "Performance"
+        case household = "Household"
+        case tasks = "Tasks"
     }
     
     private init() {

@@ -1,9 +1,10 @@
 import SwiftUI
 import CoreData
 
-// MARK: - Animated UI Components
+// MARK: - Animated UI Components (Phase 4: Premium Integration)
+// Note: Premium components defined locally until PremiumDesignSystem is properly integrated
 
-// Pulsing Dot Indicator
+// Premium Pulsing Dot Indicator (Battery Optimized)
 struct PulsingDotIndicator: View {
     let color: Color
     @State private var scale: CGFloat = 1.0
@@ -22,11 +23,15 @@ struct PulsingDotIndicator: View {
                 .frame(width: 8, height: 8)
         }
         .onAppear {
-            // Use timer-based animation to prevent performance issues
-            Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
-                withAnimation(.easeInOut(duration: 1.5)) {
-                    scale = scale == 1.0 ? 1.5 : 1.0
-                    opacity = opacity == 1.0 ? 0.3 : 1.0
+            // Single pulse animation (battery optimized)
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                scale = 1.5
+                opacity = 0.3
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    scale = 1.0
+                    opacity = 1.0
                 }
             }
         }
@@ -135,147 +140,118 @@ struct MorphingNumberView: View {
     }
 }
 
-// MARK: - Not Boring Card Component
-struct NotBoringCard<Content: View>: View {
+// MARK: - Premium Dashboard Card (Phase 4 Upgrade)
+struct PremiumDashboardCard<Content: View>: View {
+    let sectionColor: Color
     let content: Content
-    @State private var isHovered = false
-    @State private var rotationAngle: Double = 0
-    @State private var cardScale: CGFloat = 1.0
     
-    init(@ViewBuilder content: () -> Content) {
+    init(sectionColor: Color = .blue, @ViewBuilder content: () -> Content) {
+        self.sectionColor = sectionColor
         self.content = content()
     }
     
     var body: some View {
         content
-            .padding(20)
+            .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(UIColor.systemBackground))
-                    .shadow(
-                        color: Color.black.opacity(0.1),
-                        radius: isHovered ? 20 : 12,
-                        x: 0,
-                        y: isHovered ? 12 : 8
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.8), Color.clear],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                    // Very subtle angular gradient ring to add a hint of personality
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            AngularGradient(
+                                gradient: Gradient(colors: [
+                                    sectionColor.opacity(0.12),
+                                    sectionColor.opacity(0.04),
+                                    sectionColor.opacity(0.12)
+                                ]),
+                                center: .center
+                            ),
+                            lineWidth: 1
+                        )
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color(UIColor.separator).opacity(0.18), lineWidth: 1)
+                }
+                .shadow(
+                    color: Color.black.opacity(0.06),
+                    radius: 8,
+                    x: 0,
+                    y: 4
+                )
             )
-            .scaleEffect(cardScale)
-            .rotation3DEffect(
-                .degrees(rotationAngle),
-                axis: (x: 0.1, y: 0.1, z: 0),
-                perspective: 0.7
-            )
-            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isHovered)
-            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: rotationAngle)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: cardScale)
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                    cardScale = 0.98
-                    rotationAngle = rotationAngle == 0 ? 2 : 0
-                }
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        cardScale = 1.0
-                    }
-                }
-            }
-            .onAppear {
-                // Subtle breathing animation - limited duration to prevent performance issues
-                withAnimation(.easeInOut(duration: 3.0)) {
-                    rotationAngle = 1
-                }
+            .scaleEffect(1.0)
+            .onLongPressGesture {
+                PremiumAudioHapticSystem.playButtonTap(style: .medium)
             }
     }
 }
 
+// MARK: - Premium Dashboard Card with Entrance Animation
+struct PremiumDashboardCardWithAnimation<Content: View>: View {
+    let sectionColor: Color
+    let delay: Double
+    let content: Content
+    
+    @State private var cardScale: CGFloat = 0.9
+    @State private var cardOpacity: Double = 0
+    
+    init(sectionColor: Color = .blue, delay: Double = 0.0, @ViewBuilder content: () -> Content) {
+        self.sectionColor = sectionColor
+        self.delay = delay
+        self.content = content()
+    }
+    
+    var body: some View {
+        PremiumDashboardCard(sectionColor: sectionColor) {
+            content
+        }
+        .scaleEffect(cardScale)
+        .opacity(cardOpacity)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay)) {
+                cardScale = 1.0
+                cardOpacity = 1.0
+            }
+        }
+    }
+}
+
 struct DashboardView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var gameificationManager: GameificationManager
-    @EnvironmentObject private var authManager: AuthenticationManager
-    @AppStorage("currentUserId") private var currentUserId = ""
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var showingLevelUpAnimation = false
     @State private var newLevel = 1
-    
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \HouseholdTask.dueDate, ascending: true)],
-        predicate: NSPredicate(format: "isCompleted == false"),
-        animation: .default)
-    private var upcomingTasks: FetchedResults<HouseholdTask>
-    
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \HouseholdTask.completedAt, ascending: false)],
-        predicate: NSPredicate(format: "isCompleted == true"),
-        animation: .default)
-    private var recentTasks: FetchedResults<HouseholdTask>
-    
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Challenge.dueDate, ascending: true)],
-        predicate: NSPredicate(format: "isActive == true"),
-        animation: .default)
-    private var activeChallenges: FetchedResults<Challenge>
 
     var body: some View {
         ZStack {
-            // Main Content
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
             ScrollView {
                 LazyVStack(spacing: 20) {
-                    // Enhanced Header with "Not Boring" effects
-                    NotBoringCard {
+                    PremiumDashboardCardWithAnimation(sectionColor: .blue, delay: 0.1) {
                         EnhancedHeaderView()
                     }
-                    
-                    // Quick Stats with animations
-                    NotBoringCard {
+                    PremiumDashboardCardWithAnimation(sectionColor: .blue, delay: 0.2) {
                         AnimatedStatsView()
                     }
-                    
-                    // Upcoming Tasks with 3D cards
-                    NotBoringCard {
-                        UpcomingTasksCardView(tasks: Array(upcomingTasks.prefix(3)))
-                    }
-                    
-                    // Active Challenges with floating effects
-                    NotBoringCard {
-                        ActiveChallengesCardView(challenges: Array(activeChallenges.prefix(2)))
-                    }
-                    
-                    // Recent Achievements with particle effects
-                    NotBoringCard {
+                    PremiumDashboardCardWithAnimation(sectionColor: .purple, delay: 0.3) {
                         RecentAchievementsCardView()
                     }
                 }
-                .padding(.horizontal)
-                .padding(.top, 10) // Add top padding since no navigation bar
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
             }
-            .onAppear {
-                // Preload data for better performance
-                gameificationManager.preloadUserData()
-            }
-            
-            // Level Up Animation Overlay
             if showingLevelUpAnimation {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
-                    .transition(.opacity)
-                
+                    .transition(reduceMotion ? .identity : .opacity)
                 LevelUpAnimation(newLevel: newLevel) {
-                    withAnimation(.easeOut(duration: 0.5)) {
+                    withAnimation(reduceMotion ? .none : .easeOut(duration: 0.5)) {
                         showingLevelUpAnimation = false
                     }
                 }
-                .transition(.scale.combined(with: .opacity))
+                .transition(reduceMotion ? .identity : .scale.combined(with: .opacity))
             }
         }
     }
@@ -283,8 +259,9 @@ struct DashboardView: View {
 
 // MARK: - Enhanced Header with 3D Effects
 struct EnhancedHeaderView: View {
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @EnvironmentObject private var gameificationManager: GameificationManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pointsPulse: CGFloat = 1.0
     @State private var greetingOpacity: Double = 0
     @State private var avatarRotation: Double = 0
@@ -297,13 +274,13 @@ struct EnhancedHeaderView: View {
                     Text("Hello, \(authManager.currentUser?.name ?? "User")!")
                         .font(.system(.title2, design: .rounded, weight: .bold))
                         .opacity(greetingOpacity)
-                        .animation(.easeIn(duration: 1.0).delay(0.3), value: greetingOpacity)
+                        .animation(reduceMotion ? .none : .easeIn(duration: 1.0).delay(0.3), value: greetingOpacity)
                     
                     Text("Ready to be awesome today?")
                         .font(.system(.subheadline, design: .rounded))
                         .foregroundColor(.secondary)
                         .opacity(greetingOpacity)
-                        .animation(.easeIn(duration: 1.0).delay(0.6), value: greetingOpacity)
+                        .animation(reduceMotion ? .none : .easeIn(duration: 1.0).delay(0.6), value: greetingOpacity)
                 }
                 
                 Spacer()
@@ -323,13 +300,16 @@ struct EnhancedHeaderView: View {
                             .font(.system(.title2, design: .rounded, weight: .bold))
                             .foregroundColor(.white)
                     )
-                    .shadow(color: .blue.opacity(0.4), radius: 8, x: 0, y: 4)
+                    .shadow(color: .blue.opacity(0.2), radius: 4, x: 0, y: 2)
                     .rotationEffect(.degrees(avatarRotation))
                     .onTapGesture {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.3)) {
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.6, dampingFraction: 0.3)) {
                             avatarRotation += 360
                         }
                     }
+                    .accessibilityLabel(Text("Edit profile"))
+                    .accessibilityHint(Text("Opens profile settings"))
+                    .accessibilityAddTraits(.isButton)
             }
             
             // Enhanced Points Display
@@ -347,7 +327,8 @@ struct EnhancedHeaderView: View {
                             .font(.system(.title, design: .rounded, weight: .black))
                             .foregroundColor(.primary)
                             .scaleEffect(pointsPulse)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: pointsPulse)
+                            .animation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.6), value: pointsPulse)
+                            .accessibilityLabel(Text("Points: \(gameificationManager.currentUserPoints)"))
                     }
                 }
                 
@@ -370,7 +351,7 @@ struct EnhancedHeaderView: View {
                             .font(.system(.headline, design: .rounded, weight: .bold))
                             .foregroundColor(.white)
                     }
-                    .shadow(color: .orange.opacity(0.4), radius: 6, x: 0, y: 3)
+                    .shadow(color: .orange.opacity(0.2), radius: 3, x: 0, y: 2)
                     
                     Text("Level")
                         .font(.system(.caption2, design: .rounded, weight: .medium))
@@ -381,13 +362,20 @@ struct EnhancedHeaderView: View {
         }
         .onAppear {
             // Trigger entrance animations
-            withAnimation(.easeInOut(duration: 0.5)) {
+            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.5)) {
                 greetingOpacity = 1.0
             }
             
-            // Start points pulse animation
-            withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
-                pointsPulse = 1.1
+            // One-time pulse to signal availability; avoid timers
+            if !reduceMotion {
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    pointsPulse = 1.05
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        pointsPulse = 1.0
+                    }
+                }
             }
         }
     }
@@ -396,7 +384,7 @@ struct EnhancedHeaderView: View {
 // MARK: - Animated Stats View with Enhanced Visualizations
 struct AnimatedStatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @EnvironmentObject private var authManager: AuthenticationManager
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var animateStats = false
     @State private var progressRingAnimation: Double = 0
     @State private var streakFlameAnimation: CGFloat = 1.0
@@ -637,9 +625,14 @@ struct UpcomingTasksCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(UIColor.separator).opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -727,9 +720,14 @@ struct ActiveChallengesCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(UIColor.separator).opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -747,9 +745,14 @@ struct RecentAchievementsCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(UIColor.separator).opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -772,8 +775,14 @@ struct SimpleBadgeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -905,9 +914,7 @@ struct LevelUpAnimation: View {
     }
     
     private func triggerLevelUpAnimation() {
-        // Heavy haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playSuccess()
         
         // Burst effect
         withAnimation(.easeOut(duration: 0.8)) {

@@ -109,7 +109,7 @@ struct SimpleLaunchView: View {
     
     private func checkAuthentication() -> Bool {
         // Simple auth check
-        let isAuthenticated = AuthenticationManager.shared.isAuthenticated
+        let isAuthenticated = IntegratedAuthenticationManager.shared.isAuthenticated
         print("Authentication status: \(isAuthenticated)")
         return true // Always return true for demo
     }

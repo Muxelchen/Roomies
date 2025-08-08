@@ -7,7 +7,9 @@ struct QRCodeView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                VStack(spacing: 30) {
                 VStack(spacing: 16) {
                     Text("Scan QR Code")
                         .font(.title2)
@@ -52,11 +54,18 @@ struct QRCodeView: View {
                         .fontWeight(.bold)
                         .tracking(3)
                         .padding()
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .cornerRadius(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(UIColor.secondarySystemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.12), lineWidth: 1)
+                                )
+                        )
                 }
                 
-                Spacer()
+                    Spacer()
+                }
             }
             .padding()
             .navigationTitle("Invitation")

@@ -17,7 +17,7 @@ export class UserHouseholdMembership {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'enum', enum: ['admin', 'member'], default: 'member' })
+  @Column({ type: 'simple-enum', enum: ['admin', 'member'], default: 'member' })
   role!: MemberRole;
 
   @Column({ name: 'is_active', default: true })

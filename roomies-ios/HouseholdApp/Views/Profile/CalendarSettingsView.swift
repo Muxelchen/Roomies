@@ -5,7 +5,9 @@ struct CalendarSettingsView: View {
     @EnvironmentObject private var calendarManager: CalendarManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+            VStack(alignment: .leading, spacing: 16) {
             Text("Calendar Integration")
                 .font(.headline)
                 .padding(.horizontal)
@@ -63,6 +65,7 @@ struct CalendarSettingsView: View {
                 }
             }
             .padding(.horizontal)
+            }
         }
     }
     
