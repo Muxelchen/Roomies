@@ -5,9 +5,9 @@ import { Badge } from '@/models/Badge';
 import { Challenge } from '@/models/Challenge';
 import { Household } from '@/models/Household';
 import { HouseholdTask } from '@/models/HouseholdTask';
+import { RefreshToken } from '@/models/RefreshToken';
 import { Reward } from '@/models/Reward';
 import { RewardRedemption } from '@/models/RewardRedemption';
-import { RefreshToken } from '@/models/RefreshToken';
 import { TaskComment } from '@/models/TaskComment';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
@@ -52,8 +52,9 @@ export const AppDataSource = new DataSource(
     : {
         type: 'postgres',
         url: DATABASE_URL,
-        synchronize: process.env.NODE_ENV === 'development', // Auto-sync in development
-        logging: process.env.NODE_ENV === 'development',
+        // Allow one-time schema creation in production by setting DB_SYNCHRONIZE=true
+        synchronize: process.env.DB_SYNCHRONIZE === 'true' || process.env.NODE_ENV === 'development',
+        logging: process.env.DB_LOGGING === 'true' || process.env.NODE_ENV === 'development',
         entities: [
           User,
           Household,

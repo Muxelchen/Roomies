@@ -20,7 +20,6 @@ Set these on your hosting platform:
 
 ```
 NODE_ENV=production
-PORT=3000
 JWT_SECRET=<long_random_secret>
 DATABASE_URL=postgresql://<user>:<pass>@<host>:5432/<db>
 
@@ -38,6 +37,8 @@ APP_BUNDLE_ID=de.roomies.HouseholdApp
 # CORS (only needed if you use a web client)
 # CLIENT_URL=https://your-web-origin
 ```
+
+First deploy only (to auto-create tables): set `DB_SYNCHRONIZE=true`. After the first successful deploy and health check, remove it or set to `false` and redeploy.
 
 Notes:
 - Do not commit secrets. Use your platform’s secret manager.

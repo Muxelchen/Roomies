@@ -14,14 +14,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: roomies-postgres
           property: connectionString
+
+      # First deploy: let TypeORM create tables automatically
+      - key: DB_SYNCHRONIZE
+        value: "true"
 
       # CloudKit (enable when ready)
       - key: CLOUDKIT_ENABLED
