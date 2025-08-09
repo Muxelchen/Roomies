@@ -2,22 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Roomies</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -29,12 +13,42 @@
 			</array>
 		</dict>
 	</array>
-	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>LSRequiresIPhoneOS</key>
+	<key>CloudSyncAvailable</key>
+	<true/>
+	<key>CloudSyncEnabled</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>
 	<string>17.0</string>
+	<key>MTLCaptureEnabled</key>
+	<false/>
+	<key>MTLGPUFamilyApple1</key>
+	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>127.0.0.1</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSCalendarUsageDescription</key>
+	<string>Roomies needs calendar access to sync household tasks with your calendar and set reminders for due dates.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Roomies sends notifications to remind you about task deadlines, completed tasks, and household activities.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -50,72 +64,7 @@
 			</array>
 		</dict>
 	</dict>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>armv7</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIUserInterfaceStyle</key>
-	<string>Automatic</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Roomies needs camera access to take photos of completed tasks for verification and progress tracking.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Roomies needs photo library access to select task completion photos and manage household memories.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Roomies uses location to help organize tasks by room and provide location-based reminders.</string>
-	<key>NSCalendarUsageDescription</key>
-	<string>Roomies needs calendar access to sync household tasks with your calendar and set reminders for due dates.</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Roomies needs access to reminders to create and manage task notifications and deadlines.</string>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>Roomies sends notifications to remind you about task deadlines, completed tasks, and household activities.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Roomies needs contacts access to easily invite family members and friends to join your household.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Roomies needs microphone access for voice notes and task instructions.</string>
-	<!-- ✅ FIX: Add Metal Performance Shaders flag to prevent RenderBox framework issues -->
-	<key>MTLCaptureEnabled</key>
-	<false/>
-	<key>MTLGPUFamilyApple1</key>
-	<false/>
-    <!-- ✅ Allow local HTTP for development (ATS exceptions for localhost) -->
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsLocalNetworking</key>
-        <true/>
-        <key>NSExceptionDomains</key>
-        <dict>
-            <key>localhost</key>
-            <dict>
-                <key>NSIncludesSubdomains</key>
-                <true/>
-                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
-                <true/>
-            </dict>
-            <key>127.0.0.1</key>
-            <dict>
-                <key>NSIncludesSubdomains</key>
-                <true/>
-                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
-                <true/>
-            </dict>
-        </dict>
-    </dict>
 </dict>
 </plist>

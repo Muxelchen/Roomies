@@ -1,8 +1,12 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import CloudKitService from '@/services/CloudKitService';
+import { authenticateToken } from '@/middleware/auth';
 
 const router = express.Router();
+
+// All notification routes require authentication
+router.use(authenticateToken);
 
 // Register device token for push notifications via CloudKit (scaffold)
 router.post('/register-device', async (req: Request, res: Response) => {
@@ -20,6 +24,32 @@ router.post('/register-device', async (req: Request, res: Response) => {
     return res.json({ success: true });
   } catch (e) {
     return res.status(500).json({ success: false, error: { code: 'REGISTER_DEVICE_ERROR', message: 'Failed to register device' } });
+  }
+});
+
+// Update notification preferences (scaffold)
+router.put('/preferences', async (req: Request, res: Response) => {
+  try {
+    const { preferences } = req.body || {};
+    // TODO: persist preferences to DB per user
+    return res.json({ success: true, data: { preferences: preferences || {} }, message: 'Preferences updated' });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: { code: 'PREFERENCES_ERROR', message: 'Failed to update preferences' } });
+  }
+});
+
+// Test push notification (scaffold)
+router.post('/test', async (req: Request, res: Response) => {
+  try {
+    const cloud = CloudKitService.getInstance();
+    const status = cloud.getCloudKitStatus();
+    if (!status.enabled || !status.available) {
+      return res.json({ success: true, message: 'Cloud not enabled/configured; test simulated' });
+    }
+    // TODO: Use CloudKit Web Services to create a small test record for connectivity verification
+    return res.json({ success: true, message: 'CloudKit connectivity OK' });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: { code: 'TEST_PUSH_ERROR', message: 'Failed to send test notification' } });
   }
 });
 

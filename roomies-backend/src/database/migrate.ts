@@ -60,6 +60,16 @@ async function runCustomMigrations(): Promise<void> {
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activities_user_household 
       ON activity (user_id, household_id, created_at DESC);
     `);
+
+    // Ensure users table has verification and reset fields
+    await queryRunner.query(`
+      ALTER TABLE IF EXISTS users
+        ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS email_verification_token_hash VARCHAR NULL,
+        ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMPTZ NULL,
+        ADD COLUMN IF NOT EXISTS password_reset_token_hash VARCHAR NULL,
+        ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMPTZ NULL;
+    `);
     
     await queryRunner.release();
     

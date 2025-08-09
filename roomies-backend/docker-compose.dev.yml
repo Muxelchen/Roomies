@@ -14,7 +14,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
     networks:
       - roomies-network
     restart: unless-stopped
@@ -26,17 +25,15 @@ services:
 
   # Redis Cache
   redis:
-    image: redis:7-alpine
+    image: arm64v8/redis:7-alpine
     container_name: roomies-redis-dev
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - roomies-network
     restart: unless-stopped
-    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -48,6 +45,7 @@ services:
   # Redis Commander (Web UI for Redis)
   redis-commander:
     image: rediscommander/redis-commander:latest
+    platform: linux/amd64
     container_name: roomies-redis-commander
     environment:
       REDIS_HOSTS: local:redis:6379
@@ -63,14 +61,15 @@ services:
 
   # Roomies Backend Application
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      target: development
+    image: node:18-alpine
     container_name: roomies-backend-dev
+    env_file:
+      - .env.secure
+    working_dir: /app
     environment:
       NODE_ENV: development
       PORT: 3000
+      DATABASE_URL: postgresql://roomies_user:secure_password@postgres:5432/roomies_dev
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: roomies_user
@@ -79,12 +78,22 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
-      REDIS_KEY_PREFIX: roomies:dev:
+      REDIS_KEY_PREFIX: "roomies:dev:"
       JWT_SECRET: dev-jwt-secret-change-in-production
       CLIENT_URL: http://localhost:3000
       LOG_LEVEL: debug
       ENABLE_DEBUG_ENDPOINTS: true
       ENABLE_SAMPLE_DATA: true
+      # Email configuration (optional for local)
+      EMAIL_FROM: roomiesappteam@gmail.com
+      # For Gmail, you can use service + app password (recommended):
+      # SMTP_SERVICE: gmail
+      # SMTP_USER: roomiesappteam@gmail.com
+      # SMTP_PASS: your_app_password
+      # Or explicit SMTP host config:
+      # SMTP_HOST: smtp.example.com
+      # SMTP_PORT: 587
+      # SMTP_SECURE: 'false'
     ports:
       - "3001:3000"
     volumes:
@@ -99,9 +108,9 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    command: npm run dev
+    command: sh -lc "npm ci && npm run dev"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -119,7 +128,6 @@ services:
       - "8080:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
     networks:
       - roomies-network
     depends_on:

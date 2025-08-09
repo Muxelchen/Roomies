@@ -1,3 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${API_URL:-http://localhost:3000/api}"
+
+echo "🧪 Running comprehensive API E2E against ${BASE_URL}"
+
+EMAIL="user$RANDOM@example.com"
+PASS="Password123!"
+NAME="CLI User"
+
+echo "→ Register"
+REGISTER=$(curl -s -X POST "$BASE_URL/auth/register" -H 'content-type: application/json' -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"name\":\"$NAME\"}")
+TOKEN=$(echo "$REGISTER" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).data.token)}catch(e){process.exit(1)}})")
+
+auth() { echo "Authorization: Bearer $TOKEN"; }
+
+echo "→ Create household"
+HOUSEHOLD=$(curl -s -X POST "$BASE_URL/households" -H "$(auth)" -H 'content-type: application/json' -d '{"name":"CLI Household"}')
+HID=$(echo "$HOUSEHOLD" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{console.log(JSON.parse(d).data.id)})")
+
+echo "→ Create task"
+TASK=$(curl -s -X POST "$BASE_URL/tasks" -H "$(auth)" -H 'content-type: application/json' -d "{\"title\":\"Dish duty\",\"points\":10,\"householdId\":\"$HID\"}")
+TID=$(echo "$TASK" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{console.log(JSON.parse(d).data.id)})")
+
+echo "→ Complete task"
+curl -s -X POST "$BASE_URL/tasks/$TID/complete" -H "$(auth)" > /dev/null
+
+echo "→ Create reward"
+REWARD=$(curl -s -X POST "$BASE_URL/rewards" -H "$(auth)" -H 'content-type: application/json' -d "{\"name\":\"Ice Cream\",\"cost\":5,\"householdId\":\"$HID\"}")
+RID=$(echo "$REWARD" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{console.log(JSON.parse(d).data.id)})")
+
+echo "→ Redeem reward"
+curl -s -X POST "$BASE_URL/rewards/$RID/redeem" -H "$(auth)" > /dev/null
+
+echo "→ Leaderboard"
+curl -s "$BASE_URL/gamification/leaderboard/$HID" -H "$(auth)" | jq '.data.leaderboard | length' || true
+
+echo "✅ E2E complete"
+
 #!/bin/bash
 
 echo "🚀 Roomies Backend - Comprehensive API Test Suite"

@@ -17,7 +17,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "migrate": "ts-node -r tsconfig-paths/register src/database/migrate.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
-    "test:realtime": "node test-realtime.js"
+    "test:realtime": "node test-realtime.js",
+    "e2e:mvp": "node --experimental-fetch scripts/e2e-mvp.js"
   },
   "dependencies": {
     "@sentry/node": "^10.2.0",

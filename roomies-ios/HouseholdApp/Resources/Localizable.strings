@@ -240,6 +240,13 @@
 "time.overdue_by" = "Overdue by %d days";
 
 // MARK: - Badges
+"badges.all_title" = "All Badges";
+"badges.requirement.points" = "Reach %d points";
+"badges.requirement.tasks" = "Complete %d tasks";
+"badges.requirement.streak" = "Maintain a %d-day streak";
+"badges.requirement.challenge_win" = "Win a challenge";
+"badges.requirement.special" = "Awarded for special contributions";
+
 "badge.point_collector" = "Point Collector";
 "badge.point_master" = "Point Master";
 "badge.task_master" = "Task Master";

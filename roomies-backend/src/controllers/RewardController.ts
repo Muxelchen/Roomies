@@ -127,6 +127,168 @@ export class RewardController {
       res.status(500).json(createErrorResponse('Failed to redeem reward', 'REDEEM_ERROR'));
     }
   });
+
+  /**
+   * Create a reward (household admin only)
+   */
+  createReward = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { name, description, cost, iconName, color, quantityAvailable, maxPerUser, expiresAt, householdId } = req.body || {};
+
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    if (!name || !householdId || !cost) {
+      res.status(400).json(createErrorResponse('name, cost, and householdId are required', 'VALIDATION_ERROR'));
+      return;
+    }
+
+    const membership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: householdId }, isActive: true } });
+    if (!membership || membership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only household admins can create rewards', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+
+    const household = membership.household;
+    const creator = membership.user;
+
+    const reward = this.rewardRepository.create({
+      name: String(name).trim(),
+      description: description ? String(description).trim() : undefined,
+      cost: Math.max(1, parseInt(String(cost), 10) || 1),
+      isAvailable: true,
+      iconName: iconName || 'gift',
+      color: color || 'blue',
+      quantityAvailable: quantityAvailable !== undefined && quantityAvailable !== null ? Number(quantityAvailable) : undefined,
+      maxPerUser: maxPerUser !== undefined && maxPerUser !== null ? Number(maxPerUser) : undefined,
+      expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+      createdBy: req.userId,
+      household,
+      creator
+    });
+
+    const saved = await this.rewardRepository.save(reward);
+
+    res.status(201).json(createResponse({
+      id: saved.id,
+      name: saved.name,
+      description: saved.description,
+      cost: saved.cost,
+      status: saved.status,
+      iconName: saved.iconName,
+      color: saved.color,
+      quantityAvailable: saved.quantityAvailable ?? null,
+      remainingQuantity: saved.remainingQuantity,
+      maxPerUser: saved.maxPerUser ?? null,
+      expiresAt: saved.expiresAt ?? null,
+      householdId: saved.household.id,
+      createdAt: saved.createdAt,
+    }, 'Reward created'));
+  });
+
+  /**
+   * Update a reward (household admin only)
+   */
+  updateReward = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { rewardId } = req.params;
+    const { name, description, cost, iconName, color, quantityAvailable, maxPerUser, expiresAt, isAvailable } = req.body || {};
+
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const reward = await this.rewardRepository.findOne({ where: { id: rewardId }, relations: ['household'] });
+    if (!reward) {
+      res.status(404).json(createErrorResponse('Reward not found', 'REWARD_NOT_FOUND'));
+      return;
+    }
+
+    const membership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: reward.household.id }, isActive: true } });
+    if (!membership || membership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only household admins can update rewards', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+
+    if (name !== undefined) reward.name = String(name).trim();
+    if (description !== undefined) reward.description = String(description).trim();
+    if (cost !== undefined) reward.cost = Math.max(1, parseInt(String(cost), 10) || reward.cost);
+    if (iconName !== undefined) reward.iconName = String(iconName);
+    if (color !== undefined) reward.color = String(color);
+    if (quantityAvailable !== undefined) reward.updateQuantity(quantityAvailable === null ? null : Number(quantityAvailable));
+    if (maxPerUser !== undefined) reward.maxPerUser = maxPerUser === null ? undefined : Number(maxPerUser);
+    if (expiresAt !== undefined) reward.updateExpiration(expiresAt ? new Date(expiresAt) : null);
+    if (isAvailable !== undefined) reward.isAvailable = Boolean(isAvailable);
+
+    const saved = await this.rewardRepository.save(reward);
+
+    res.json(createResponse({
+      id: saved.id,
+      name: saved.name,
+      description: saved.description,
+      cost: saved.cost,
+      status: saved.status,
+      iconName: saved.iconName,
+      color: saved.color,
+      quantityAvailable: saved.quantityAvailable ?? null,
+      remainingQuantity: saved.remainingQuantity,
+      maxPerUser: saved.maxPerUser ?? null,
+      expiresAt: saved.expiresAt ?? null,
+      updatedAt: saved.updatedAt
+    }, 'Reward updated'));
+  });
+
+  /**
+   * Delete a reward (household admin only)
+   */
+  deleteReward = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { rewardId } = req.params;
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const reward = await this.rewardRepository.findOne({ where: { id: rewardId }, relations: ['household'] });
+    if (!reward) {
+      res.status(404).json(createErrorResponse('Reward not found', 'REWARD_NOT_FOUND'));
+      return;
+    }
+
+    const membership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: reward.household.id }, isActive: true } });
+    if (!membership || membership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only household admins can delete rewards', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+
+    await this.rewardRepository.delete(reward.id);
+    res.json(createResponse({ id: reward.id }, 'Reward deleted'));
+  });
+
+  /**
+   * Get current user's reward redemption history
+   */
+  getMyRedemptionHistory = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const redemptions = await this.redemptionRepository.find({
+      where: { redeemedBy: { id: req.userId } },
+      relations: ['reward'],
+      order: { redeemedAt: 'DESC' }
+    });
+
+    res.json(createResponse({
+      history: redemptions.map(r => ({
+        id: r.id,
+        reward: { id: r.reward.id, name: r.reward.name, cost: r.reward.cost },
+        pointsSpent: r.pointsSpent,
+        redeemedAt: r.redeemedAt
+      }))
+    }, 'Reward redemption history'));
+  });
 }
 
 export default RewardController;

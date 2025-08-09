@@ -16,9 +16,33 @@ router.use(authenticateToken);
 router.get('/household/:householdId', validateUUID('householdId'), controller.listHouseholdRewards);
 
 /**
+ * @route   POST /api/rewards
+ * @desc    Create a reward (admin)
+ */
+router.post('/', controller.createReward);
+
+/**
+ * @route   PUT /api/rewards/:rewardId
+ * @desc    Update a reward (admin)
+ */
+router.put('/:rewardId', validateUUID('rewardId'), controller.updateReward);
+
+/**
+ * @route   DELETE /api/rewards/:rewardId
+ * @desc    Delete a reward (admin)
+ */
+router.delete('/:rewardId', validateUUID('rewardId'), controller.deleteReward);
+
+/**
  * @route   POST /api/rewards/:rewardId/redeem
  * @desc    Redeem a reward
  */
 router.post('/:rewardId/redeem', validateUUID('rewardId'), controller.redeemReward);
+
+/**
+ * @route   GET /api/rewards/history/my
+ * @desc    Get current user's redemption history
+ */
+router.get('/history/my', controller.getMyRedemptionHistory);
 
 export default router;

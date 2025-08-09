@@ -36,6 +36,7 @@ Create a `.env` at project root with at least:
 
 ```
 CLOUDKIT_ENABLED=false
+CLOUDKIT_USE_WEB_SERVICES=false
 DATABASE_URL=postgresql://localhost:5432/roomies_dev
 PORT=3000
 ```
@@ -45,7 +46,12 @@ To enable CloudKit later, add:
 ```
 CLOUDKIT_ENABLED=true
 CLOUDKIT_CONTAINER_ID=iCloud.com.yourcompany.roomies
-# Optional token for CloudKit Web Services if used
+# For Web Services server-to-server signing:
+CLOUDKIT_USE_WEB_SERVICES=true
+CLOUDKIT_ENV=development            # or production
+CLOUDKIT_KEY_ID=XXXXXXXXXX          # Key ID from Apple Developer
+CLOUDKIT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEv...\n-----END PRIVATE KEY-----\n"
+# Optional token for other auth scenarios
 CLOUDKIT_API_TOKEN=your_token
 ```
 
@@ -98,14 +104,15 @@ POST   /api/households        # Create household
 GET    /api/households/:id    # Get household details
 PUT    /api/households/:id    # Update household
 POST   /api/households/join   # Join via invite code
-DELETE /api/households/:id/leave  # Leave household
+POST   /api/households/leave  # Leave household
 GET    /api/households/:id/members  # Get members
-POST   /api/households/:id/invite   # Generate invite
+POST   /api/households/:id/invite   # Get/regenerate invite
+DELETE /api/households/:id/members/:userId # Remove member (admin)
 ```
 
 ### Task Management
 ```
-GET    /api/tasks             # Get tasks (filtered)
+GET    /api/tasks/household/:householdId  # Get tasks for household
 POST   /api/tasks             # Create task
 PUT    /api/tasks/:id         # Update task
 DELETE /api/tasks/:id         # Delete task
@@ -116,18 +123,20 @@ GET    /api/tasks/my-tasks        # Current user tasks
 
 ### Gamification
 ```
-GET    /api/gamification/stats       # User stats
-GET    /api/gamification/leaderboard # Household leaderboard
-GET    /api/gamification/badges      # Available badges
-POST   /api/gamification/claim-badge # Claim earned badge
+GET    /api/gamification/stats                 # Global activity stats
+GET    /api/gamification/leaderboard/:householdId  # Household leaderboard
+GET    /api/gamification/achievements          # Current user's achievements
+POST   /api/gamification/claim-achievement     # Claim earned achievement (TBD)
 ```
 
 ### Reward Store
 ```
-GET    /api/rewards           # Get available rewards
-POST   /api/rewards           # Create reward (admin)
-POST   /api/rewards/:id/redeem    # Redeem reward
-GET    /api/rewards/history       # Redemption history
+GET    /api/rewards/household/:householdId # Get available rewards for a household
+POST   /api/rewards                      # Create reward (admin)
+PUT    /api/rewards/:id                  # Update reward (admin)
+DELETE /api/rewards/:id                  # Delete reward (admin)
+POST   /api/rewards/:id/redeem           # Redeem reward
+GET    /api/rewards/history/my           # Current user's redemption history
 ```
 
 ### Real-time WebSocket Events
@@ -246,6 +255,8 @@ npm run test:coverage
 ## 🔒 Security Features
 
 - **JWT Authentication** with secure token management
+- **Email Verification** with tokenized links
+- **Password Reset** via tokenized email links
 - **Password Hashing** with bcrypt (12 rounds)
 - **Rate Limiting** on all endpoints
 - **Input Validation** with class-validator
@@ -281,6 +292,18 @@ CLOUDKIT_CONTAINER_ID=iCloud.com.yourcompany.roomies
 REDIS_HOST=localhost
 ENABLE_ANALYTICS=true
 ENABLE_REAL_TIME_SYNC=true
+
+# Email (for auth/reset emails)
+EMAIL_FROM=roomiesappteam@gmail.com
+# Use one of the following SMTP setups:
+# 1) Well-known service (e.g., Gmail) with app password
+# SMTP_SERVICE=gmail
+# SMTP_USER=roomiesappteam@gmail.com
+# SMTP_PASS=your_app_password
+# 2) Explicit SMTP server
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
 ```
 
 ## 🚀 Deployment
@@ -331,6 +354,13 @@ npm run test
 
 # 3. When ready, simulate CloudKit enabling
 CLOUDKIT_ENABLED=true npm run dev
+
+### Email Verification & Reset
+
+- POST `/api/auth/register` sends a verification email to the user.
+- POST `/api/auth/verify-email` with `{ email, token }` marks the email as verified.
+- POST `/api/auth/forgot-password` sends a password reset link.
+- POST `/api/auth/reset-password` with `{ email, token, newPassword }` resets the password.
 
 # 4. All CloudKit features activate with proper fallbacks
 ```

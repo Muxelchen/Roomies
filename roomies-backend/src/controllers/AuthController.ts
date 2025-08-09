@@ -12,6 +12,8 @@ import {
   asyncHandler
 } from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
+import MailService from '@/services/MailService';
+import TokenService from '@/services/TokenService';
 
 export class AuthController {
   private userRepository = AppDataSource.getRepository(User);
@@ -69,6 +71,12 @@ export class AuthController {
       throw new ValidationError('Validation failed', errors.map(e => e.constraints));
     }
 
+    // Generate email verification token
+    const verification = TokenService.generateToken(24);
+    user.emailVerificationTokenHash = verification.tokenHash;
+    user.emailVerificationExpires = verification.expiresAt;
+    user.emailVerified = false;
+
     // Save user
     await this.userRepository.save(user);
 
@@ -80,6 +88,18 @@ export class AuthController {
     });
 
     logger.info('User registered successfully', { userId: user.id, email: user.email });
+
+    // Send verification email (best-effort)
+    try {
+      const appBaseUrl = process.env.CLIENT_URL || 'https://roomies.app';
+      const verifyLink = `${appBaseUrl}/verify-email?token=${verification.token}&email=${encodeURIComponent(user.email)}`;
+      await MailService.getInstance().sendMail({
+        to: user.email,
+        subject: 'Verify your Roomies email',
+        text: `Welcome to Roomies! Please verify your email by visiting: ${verifyLink}`,
+        html: `<p>Welcome to Roomies! Please verify your email by clicking the link below:</p><p><a href="${verifyLink}">Verify Email</a></p>`
+      });
+    } catch {}
 
     // Return user data and token
     res.status(201).json(createResponse({
@@ -260,7 +280,26 @@ export class AuthController {
       throw new ValidationError('Email is required');
     }
 
-    // TODO: Implement email integration when available
+    // Generate reset token if user exists and send email (do not leak existence)
+    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    if (user) {
+      const reset = TokenService.generateToken(2);
+      user.passwordResetTokenHash = reset.tokenHash;
+      user.passwordResetExpires = reset.expiresAt;
+      await this.userRepository.save(user);
+
+      const appBaseUrl = process.env.CLIENT_URL || 'https://roomies.app';
+      const resetLink = `${appBaseUrl}/reset-password?token=${reset.token}&email=${encodeURIComponent(user.email)}`;
+      try {
+        await MailService.getInstance().sendMail({
+          to: user.email,
+          subject: 'Roomies password reset',
+          text: `If you requested a password reset, visit: ${resetLink}\n\nIf not, you can ignore this email.`,
+          html: `<p>If you requested a password reset, click the link below:</p><p><a href="${resetLink}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+        });
+      } catch {}
+    }
+
     logger.info('Password reset requested', { email });
 
     // Always return success for security (don't reveal if email exists)
@@ -274,19 +313,81 @@ export class AuthController {
    * Reset password - ENHANCED (placeholder for email integration)
    */
   resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { token, newPassword } = req.body;
+    const { token, newPassword, email } = req.body;
 
     if (!token || !newPassword) {
       throw new ValidationError('Token and new password are required');
     }
 
-    // TODO: Implement token validation and password reset
-    logger.info('Password reset attempted', { token: token.substring(0, 10) + '...' });
+    const user = await this.userRepository.findOne({ where: { email: (email || '').toLowerCase() } });
+    if (!user || !user.passwordResetTokenHash || !user.passwordResetExpires) {
+      throw new UnauthorizedError('Invalid or expired reset token');
+    }
+    if (user.passwordResetExpires.getTime() < Date.now()) {
+      throw new UnauthorizedError('Invalid or expired reset token');
+    }
+    const providedHash = TokenService.hashToken(token);
+    if (providedHash !== user.passwordResetTokenHash) {
+      throw new UnauthorizedError('Invalid or expired reset token');
+    }
+    user.hashedPassword = newPassword;
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpires = null;
+    await this.userRepository.save(user);
 
-    res.status(501).json(createErrorResponse(
-      'Password reset not implemented yet',
-      'NOT_IMPLEMENTED'
-    ));
+    res.json(createResponse({}, 'Password reset successfully'));
+  });
+
+  verifyEmail = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { token, email } = req.body;
+    if (!token || !email) {
+      throw new ValidationError('Token and email are required');
+    }
+    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    if (!user || !user.emailVerificationTokenHash || !user.emailVerificationExpires) {
+      throw new UnauthorizedError('Invalid or expired verification token');
+    }
+    if (user.emailVerificationExpires.getTime() < Date.now()) {
+      throw new UnauthorizedError('Invalid or expired verification token');
+    }
+    const providedHash = TokenService.hashToken(token);
+    if (providedHash !== user.emailVerificationTokenHash) {
+      throw new UnauthorizedError('Invalid or expired verification token');
+    }
+    user.emailVerified = true;
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpires = null;
+    await this.userRepository.save(user);
+    res.json(createResponse({}, 'Email verified successfully'));
+  });
+
+  // GET-friendly verification for link clicks
+  verifyEmailLink = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const token = String(req.query.token || '');
+    const email = String(req.query.email || '');
+    if (!token || !email) {
+      res.status(400).send('Invalid verification link');
+      return;
+    }
+    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    if (!user || !user.emailVerificationTokenHash || !user.emailVerificationExpires) {
+      res.status(400).send('Verification link is invalid or expired');
+      return;
+    }
+    if (user.emailVerificationExpires.getTime() < Date.now()) {
+      res.status(400).send('Verification link is invalid or expired');
+      return;
+    }
+    const providedHash = TokenService.hashToken(token);
+    if (providedHash !== user.emailVerificationTokenHash) {
+      res.status(400).send('Verification link is invalid or expired');
+      return;
+    }
+    user.emailVerified = true;
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpires = null;
+    await this.userRepository.save(user);
+    res.send('Email verified! You can close this page and return to the app.');
   });
 
   /**

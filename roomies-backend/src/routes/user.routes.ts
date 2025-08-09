@@ -25,6 +25,13 @@ router.get('/profile', userController.getProfile);
 router.put('/profile', userController.updateProfile);
 
 /**
+ * @route   POST /api/users/avatar
+ * @desc    Upload/Update avatar image
+ * @access  Private
+ */
+router.post('/avatar', userController.uploadAvatar);
+
+/**
  * @route   GET /api/users/statistics
  * @desc    Get user statistics and achievements
  * @access  Private

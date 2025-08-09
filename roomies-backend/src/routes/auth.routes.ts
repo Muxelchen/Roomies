@@ -7,6 +7,7 @@ import {
 import { asyncHandler, createResponse } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
 import { validateRequest, schemas } from '@/middleware/validation';
+import Joi from 'joi';
 
 const router = express.Router();
 const authController = new AuthController();
@@ -97,9 +98,35 @@ router.post('/forgot-password',
  */
 router.post('/reset-password', 
   passwordResetRateLimiter,  // 3 attempts per hour
-  // TODO: Add reset password schema when implementing
+  validateRequest(Joi.object({
+    email: Joi.string().email({ tlds: { allow: false } }).required().lowercase().trim(),
+    token: Joi.string().required(),
+    newPassword: Joi.string().min(8).max(128).required().pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  })),
   authController.resetPassword
 );
+
+/**
+ * @route   POST /api/auth/verify-email
+ * @desc    Verify email with token
+ * @access  Public
+ * @body    { email: string, token: string }
+ */
+router.post('/verify-email',
+  validateRequest(Joi.object({
+    email: Joi.string().email({ tlds: { allow: false } }).required().lowercase().trim(),
+    token: Joi.string().required()
+  })),
+  authController.verifyEmail
+);
+
+/**
+ * @route   GET /api/auth/verify-email
+ * @desc    Verify email via clickable link with query params
+ * @access  Public
+ * @query   token, email
+ */
+router.get('/verify-email', authController.verifyEmailLink);
 
 /**
  * @route   POST /api/auth/change-password

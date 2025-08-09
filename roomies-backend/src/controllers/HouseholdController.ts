@@ -329,6 +329,125 @@ export class HouseholdController {
   });
 
   /**
+   * Get household by id (only for members)
+   */
+  getHouseholdById = asyncHandler(async (req: Request, res: Response) => {
+    const { householdId } = req.params;
+
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: householdId }, isActive: true },
+      relations: ['household', 'household.memberships', 'household.memberships.user']
+    });
+
+    if (!membership) {
+      res.status(403).json(createErrorResponse('Access denied. Not a member of this household.', 'ACCESS_DENIED'));
+      return;
+    }
+
+    const household = membership.household;
+    const activeMembers = household.memberships.filter(m => m.isActive);
+    const [activeTasks, completedTasks] = await Promise.all([
+      this.taskRepository.count({ where: { household: { id: household.id }, isCompleted: false } }),
+      this.taskRepository.count({ where: { household: { id: household.id }, isCompleted: true } })
+    ]);
+
+    res.json(createResponse({
+      id: household.id,
+      name: household.name,
+      inviteCode: household.inviteCode,
+      createdAt: household.createdAt,
+      role: membership.role,
+      memberCount: activeMembers.length,
+      members: activeMembers.map(m => ({
+        id: m.user.id,
+        name: m.user.name,
+        avatarColor: m.user.avatarColor,
+        role: m.role,
+        points: m.user.points,
+        level: m.user.level,
+        joinedAt: m.joinedAt,
+        lastActivity: m.user.lastActivity
+      })),
+      statistics: {
+        memberCount: activeMembers.length,
+        activeTasks,
+        completedTasks,
+        totalPoints: activeMembers.reduce((sum, m) => sum + (m.user?.points || 0), 0)
+      }
+    }));
+  });
+
+  /**
+   * Get or regenerate invite code (admin only)
+   */
+  getInvite = asyncHandler(async (req: Request, res: Response) => {
+    const { householdId } = req.params;
+    const { regenerate } = req.body || {};
+
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, household: { id: householdId }, isActive: true },
+      relations: ['household']
+    });
+
+    if (!membership || membership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only household admins can manage invites', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+
+    const household = membership.household;
+    if (regenerate === true) {
+      household.inviteCode = this.generateInviteCode();
+      await this.householdRepository.save(household);
+    }
+
+    res.json(createResponse({ inviteCode: household.inviteCode }));
+  });
+
+  /**
+   * Remove a member from household (admin only)
+   */
+  removeMember = asyncHandler(async (req: Request, res: Response) => {
+    const { householdId, memberId } = req.params;
+
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const adminMembership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: householdId }, isActive: true } });
+    if (!adminMembership || adminMembership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only admins can remove members', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+
+    const target = await this.membershipRepository.findOne({ where: { user: { id: memberId }, household: { id: householdId }, isActive: true } });
+    if (!target) {
+      res.status(404).json(createErrorResponse('Member not found in this household', 'MEMBER_NOT_FOUND'));
+      return;
+    }
+
+    if (target.role === 'admin') {
+      res.status(409).json(createErrorResponse('Cannot remove another admin. Demote first.', 'CANNOT_REMOVE_ADMIN'));
+      return;
+    }
+
+    target.isActive = false;
+    target.leftAt = new Date();
+    await this.membershipRepository.save(target);
+
+    res.json(createResponse({ removedUserId: memberId }, 'Member removed'));
+  });
+  /**
    * Update household information (admin only)
    */
   updateHousehold = asyncHandler(async (req: Request, res: Response) => {

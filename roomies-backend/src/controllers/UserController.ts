@@ -7,6 +7,7 @@ import { RewardRedemption } from '@/models/RewardRedemption';
 import { logger } from '@/utils/logger';
 import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
+import FileStorageService from '@/services/FileStorageService';
 
 export class UserController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
@@ -200,6 +201,35 @@ export class UserController {
       streakDays: user.streakDays,
       updatedAt: user.updatedAt
     }, 'Profile updated successfully'));
+  });
+
+  /**
+   * Upload user avatar (expects base64 image or binary buffer in body)
+   */
+  uploadAvatar = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+
+    const { imageBase64, contentType } = req.body || {};
+    if (!imageBase64 || !contentType || !contentType.startsWith('image/')) {
+      res.status(400).json(createErrorResponse('imageBase64 and image/* contentType required', 'VALIDATION_ERROR'));
+      return;
+    }
+
+    const buffer = Buffer.from(String(imageBase64), 'base64');
+    const storage = FileStorageService.getInstance();
+    const url = await storage.uploadAvatar(req.userId, buffer, contentType);
+
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { id: req.userId } });
+    if (user) {
+      (user as any).avatarUrl = url;
+      await userRepository.save(user);
+    }
+
+    res.status(201).json(createResponse({ url }, 'Avatar uploaded'));
   });
 
   /**

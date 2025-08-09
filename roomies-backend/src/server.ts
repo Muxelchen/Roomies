@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { corsConfig, securityMiddlewareStack } from '@/middleware/security';
 import { AppDataSource } from '@/config/database';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
@@ -31,8 +33,12 @@ import notificationRoutes from '@/routes/notification.routes';
 import challengeRoutes from '@/routes/challenge.routes';
 import eventRoutes from '@/routes/events.routes';
 
-// Load environment variables
+// Load environment variables (.env then optional .env.secure)
 dotenv.config();
+const secureEnvPath = path.resolve(process.cwd(), '.env.secure');
+if (fs.existsSync(secureEnvPath)) {
+  dotenv.config({ path: secureEnvPath });
+}
 
 class RoomiesServer {
   private app: express.Application;

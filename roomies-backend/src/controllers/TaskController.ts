@@ -235,6 +235,100 @@ export class TaskController {
   });
 
   /**
+   * Get tasks assigned to the current user in their active household
+   */
+  getMyTasks = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    if (!req.user || !req.userId) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    // Find active household membership
+    const membership = await this.membershipRepository.findOne({
+      where: { user: { id: req.userId }, isActive: true },
+      relations: ['household']
+    });
+
+    if (!membership) {
+      res.json(createResponse({ tasks: [], pagination: { currentPage: 1, totalPages: 0, totalItems: 0, hasNextPage: false, hasPreviousPage: false } }, 'No active household'));
+      return;
+    }
+
+    const tasks = await this.taskRepository.find({
+      where: { household: { id: membership.household.id }, assignedTo: { id: req.userId }, isCompleted: false },
+      relations: ['assignedTo', 'creator'],
+      order: { dueDate: 'ASC', createdAt: 'DESC' },
+      take: 100
+    });
+
+    res.json(createResponse({
+      tasks: tasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate,
+        priority: task.priority,
+        points: task.points,
+        isRecurring: task.isRecurring,
+        recurringType: task.recurringType,
+        isCompleted: task.isCompleted,
+        assignedUser: task.assignedTo ? { id: task.assignedTo.id, name: task.assignedTo.name, avatarColor: task.assignedTo.avatarColor } : null,
+        createdBy: { id: task.creator.id, name: task.creator.name, avatarColor: task.creator.avatarColor },
+        isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
+      }))
+    }));
+  });
+
+  /**
+   * Assign a task to a user (task creator or household admin)
+   */
+  assignTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { taskId } = req.params;
+    const { userId } = req.body || {};
+
+    if (!req.user || !req.userId) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const task = await this.taskRepository.findOne({ where: { id: taskId }, relations: ['household', 'assignedTo'] });
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    const membership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: task.household.id }, isActive: true } });
+    if (!membership) {
+      throw new ValidationError('Access denied');
+    }
+
+    const isCreator = task.createdBy === req.userId;
+    const isAdmin = membership.role === 'admin';
+    if (!isCreator && !isAdmin) {
+      throw new ValidationError('Only the task creator or household admin can assign the task');
+    }
+
+    // Allow unassign when userId is null/empty
+    if (!userId) {
+      task.assignedTo = undefined;
+    } else {
+      const assigneeMembership = await this.membershipRepository.findOne({ where: { user: { id: userId }, household: { id: task.household.id }, isActive: true }, relations: ['user'] });
+      if (!assigneeMembership) {
+        throw new ValidationError('Assigned user is not a member of this household');
+      }
+      task.assignedTo = assigneeMembership.user;
+    }
+
+    await this.taskRepository.save(task);
+
+    // Emit WebSocket/SSE event
+    this.emitTaskEvent(req.app, 'task_assigned', task.household.id, {
+      task: { id: task.id, title: task.title },
+      assignedTo: task.assignedTo ? { id: task.assignedTo.id, name: task.assignedTo.name } : null,
+      updatedBy: { id: req.user!.id, name: req.user!.name }
+    });
+
+    res.json(createResponse({ id: task.id, assignedUserId: task.assignedTo?.id || null }, 'Task assignment updated'));
+  });
+
+  /**
    * Get a specific task with details - ENHANCED
    */
   getTask = asyncHandler(async (req: Request, res: Response): Promise<void> => {

@@ -207,6 +207,7 @@ class CloudSyncManager: ObservableObject {
               let userId = activity.user?.id else { return }
         
         do {
+            guard let db = getDatabase() else { return }
             let record = CKRecord(recordType: "Activity", recordID: CKRecord.ID(recordName: activityId.uuidString))
             record["action"] = activity.action
             record["type"] = activity.type
@@ -215,7 +216,7 @@ class CloudSyncManager: ObservableObject {
             record["householdId"] = householdId.uuidString
             record["userId"] = userId.uuidString
             
-            let _ = try await database.save(record)
+            let _ = try await db.save(record)
             LoggingManager.shared.debug("Activity synced to CloudKit", category: "CloudSync")
             
         } catch {

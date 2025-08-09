@@ -37,6 +37,12 @@ router.get('/household/:householdId',
 );
 
 /**
+ * @route   GET /api/tasks/my-tasks
+ * @desc    Get tasks assigned to current user across their active household
+ */
+router.get('/my-tasks', taskController.getMyTasks);
+
+/**
  * @route   GET /api/tasks/:taskId
  * @desc    Get a specific task with details - ENHANCED with validation
  * @access  Private (Household members)
@@ -77,6 +83,15 @@ router.post('/:taskId/complete',
   validateUUID('taskId'),
   expensiveOperationLimiter(50), // Prevent task completion spam
   taskController.completeTask
+);
+
+/**
+ * @route   POST /api/tasks/:taskId/assign
+ * @desc    Assign task to a user (creator or admin)
+ */
+router.post('/:taskId/assign', 
+  validateUUID('taskId'),
+  taskController.assignTask
 );
 
 /**

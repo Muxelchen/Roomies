@@ -40,6 +40,9 @@ export class User {
   @Column({ name: 'avatar_color', default: 'blue' })
   avatarColor!: string;
 
+  @Column({ name: 'avatar_url', nullable: true })
+  avatarUrl?: string | null;
+
   @Column({ default: 0 })
   points!: number;
 
@@ -48,6 +51,23 @@ export class User {
 
   @Column({ name: 'last_activity', nullable: true })
   lastActivity?: Date;
+
+  // Email verification
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
+  emailVerified!: boolean;
+
+  @Column({ name: 'email_verification_token_hash', type: 'varchar', nullable: true })
+  emailVerificationTokenHash?: string | null;
+
+  @Column({ name: 'email_verification_expires', nullable: true })
+  emailVerificationExpires?: Date | null;
+
+  // Password reset
+  @Column({ name: 'password_reset_token_hash', type: 'varchar', nullable: true })
+  passwordResetTokenHash?: string | null;
+
+  @Column({ name: 'password_reset_expires', nullable: true })
+  passwordResetExpires?: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

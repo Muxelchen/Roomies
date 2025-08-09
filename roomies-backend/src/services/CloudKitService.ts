@@ -1,4 +1,6 @@
 import { logger, cloudLogger } from '@/utils/logger';
+import crypto from 'crypto';
+import https from 'https';
 import { User } from '@/models/User';
 import { Household } from '@/models/Household';
 import { HouseholdTask } from '@/models/HouseholdTask';
@@ -33,6 +35,129 @@ class DefaultCloudKitClient implements CloudKitClient {
   }
 }
 
+// CloudKit Web Services client (server-to-server). Requires env configuration
+class WebServicesCloudKitClient implements CloudKitClient {
+  public isConfigured = false;
+  private containerId = '';
+  private environment: 'development' | 'production' = 'development';
+  private keyId = '';
+  private privateKeyPem = '';
+  private apiVersion = '1';
+
+  async configure(opts: { containerId: string; apiToken?: string }): Promise<void> {
+    // Note: apiToken not used for server-to-server; Apple uses signed headers
+    this.containerId = opts.containerId;
+    this.environment = (process.env.CLOUDKIT_ENV as any) === 'production' ? 'production' : 'development';
+    this.keyId = process.env.CLOUDKIT_KEY_ID || '';
+    this.privateKeyPem = (process.env.CLOUDKIT_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+    if (!this.containerId || !this.keyId || !this.privateKeyPem) {
+      logger.warn('CloudKit Web Services missing configuration (CLOUDKIT_CONTAINER_ID, CLOUDKIT_KEY_ID, CLOUDKIT_PRIVATE_KEY)');
+      this.isConfigured = false;
+      return;
+    }
+    this.isConfigured = true;
+  }
+
+  private getBaseUrl(database: 'public' | 'private' | 'shared' = 'public'): string {
+    return `https://api.apple-cloudkit.com/database/${this.apiVersion}/${this.containerId}/${this.environment}/${database}`;
+  }
+
+  private async request(method: string, path: string, body?: any): Promise<any> {
+    if (!this.isConfigured) throw new Error('CloudKit client not configured');
+    const date = new Date().toISOString();
+    const payload = body ? JSON.stringify(body) : '';
+    const signature = this.signRequest(date, method, path, payload);
+
+    const url = new URL(this.getBaseUrl('public') + path);
+    const options: https.RequestOptions = {
+      method,
+      hostname: url.hostname,
+      path: url.pathname + (url.search || ''),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Apple-CloudKit-Request-KeyID': this.keyId,
+        'X-Apple-CloudKit-Request-ISO8601Date': date,
+        'X-Apple-CloudKit-Request-Signature': signature
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, res => {
+        let data = '';
+        res.on('data', chunk => (data += chunk));
+        res.on('end', () => {
+          try {
+            const parsed = data ? JSON.parse(data) : null;
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(parsed);
+            } else {
+              reject(new Error(`CloudKit error ${res.statusCode}: ${data}`));
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      req.on('error', reject);
+      if (payload) req.write(payload);
+      req.end();
+    });
+  }
+
+  // NOTE: This signing method follows Apple documentation for Web Services.
+  // The canonical string typically includes the date, method, path, and body.
+  // If signing fails with CloudKit, verify the exact canonicalization rules.
+  private signRequest(dateIso: string, method: string, path: string, body: string): string {
+    const canonical = `${dateIso}\n${method.toUpperCase()}\n${path}\n${body}`;
+    const signer = crypto.createSign('sha256');
+    signer.update(canonical);
+    signer.end();
+    return signer.sign(this.privateKeyPem, 'base64');
+  }
+
+  private toCKFields(fields: Record<string, any>): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(fields)) {
+      out[k] = { value: v };
+    }
+    return out;
+  }
+
+  async createRecord(recordType: string, fields: Record<string, any>): Promise<any> {
+    const path = '/records/modify';
+    const body = {
+      operations: [
+        {
+          operationType: 'create',
+          record: {
+            recordType,
+            fields: this.toCKFields(fields)
+          }
+        }
+      ]
+    };
+    return this.request('POST', path, body);
+  }
+
+  async fetchRecords(recordType: string, predicate?: Record<string, any>): Promise<any[]> {
+    const path = '/records/query';
+    const body = {
+      query: {
+        recordType,
+        filterBy: predicate
+          ? Object.entries(predicate).map(([fieldName, value]) => ({
+              fieldName,
+              comparator: 'EQUALS',
+              fieldValue: { value }
+            }))
+          : []
+      }
+    };
+    const resp = await this.request('POST', path, body);
+    return resp?.records || [];
+  }
+}
+
 /**
  * CloudKit Service - Handles cloud synchronization with Apple's CloudKit
  * 
@@ -48,7 +173,8 @@ export class CloudKitService {
 
   private constructor() {
     this.isCloudKitEnabled = process.env.CLOUDKIT_ENABLED === 'true';
-    this.client = new DefaultCloudKitClient();
+    const useWebServices = process.env.CLOUDKIT_USE_WEB_SERVICES === 'true';
+    this.client = useWebServices ? new WebServicesCloudKitClient() : new DefaultCloudKitClient();
     
     if (!this.isCloudKitEnabled) {
       logger.info('🚫 CloudKit synchronization disabled (Free Apple Developer account)');
