@@ -22,7 +22,8 @@
     "e2e:mvp": "node --experimental-fetch scripts/e2e-mvp.js",
     "ci:e2e-local": "bash -lc 'NODE_ENV=test PORT=4010 ts-node -r tsconfig-paths/register src/server.ts & pid=$!; for i in {1..30}; do curl -fsS http://localhost:4010/health >/dev/null && break || sleep 1; done; API_URL=http://localhost:4010/api node --experimental-fetch scripts/e2e-mvp.js; kill $pid'",
     "ci:realtime-local": "bash -lc 'NODE_ENV=test PORT=4020 ts-node -r tsconfig-paths/register src/server.ts & pid=$!; for i in {1..30}; do curl -fsS http://localhost:4020/health >/dev/null && break || sleep 1; done; API_URL=http://localhost:4020/api node test-realtime.js; kill $pid'",
-    "ci:all": "npm run test:ci && npm run ci:e2e-local && npm run ci:realtime-local"
+    "ci:all": "npm run test:ci && npm run ci:e2e-local && npm run ci:realtime-local",
+    "users:list": "ts-node -r tsconfig-paths/register scripts/list-users.ts"
   },
   "dependencies": {
     "@sentry/node": "^10.2.0",

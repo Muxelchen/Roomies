@@ -65,7 +65,11 @@ export class AuthController {
     });
 
     if (existingUser) {
-      throw new ConflictError('User with this email already exists');
+      // Return standardized error envelope for clients to handle gracefully
+      return res.status(409).json(createErrorResponse(
+        'An account with this email already exists. Try logging in or resetting your password.',
+        'USER_EXISTS'
+      ));
     }
 
     // Create new user

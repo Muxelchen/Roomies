@@ -11,6 +11,8 @@ build/
 .env.aws
 .env.production
 .env.local
+# Local scripts/utilities not for commit
+scripts/list-users.ts
 
 # AWS credentials and keys
 roomies-key.pem
