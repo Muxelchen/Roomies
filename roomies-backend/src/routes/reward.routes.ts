@@ -1,7 +1,8 @@
+import express from 'express';
+
 import { RewardController } from '@/controllers/RewardController';
 import { authenticateToken } from '@/middleware/auth';
 import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
-import express from 'express';
 
 const router = express.Router();
 const controller = new RewardController();

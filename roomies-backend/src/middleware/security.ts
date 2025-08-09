@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 
 import { logger } from '@/utils/logger';
-import { Request, Response, NextFunction } from 'express';
 
 // Extend Request type to include userId
 declare module 'express-serve-static-core' {

@@ -1,4 +1,5 @@
 import { validate } from 'class-validator';
+import { Request, Response } from 'express';
 
 import { AppDataSource } from '@/config/database';
 import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
@@ -9,7 +10,6 @@ import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import CloudKitService from '@/services/CloudKitService';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 const getCloudKitService = () => CloudKitService.getInstance();
 
 export class HouseholdController {

@@ -1,8 +1,9 @@
+import { Request, Response, NextFunction } from 'express';
+
 import { AppDataSource } from '@/config/database';
 import { User } from '@/models/User';
 import { verifyToken, extractToken, JWTPayload } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
-import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include user
 declare global {
@@ -20,26 +21,20 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     const token = extractToken(req.headers.authorization);
     
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required'
-      });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Access token required' } });
     }
 
     let payload: JWTPayload | any;
     try {
       payload = verifyToken(token);
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid or expired token'
-      });
+      return res.status(401).json({ success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' } });
     }
 
     // Resolve user id from various token shapes used in tests and prod
     const resolvedUserId = (payload && (payload.userId || payload.id || payload.sub)) as string | undefined;
     if (!resolvedUserId) {
-      return res.status(401).json({ success: false, message: 'Invalid token payload' });
+      return res.status(401).json({ success: false, error: { code: 'INVALID_TOKEN_PAYLOAD', message: 'Invalid token payload' } });
     }
 
     // Attach userId from token
@@ -61,11 +56,11 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
             req.householdId = activeMembership.household.id;
           }
         } else {
-          return res.status(401).json({ success: false, message: 'User not found' });
+          return res.status(401).json({ success: false, error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
         }
       } catch (fetchError) {
         logger.error('Authentication DB fetch failed:', fetchError);
-        return res.status(500).json({ success: false, message: 'Authentication error' });
+        return res.status(500).json({ success: false, error: { code: 'AUTH_ERROR', message: 'Authentication error' } });
       }
     } else {
       // In test mode, also populate req.user and householdId for parity with production path
@@ -92,37 +87,25 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
 
   } catch (error) {
     logger.error('Authentication middleware error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Authentication error'
-    });
+    res.status(500).json({ success: false, error: { code: 'AUTH_ERROR', message: 'Authentication error' } });
   }
 }
 
 export function requireHousehold(req: Request, res: Response, next: NextFunction) {
   if (!req.householdId) {
-    return res.status(403).json({
-      success: false,
-      message: 'User must be part of a household to access this resource'
-    });
+    return res.status(403).json({ success: false, error: { code: 'HOUSEHOLD_REQUIRED', message: 'User must be part of a household to access this resource' } });
   }
   next();
 }
 
 export function requireHouseholdAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user || !req.householdId) {
-    return res.status(403).json({
-      success: false,
-      message: 'Access denied'
-    });
+    return res.status(403).json({ success: false, error: { code: 'ACCESS_DENIED', message: 'Access denied' } });
   }
 
   const isAdmin = req.user.isHouseholdAdmin(req.householdId);
   if (!isAdmin) {
-    return res.status(403).json({
-      success: false,
-      message: 'Admin privileges required'
-    });
+    return res.status(403).json({ success: false, error: { code: 'ADMIN_REQUIRED', message: 'Admin privileges required' } });
   }
 
   next();
@@ -176,10 +159,7 @@ export function requireResourceOwnership(resourceParam: string = 'id') {
     const userId = req.userId;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } });
     }
 
     // This is a basic check - specific controllers should implement more detailed ownership checks

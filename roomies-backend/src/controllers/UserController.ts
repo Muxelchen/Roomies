@@ -1,4 +1,5 @@
 import { validate } from 'class-validator';
+import { Request, Response } from 'express';
 
 import { AppDataSource } from '@/config/database';
 import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
@@ -8,7 +9,6 @@ import { RewardRedemption } from '@/models/RewardRedemption';
 import { User } from '@/models/User';
 import FileStorageService from '@/services/FileStorageService';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 export class UserController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);

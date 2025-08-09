@@ -1,12 +1,13 @@
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+
 import { AppDataSource } from '@/config/database';
-import { createResponse } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
+import { createResponse } from '@/middleware/errorHandler';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import CloudKitService from '@/services/CloudKitService';
 import { eventBroker } from '@/services/EventBroker';
 import { logger } from '@/utils/logger';
-import rateLimit from 'express-rate-limit';
-import express from 'express';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.get('/household/:householdId', async (req, res) => {
   const userId = (req as any).userId as string | undefined;
 
   if (!userId) {
-    return res.status(401).json({ success: false, error: { message: 'Unauthorized' } });
+    return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } });
   }
 
   try {
@@ -35,13 +36,13 @@ router.get('/household/:householdId', async (req, res) => {
     const repo = AppDataSource.getRepository(UserHouseholdMembership);
     const membership = await repo.findOne({ where: { user: { id: userId }, household: { id: householdId }, isActive: true } });
     if (!membership) {
-      return res.status(403).json({ success: false, error: { message: 'Forbidden' } });
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Forbidden' } });
     }
 
     // Per-user connection cap per household
     const userConnections = eventBroker.getUserClientCount(householdId, userId);
     if (userConnections >= 3) {
-      return res.status(429).json({ success: false, error: { message: 'Too many event streams open' } });
+      return res.status(429).json({ success: false, error: { code: 'SSE_LIMIT', message: 'Too many event streams open' } });
     }
 
     // Set headers for SSE
@@ -79,7 +80,7 @@ router.get('/household/:householdId', async (req, res) => {
     });
   } catch (err) {
     logger.error('SSE connection error', err as any);
-    res.status(500).json({ success: false, error: { message: 'SSE setup failed' } });
+    res.status(500).json({ success: false, error: { code: 'SSE_ERROR', message: 'SSE setup failed' } });
   }
 });
 

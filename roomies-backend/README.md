@@ -67,7 +67,9 @@ CLOUDKIT_API_TOKEN=your_token
 2. **Environment Setup**
    ```bash
    cp .env.example .env
-   # Edit .env with your database credentials
+   # Optional environment templates for staging/production are available:
+   # .env.staging.example and .env.production.example
+   # Copy and fill them to `.env` for your target environment
    ```
 
 3. **Database Setup**

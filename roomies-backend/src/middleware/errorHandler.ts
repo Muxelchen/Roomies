@@ -1,5 +1,6 @@
-import { logger } from '@/utils/logger';
 import { Request, Response, NextFunction } from 'express';
+
+import { logger } from '@/utils/logger';
 
 export interface ApiError extends Error {
   statusCode?: number;
@@ -68,7 +69,7 @@ export class CloudSyncError extends Error {
   }
 }
 
-export function errorHandler(error: ApiError, req: Request, res: Response, next: NextFunction) {
+export function errorHandler(error: ApiError, req: Request, res: Response, _next: NextFunction) {
   // Log error details
   logger.error('API Error:', {
     message: error.message,
@@ -82,8 +83,11 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
     householdId: req.householdId
   });
 
-  // Handle validation errors from class-validator
-  if (error.name === 'ValidationError' || (error.message && error.message.toLowerCase().includes('validation'))) {
+  // Handle validation errors (our ValidationError or JOI/class-validator flavors)
+  if (
+    error.name === 'ValidationError' ||
+    (typeof error.message === 'string' && error.message.toLowerCase().includes('validation'))
+  ) {
     return res.status(400).json({
       success: false,
       error: {
@@ -106,7 +110,7 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
   }
 
   // Handle JWT errors
-  if (error.message.includes('jwt') || error.message.includes('token')) {
+  if (typeof error.message === 'string' && (error.message.includes('jwt') || error.message.includes('token'))) {
     return res.status(401).json({
       success: false,
       error: {
@@ -142,8 +146,12 @@ export function errorHandler(error: ApiError, req: Request, res: Response, next:
 }
 
 // Async error handler wrapper
-export function asyncHandler(fn: Function) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function asyncHandler<
+  TReq extends Request = Request,
+  TRes extends Response = Response,
+  TNext extends NextFunction = NextFunction
+>(fn: (req: TReq, res: TRes, next: TNext) => any) {
+  return (req: TReq, res: TRes, next: TNext) => {
     return Promise.resolve(fn(req, res, next)).catch(next);
   };
 }

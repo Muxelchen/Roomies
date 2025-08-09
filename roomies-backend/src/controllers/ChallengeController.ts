@@ -1,10 +1,11 @@
+import { Request, Response } from 'express';
+
 import { AppDataSource } from '@/config/database';
 import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { Challenge } from '@/models/Challenge';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 export class ChallengeController {
   private challengeRepository = AppDataSource.getRepository(Challenge);

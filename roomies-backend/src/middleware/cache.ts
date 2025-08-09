@@ -1,6 +1,7 @@
+import { Request, Response, NextFunction } from 'express';
+
 import { getCacheService, CacheKeys } from '@/services/CacheService';
 import { logger } from '@/utils/logger';
-import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include cache context
 declare global {

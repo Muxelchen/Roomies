@@ -1,5 +1,7 @@
 import { validate } from 'class-validator';
-import { In } from 'typeorm';
+// import { In } from 'typeorm';
+
+import { Request, Response } from 'express';
 
 import { AppDataSource } from '@/config/database';
 import { 
@@ -15,8 +17,8 @@ import { HouseholdTask } from '@/models/HouseholdTask';
 import { TaskComment } from '@/models/TaskComment';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
+import { eventBroker } from '@/services/EventBroker';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 export class TaskController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
@@ -269,22 +271,15 @@ export class TaskController {
       take: 100
     });
 
-    res.json(createResponse(
-      tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
-        priority: task.priority,
-        points: task.points,
-        isRecurring: task.isRecurring,
-        recurringType: task.recurringType,
-        isCompleted: task.isCompleted,
-        assignedUser: task.assignedTo ? { id: task.assignedTo.id, name: task.assignedTo.name, avatarColor: task.assignedTo.avatarColor } : null,
-        createdBy: { id: task.creator.id, name: task.creator.name, avatarColor: task.creator.avatarColor },
+    const apiTasks = await Promise.all(tasks.map(async task => {
+      const base = await this.toAPITask(task);
+      return {
+        ...base,
         isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
-      }))
-    ));
+      };
+    }));
+
+    res.json(createResponse(apiTasks));
   });
 
   /**
@@ -298,7 +293,7 @@ export class TaskController {
       throw new UnauthorizedError('User not authenticated');
     }
 
-    const task = await this.taskRepository.findOne({ where: { id: taskId }, relations: ['household', 'assignedTo'] });
+    const task = await this.taskRepository.findOne({ where: { id: taskId }, relations: ['household', 'assignedTo', 'creator'] });
     if (!task) {
       throw new NotFoundError('Task not found');
     }
@@ -334,7 +329,8 @@ export class TaskController {
       updatedBy: { id: req.user!.id, name: req.user!.name }
     });
 
-    res.json(createResponse({ id: task.id, assignedUserId: task.assignedTo?.id || null }, 'Task assignment updated'));
+    const apiTask = await this.toAPITask(task);
+    res.json(createResponse(apiTask, 'Task assignment updated'));
   });
 
   /**
@@ -372,29 +368,9 @@ export class TaskController {
       throw new ValidationError('Access denied');
     }
 
+    const base = await this.toAPITask(task);
     res.json(createResponse({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      dueDate: task.dueDate,
-      priority: task.priority,
-      points: task.points,
-      isRecurring: task.isRecurring,
-      recurringType: task.recurringType,
-      isCompleted: task.isCompleted,
-      completedAt: task.completedAt,
-      createdAt: task.createdAt,
-      updatedAt: task.updatedAt,
-      assignedUser: task.assignedTo ? {
-        id: task.assignedTo.id,
-        name: task.assignedTo.name,
-        avatarColor: task.assignedTo.avatarColor
-      } : null,
-      createdBy: {
-        id: task.creator.id,
-        name: task.creator.name,
-        avatarColor: task.creator.avatarColor
-      },
+      ...base,
       comments: task.comments?.map(comment => ({
         id: comment.id,
         content: comment.content,
@@ -546,7 +522,6 @@ export class TaskController {
       }
       // Also broadcast via SSE for native clients without Socket.IO
       try {
-        const { eventBroker } = require('@/services/EventBroker');
         eventBroker.broadcast(householdId, eventName, data);
       } catch (e) {
         logger.warn('SSE broadcast failed (continuing):', e);

@@ -1,9 +1,10 @@
+import express from 'express';
+
 import { TaskController } from '@/controllers/TaskController';
 import { authenticateToken } from '@/middleware/auth';
 import { taskPaginationMiddleware, paginationMonitoringMiddleware } from '@/middleware/pagination';
 import { expensiveOperationLimiter } from '@/middleware/rateLimiter';
 import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
-import express from 'express';
 
 const router = express.Router();
 const taskController = new TaskController();

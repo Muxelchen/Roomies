@@ -1,8 +1,9 @@
+import express, { Request, Response } from 'express';
+
 import { UserController } from '@/controllers/UserController';
 import { authenticateToken } from '@/middleware/auth';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { validateRequest, schemas } from '@/middleware/validation';
-import express, { Request, Response } from 'express';
 
 const router = express.Router();
 const userController = new UserController();

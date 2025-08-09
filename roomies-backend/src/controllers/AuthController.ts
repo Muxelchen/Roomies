@@ -2,6 +2,7 @@ import { createPublicKey } from 'crypto';
 import https from 'https';
 
 import { validate } from 'class-validator';
+import { Request, Response } from 'express';
 import jwt, { JwtHeader } from 'jsonwebtoken';
 
 import { AppDataSource } from '@/config/database';
@@ -13,15 +14,14 @@ import {
   createErrorResponse,
   asyncHandler
 } from '@/middleware/errorHandler';
-import { User } from '@/models/User';
-import { RefreshToken } from '@/models/RefreshToken';
 import { HouseholdTask } from '@/models/HouseholdTask';
+import { RefreshToken } from '@/models/RefreshToken';
+import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import MailService from '@/services/MailService';
 import TokenService from '@/services/TokenService';
 import { generateToken, refreshToken as refreshJWT } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 
 

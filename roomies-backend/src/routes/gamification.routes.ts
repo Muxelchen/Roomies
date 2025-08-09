@@ -1,10 +1,11 @@
+import express from 'express';
+
 import { AppDataSource } from '@/config/database';
 import { authenticateToken } from '@/middleware/auth';
 import { createResponse , createErrorResponse } from '@/middleware/errorHandler';
 import { Activity } from '@/models/Activity';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import express from 'express';
 
 const router = express.Router();
 

@@ -1,3 +1,4 @@
+import express, { Request, Response } from 'express';
 import Joi from 'joi';
 
 import { AuthController } from '@/controllers/AuthController';
@@ -8,7 +9,6 @@ import {
   passwordResetRateLimiter 
 } from '@/middleware/rateLimiter.simple';
 import { validateRequest, schemas } from '@/middleware/validation';
-import express, { Request, Response } from 'express';
 
 
 const router = express.Router();

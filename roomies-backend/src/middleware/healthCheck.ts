@@ -1,6 +1,7 @@
+import { Request, Response } from 'express';
+
 import { AppDataSource } from '@/config/database';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';

@@ -4,10 +4,10 @@
  * Note: Uses memory store for now, will upgrade to Redis later
  */
 
+import { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 // Extend Request type to include userId
 declare module 'express-serve-static-core' {

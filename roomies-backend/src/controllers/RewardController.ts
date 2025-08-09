@@ -1,3 +1,5 @@
+import { Request, Response } from 'express';
+
 import { AppDataSource } from '@/config/database';
 import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { Reward } from '@/models/Reward';
@@ -5,7 +7,6 @@ import { RewardRedemption } from '@/models/RewardRedemption';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { logger } from '@/utils/logger';
-import { Request, Response } from 'express';
 
 export class RewardController {
   private rewardRepository = AppDataSource.getRepository(Reward);

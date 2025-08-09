@@ -1,8 +1,9 @@
+import express, { Request, Response } from 'express';
+
 import { HouseholdController } from '@/controllers/HouseholdController';
 import { authenticateToken } from '@/middleware/auth';
 import { asyncHandler } from '@/middleware/errorHandler';
 import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
-import express, { Request, Response } from 'express';
 
 const router = express.Router();
 const householdController = new HouseholdController();

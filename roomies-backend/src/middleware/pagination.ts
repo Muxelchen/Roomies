@@ -1,6 +1,7 @@
+import { Request, Response, NextFunction } from 'express';
+
 import { ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
-import { Request, Response, NextFunction } from 'express';
 
 export interface PaginationParams {
   page: number;

@@ -1,5 +1,6 @@
-import { logger } from '@/utils/logger';
 import { Response } from 'express';
+
+import { logger } from '@/utils/logger';
 
 export type SSEClient = {
   id: string;

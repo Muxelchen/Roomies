@@ -1,8 +1,8 @@
+import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 
 import { ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
-import { Request, Response, NextFunction } from 'express';
 
 // Sanitize input to prevent XSS
 function sanitizeString(input: any): string {

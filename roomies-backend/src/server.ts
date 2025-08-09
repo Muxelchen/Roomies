@@ -230,29 +230,19 @@ class RoomiesServer {
     this.app.get('/admin/cache/warm', async (req, res) => {
       try {
         await CacheWarmer.warmAll();
-        res.json({
-          success: true,
-          message: 'Cache warming initiated',
-          timestamp: new Date().toISOString()
-        });
+        res.json(createResponse({ timestamp: new Date().toISOString() }, 'Cache warming initiated'));
       } catch (error) {
-        res.status(500).json({
-          success: false,
-          error: {
-            message: 'Cache warming failed',
-            code: 'CACHE_WARM_ERROR'
-          }
-        });
+        res.status(500).json({ success: false, error: { code: 'CACHE_WARM_ERROR', message: 'Cache warming failed' } });
       }
     });
     
     // Legacy health endpoint for backward compatibility
     this.app.get('/ping', (req, res) => {
-      res.json({ 
+      res.json(createResponse({ 
         status: 'pong', 
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV
-      });
+      }));
     });
 
     // API routes
@@ -277,11 +267,14 @@ class RoomiesServer {
       }));
     });
 
-    // 404 handler
+    // 404 handler (standardized error envelope)
     this.app.use('*', (req, res) => {
       res.status(404).json({
         success: false,
-        message: 'Endpoint not found'
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Endpoint not found'
+        }
       });
     });
 
