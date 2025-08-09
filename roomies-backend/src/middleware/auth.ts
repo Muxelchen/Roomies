@@ -211,7 +211,10 @@ export function rateLimitPerUser(maxRequests: number = 100, windowMs: number = 1
     if (userLimit.count >= maxRequests) {
       return res.status(429).json({
         success: false,
-        message: 'Too many requests, please try again later'
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many requests, please try again later'
+        }
       });
     }
 

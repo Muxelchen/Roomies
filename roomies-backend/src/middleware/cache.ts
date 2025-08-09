@@ -352,7 +352,7 @@ export const CacheConfigs = {
     condition: (req: Request) => !!req.userId,
     tags: ['user', 'activities']
   }
-} as const;
+};
 
 /**
  * Cache invalidation patterns for different operations

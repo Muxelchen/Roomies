@@ -6,6 +6,8 @@ import { createResponse , createErrorResponse } from '@/middleware/errorHandler'
 import { Activity } from '@/models/Activity';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
+import { cache, InvalidationPatterns, CacheConfigs } from '@/middleware/cache';
+import { CacheKeys, getCacheService } from '@/services/CacheService';
 
 const router = express.Router();
 
@@ -24,7 +26,10 @@ router.get('/stats', async (req, res) => {
 });
 
 // Leaderboard for a household
-router.get('/leaderboard/:householdId', async (req, res) => {
+router.get('/leaderboard/:householdId', cache({
+  ttl: 60, // short TTL
+  keyGenerator: (req) => CacheKeys.leaderboard(req.params.householdId)
+}), async (req, res) => {
   try {
     const { householdId } = req.params;
     const membershipRepo = AppDataSource.getRepository(UserHouseholdMembership);
@@ -37,7 +42,7 @@ router.get('/leaderboard/:householdId', async (req, res) => {
 
     res.json(createResponse({ leaderboard }));
   } catch (e) {
-    res.status(500).json(createResponse({ leaderboard: [] }, 'Failed to fetch leaderboard'));
+    res.status(500).json(createErrorResponse('Failed to fetch leaderboard', 'LEADERBOARD_ERROR'));
   }
 });
 
@@ -49,7 +54,7 @@ router.get('/achievements', async (req, res) => {
     if (!user) return res.status(404).json(createResponse({ achievements: [] }, 'User not found'));
     res.json(createResponse({ achievements: user.badges?.map(b => ({ id: b.id, name: b.name, description: b.description, iconName: b.iconName, color: b.color })) || [] }));
   } catch (e) {
-    res.json(createResponse({ achievements: [] }));
+    res.status(500).json(createErrorResponse('Failed to load achievements', 'ACHIEVEMENTS_ERROR'));
   }
 });
 

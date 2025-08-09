@@ -220,6 +220,15 @@ export class UserController {
     }
 
     const buffer = Buffer.from(String(imageBase64), 'base64');
+    // Enforce max avatar size (align with MAX_REQUEST_SIZE ~5MB)
+    const maxBytes = 5 * 1024 * 1024;
+    if (buffer.length > maxBytes) {
+      res.status(400).json(createErrorResponse(
+        `Image too large. Maximum size is ${Math.floor(maxBytes / (1024 * 1024))}MB`,
+        'IMAGE_TOO_LARGE'
+      ));
+      return;
+    }
     const storage = FileStorageService.getInstance();
     const url = await storage.uploadAvatar(req.userId, buffer, contentType);
 
@@ -336,7 +345,7 @@ export class UserController {
       hasPreviousPage: page > 1,
       itemsPerPage: limit
     };
-    res.json(createResponse({
+    const responseData = {
       activities: activities.map(activity => ({
         id: activity.id,
         type: activity.type,
@@ -349,7 +358,9 @@ export class UserController {
         } : null
       })),
       pagination
-    }, undefined, pagination));
+    } as const;
+    logger.debug('ActivityHistory responseData keys', { hasPagination: !!(responseData as any).pagination });
+    res.json(createResponse(responseData, undefined, pagination));
   });
 
   /**

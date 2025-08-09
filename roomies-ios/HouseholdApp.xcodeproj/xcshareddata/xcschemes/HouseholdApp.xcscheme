@@ -67,18 +67,13 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "API_BASE_URL"
-            value = "http://192.168.178.167:3000/api"
+            value = "https://roomies-backend-fiy2.onrender.com/api"
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "SOCKET_URL"
-            value = "http://127.0.0.1:3000"
-            isEnabled = "NO">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "API_BASE_URL"
-            value = "http://127.0.0.1:3000/api"
-            isEnabled = "NO">
+            value = "https://roomies-backend-fiy2.onrender.com"
+            isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>

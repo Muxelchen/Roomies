@@ -52,6 +52,7 @@ export const AppDataSource = new DataSource(
     : {
         type: 'postgres',
         url: DATABASE_URL,
+        ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
         // Allow one-time schema creation in production by setting DB_SYNCHRONIZE=true
         synchronize: process.env.DB_SYNCHRONIZE === 'true' || process.env.NODE_ENV === 'development',
         logging: process.env.DB_LOGGING === 'true' || process.env.NODE_ENV === 'development',

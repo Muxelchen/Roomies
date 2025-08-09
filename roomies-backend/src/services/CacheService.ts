@@ -506,4 +506,5 @@ export const CacheKeys = {
   userActivities: (userId: string, page: number) => `activities:user:${userId}:page:${page}`,
   sessionData: (sessionId: string) => `session:${sessionId}`,
   rateLimitKey: (identifier: string, action: string) => `ratelimit:${action}:${identifier}`,
+  leaderboard: (householdId: string) => `leaderboard:${householdId}`,
 } as const;

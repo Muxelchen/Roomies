@@ -14,10 +14,10 @@ const router = express.Router();
 // All event routes require auth
 router.use(authenticateToken);
 
-// Basic connection rate limit per IP
+// Basic connection rate limit per IP (configurable)
 const sseLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 30,
+  windowMs: parseInt(process.env.SSE_LIMIT_WINDOW_MS || `${60 * 1000}`, 10),
+  limit: parseInt(process.env.SSE_LIMIT_PER_IP || '30', 10),
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -40,9 +40,17 @@ router.get('/household/:householdId', async (req, res) => {
     }
 
     // Per-user connection cap per household
+    const perUserCap = parseInt(process.env.SSE_MAX_CONNECTIONS_PER_USER || '3', 10);
     const userConnections = eventBroker.getUserClientCount(householdId, userId);
-    if (userConnections >= 3) {
+    if (userConnections >= perUserCap) {
       return res.status(429).json({ success: false, error: { code: 'SSE_LIMIT', message: 'Too many event streams open' } });
+    }
+
+    // Per-household total connection cap to protect server resources
+    const perHouseholdCap = parseInt(process.env.SSE_MAX_CONNECTIONS_PER_HOUSEHOLD || '100', 10);
+    const householdConnections = eventBroker.getHouseholdClientCount(householdId);
+    if (householdConnections >= perHouseholdCap) {
+      return res.status(429).json({ success: false, error: { code: 'SSE_HOUSEHOLD_LIMIT', message: 'Too many event streams for household' } });
     }
 
     // Set headers for SSE
