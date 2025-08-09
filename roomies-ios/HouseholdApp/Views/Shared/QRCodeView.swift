@@ -22,7 +22,7 @@ struct QRCodeView: View {
                 }
                 
                 // QR Code
-                if let qrImage = generateQRCode(from: "householdapp://join/\(inviteCode)") {
+                if let qrImage = generateQRCode(from: "roomies://join/\(inviteCode)") {
                     Image(uiImage: qrImage)
                         .resizable()
                         .interpolation(.none)

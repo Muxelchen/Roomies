@@ -299,6 +299,12 @@ struct InvitationsTabView: View {
                     PremiumAudioHapticSystem.playButtonTap(style: .medium)
                     shareInvite()
                 }
+                PremiumButton("Copy Deep Link", icon: "link", sectionColor: .dashboard) {
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                    let link = "roomies://join/\(household.inviteCode ?? "")"
+                    UIPasteboard.general.string = link
+                    LoggingManager.shared.info("Deep link copied: \(link)", category: LoggingManager.Category.general.rawValue)
+                }
             }
             
             if isAdmin {
