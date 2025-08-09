@@ -55,8 +55,8 @@ jobs:
           REDIS_PORT: 6379
           SOCKET_REDIS_ENABLED: 'false'
         run: |
-          mkdir -p roomies-backend/logs
-          node dist/server.js > roomies-backend/logs/combined.log 2> roomies-backend/logs/error.log & echo $! > server.pid
+          mkdir -p logs
+          node dist/server.js > logs/combined.log 2> logs/error.log & echo $! > server.pid
 
       - name: Wait for server to be ready
         run: |
@@ -67,11 +67,19 @@ jobs:
       - name: Run realtime E2E test
         run: npm run test:realtime
 
+      - name: Print server logs on failure
+        if: failure()
+        run: |
+          echo '--- error.log (tail) ---'
+          tail -n 200 logs/error.log || true
+          echo '--- combined.log (tail) ---'
+          tail -n 200 logs/combined.log || true
+
       - name: Upload server logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: backend-logs
-          path: roomies-backend/logs
+          path: logs
 
 
