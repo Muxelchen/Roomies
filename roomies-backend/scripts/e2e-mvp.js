@@ -40,7 +40,7 @@ async function main() {
   const taskId = body.data?.id;
 
   // Complete task
-  res = await fetch(`${base}/tasks/${taskId}/complete`, { method: 'POST', headers: { ...auth() } });
+  res = await fetch(`${base}/tasks/${taskId}/complete`, { method: 'POST', headers: { 'content-type': 'application/json', ...auth() }, body: JSON.stringify({}) });
   body = await res.json();
   console.log('COMPLETE_TASK', res.status, body.message);
   if (!res.ok) throw new Error('complete task failed');
@@ -61,7 +61,7 @@ async function main() {
   if (!res.ok) throw new Error('list rewards failed');
 
   // Redeem reward
-  res = await fetch(`${base}/rewards/${rewardId}/redeem`, { method: 'POST', headers: { ...auth() } });
+  res = await fetch(`${base}/rewards/${rewardId}/redeem`, { method: 'POST', headers: { 'content-type': 'application/json', ...auth() }, body: JSON.stringify({}) });
   body = await res.json();
   console.log('REDEEM_REWARD', res.status, body.message);
   if (!res.ok) throw new Error('redeem reward failed');
