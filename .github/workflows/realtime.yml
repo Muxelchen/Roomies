@@ -34,7 +34,17 @@ jobs:
           npx tsc -v || true
 
       - name: Build backend
-        run: npx tsc --pretty false -p tsconfig.json && npx tsc-alias
+        run: |
+          set -o pipefail
+          npx tsc --pretty false -p tsconfig.json 2>&1 | tee build.log
+          npx tsc-alias 2>&1 | tee -a build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-log
+          path: roomies-backend/build.log
 
       - name: Start server
         run: node dist/server.js &
