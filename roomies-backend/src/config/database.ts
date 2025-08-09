@@ -42,6 +42,8 @@ export const AppDataSource = new DataSource(
           Activity,
           Badge,
           UserHouseholdMembership,
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          require('@/models/HouseholdJoinRequest').HouseholdJoinRequest,
           RewardRedemption,
           RefreshToken,
           TaskComment
@@ -65,6 +67,8 @@ export const AppDataSource = new DataSource(
           Activity,
           Badge,
           UserHouseholdMembership,
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          require('@/models/HouseholdJoinRequest').HouseholdJoinRequest,
           RewardRedemption,
           RefreshToken,
           TaskComment

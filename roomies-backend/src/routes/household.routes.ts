@@ -29,6 +29,27 @@ router.post('/', validateRequest(schemas.createHousehold), householdController.c
 router.post('/join', validateRequest(schemas.joinHousehold), householdController.joinHousehold);
 
 /**
+ * @route   GET /api/households/:householdId/requests
+ * @desc    List pending join requests (admin only)
+ */
+router.get(
+  '/:householdId/requests',
+  validateUUID('householdId'),
+  householdController.listJoinRequests
+);
+
+/**
+ * @route   POST /api/households/:householdId/requests/:requestId/approve
+ * @desc    Approve a join request (admin only)
+ */
+router.post(
+  '/:householdId/requests/:requestId/approve',
+  validateUUID('householdId'),
+  validateUUID('requestId'),
+  householdController.approveJoin
+);
+
+/**
  * @route   GET /api/households/current
  * @desc    Get current user's household
  * @access  Private

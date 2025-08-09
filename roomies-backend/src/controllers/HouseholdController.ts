@@ -8,6 +8,7 @@ import { Household } from '@/models/Household';
 import { HouseholdTask } from '@/models/HouseholdTask';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
+import { HouseholdJoinRequest } from '@/models/HouseholdJoinRequest';
 import CloudKitService from '@/services/CloudKitService';
 import { logger } from '@/utils/logger';
 const getCloudKitService = () => CloudKitService.getInstance();
@@ -16,6 +17,7 @@ export class HouseholdController {
   private householdRepository = AppDataSource.getRepository(Household);
   private userRepository = AppDataSource.getRepository(User);
   private membershipRepository = AppDataSource.getRepository(UserHouseholdMembership);
+  private joinRequestRepository = AppDataSource.getRepository(HouseholdJoinRequest);
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
   private activityRepository = AppDataSource.getRepository(Activity);
 
@@ -177,6 +179,20 @@ export class HouseholdController {
         return;
       }
 
+      // If the household requires admin approval, create a join request and return pending
+      const requireApproval = process.env.HOUSEHOLD_REQUIRE_APPROVAL === 'true';
+      if (requireApproval) {
+        const pending = await this.joinRequestRepository.findOne({ where: { user: { id: req.userId }, household: { id: household.id } } });
+        if (!pending) {
+          const user = await this.userRepository.findOne({ where: { id: req.userId } });
+          if (!user) throw new Error('User not found');
+          const jr = this.joinRequestRepository.create({ user, household });
+          await this.joinRequestRepository.save(jr);
+        }
+        res.status(202).json(createResponse({ status: 'pending', householdId: household.id }, 'Join request submitted and pending admin approval'));
+        return;
+      }
+
       // Check if user is already a member (even if inactive)
       const existingInactiveMembership = await this.membershipRepository.findOne({
         where: { user: { id: req.userId }, household: { id: household.id } }
@@ -260,6 +276,49 @@ export class HouseholdController {
         'JOIN_HOUSEHOLD_ERROR'
       ));
     }
+  });
+
+  /**
+   * Approve a pending join request (admin only)
+   */
+  approveJoin = asyncHandler(async (req: Request, res: Response) => {
+    const { householdId, requestId } = req.params as any;
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+    const adminMembership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: householdId }, isActive: true } });
+    if (!adminMembership || adminMembership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only admins can approve requests', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+    const reqEntity = await this.joinRequestRepository.findOne({ where: { id: requestId } });
+    if (!reqEntity) {
+      res.status(404).json(createErrorResponse('Join request not found', 'REQUEST_NOT_FOUND'));
+      return;
+    }
+    const membership = this.membershipRepository.create({ user: reqEntity.user, household: reqEntity.household, role: 'member', isActive: true, joinedAt: new Date() });
+    await this.membershipRepository.save(membership);
+    await this.joinRequestRepository.delete(reqEntity.id);
+    res.json(createResponse({ approvedUserId: reqEntity.user.id }, 'Join request approved'));
+  });
+
+  /**
+   * List pending join requests (admin only)
+   */
+  listJoinRequests = asyncHandler(async (req: Request, res: Response) => {
+    const { householdId } = req.params as any;
+    if (!req.userId) {
+      res.status(401).json(createErrorResponse('User not authenticated', 'NOT_AUTHENTICATED'));
+      return;
+    }
+    const adminMembership = await this.membershipRepository.findOne({ where: { user: { id: req.userId }, household: { id: householdId }, isActive: true } });
+    if (!adminMembership || adminMembership.role !== 'admin') {
+      res.status(403).json(createErrorResponse('Only admins can view requests', 'INSUFFICIENT_PERMISSIONS'));
+      return;
+    }
+    const requests = await this.joinRequestRepository.find({ where: { household: { id: householdId } } });
+    res.json(createResponse(requests.map(r => ({ id: r.id, user: { id: r.user.id, name: r.user.name, email: r.user.email }, createdAt: r.createdAt }))));
   });
 
   /**

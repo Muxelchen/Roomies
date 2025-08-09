@@ -16,6 +16,7 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "migrate": "ts-node -r tsconfig-paths/register src/database/migrate.ts",
+    "migrate:rollback": "ts-node -r tsconfig-paths/register src/database/rollback.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
     "test:realtime": "node test-realtime.js",
     "e2e:mvp": "node --experimental-fetch scripts/e2e-mvp.js",

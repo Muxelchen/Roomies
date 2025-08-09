@@ -60,6 +60,10 @@ struct ProfileView: View {
         .sheet(isPresented: $showingHouseholdManager) {
             HouseholdManagerView()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenHouseholdManager"))) { notif in
+            self.showingHouseholdManager = true
+            // The manager presents create/join sheets itself; we cannot toggle them here without refactoring.
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }

@@ -80,6 +80,46 @@ async function runCustomMigrations(): Promise<void> {
   }
 }
 
+/**
+ * Rollback custom migration queries applied by runCustomMigrations
+ */
+async function rollbackCustomMigrations(): Promise<void> {
+  const queryRunner = AppDataSource.createQueryRunner();
+  try {
+    // Drop created indexes (IF EXISTS to be safe)
+    await queryRunner.query(`
+      DROP INDEX IF EXISTS idx_tasks_active;
+    `);
+    await queryRunner.query(`
+      DROP INDEX IF EXISTS idx_user_household_membership;
+    `);
+    await queryRunner.query(`
+      DROP INDEX IF EXISTS idx_activities_user_household;
+    `);
+    // Note: We do not remove added user columns to avoid data loss in rollback
+    logger.info('↩️  Custom migrations rolled back successfully');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.warn('⚠️  Custom rollback failed:', errorMessage);
+  } finally {
+    try { await queryRunner.release(); } catch {}
+  }
+}
+
+export async function rollbackMigrations(): Promise<void> {
+  try {
+    logger.info('🕑 Starting database rollback...');
+    await connectDatabase();
+    await rollbackCustomMigrations();
+    logger.info('✅ Database rollback completed');
+  } catch (error) {
+    logger.error('❌ Rollback failed:', error);
+    throw error;
+  } finally {
+    await disconnectDatabase();
+  }
+}
+
 // Run migrations if this script is executed directly
 if (require.main === module) {
   runMigrations()

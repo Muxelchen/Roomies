@@ -22,6 +22,13 @@ struct ContentView: View {
                 }
             } else if !hasCompletedOnboarding {
                 OnboardingView()
+                    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenHouseholdCreate"))) { _ in
+                        // Present create flow immediately after onboarding
+                        presentCreateOrJoin(create: true)
+                    }
+                    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenHouseholdJoin"))) { _ in
+                        presentCreateOrJoin(create: false)
+                    }
             } else if authManager.isAuthenticated {
                 // Use the MainTabView which has 6 tabs with Store
                 MainTabView()
@@ -53,6 +60,14 @@ struct ContentView: View {
         await MainActor.run {
             isInitializing = false
         }
+    }
+
+    @MainActor
+    private func presentCreateOrJoin(create: Bool) {
+        // Show HouseholdManager with appropriate sheet
+        // Reuse the existing manager sheets by posting notifications the manager listens to (simplified)
+        // For now just set a flag to pass through Navigation: open Profile → HouseholdManager
+        NotificationCenter.default.post(name: NSNotification.Name("OpenHouseholdManager"), object: create ? "create" : "join")
     }
     
     private func createSampleDataIfNeeded() async {

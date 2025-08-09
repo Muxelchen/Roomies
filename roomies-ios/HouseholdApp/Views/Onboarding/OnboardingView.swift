@@ -64,15 +64,28 @@ struct OnboardingView: View {
                 // Enhanced Action Buttons
                 VStack(spacing: 16) {
                     if currentPage == onboardingPages.count - 1 {
-                        RoomiesOnboardingButton(
-                            title: localizationManager.localizedString("onboarding.get_started"),
-                            icon: "arrow.right.circle.fill",
-                            isPrimary: true,
-                            action: { 
-                                PremiumAudioHapticSystem.playButtonTap(style: .medium)
-                                completeOnboarding()
-                            }
-                        )
+                        VStack(spacing: 12) {
+                            RoomiesOnboardingButton(
+                                title: "Create Household",
+                                icon: "house.badge.plus",
+                                isPrimary: true,
+                                action: {
+                                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                                    NotificationCenter.default.post(name: NSNotification.Name("OpenHouseholdCreate"), object: nil)
+                                    completeOnboarding()
+                                }
+                            )
+                            RoomiesOnboardingButton(
+                                title: "Join Household",
+                                icon: "person.2.badge.plus",
+                                isPrimary: true,
+                                action: {
+                                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                                    NotificationCenter.default.post(name: NSNotification.Name("OpenHouseholdJoin"), object: nil)
+                                    completeOnboarding()
+                                }
+                            )
+                        }
                     } else {
                         RoomiesOnboardingButton(
                             title: localizationManager.localizedString("onboarding.next"),

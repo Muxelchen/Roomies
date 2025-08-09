@@ -784,23 +784,30 @@ class IntegratedAuthenticationManager: ObservableObject {
         Task {
             do {
                 if networkManager.isOnline {
-                    // Join household via API
+                    // Join household via API (may return pending approval)
                     let response = try await networkManager.joinHousehold(inviteCode: inviteCode)
-                    
-                    if let apiHousehold = response.data {
-                        await syncHouseholdFromAPI(apiHousehold)
-                        
+                    if response.data?.status == "pending" {
                         await MainActor.run {
-                            // Update member updates for real-time sync
+                            self.errorMessage = "Join request sent. Waiting for admin approval."
+                            self.isLoading = false
+                        }
+                        return
+                    }
+                    if let householdId = response.data?.id,
+                       let name = response.data?.name,
+                       let code = response.data?.inviteCode,
+                       let createdAt = response.data?.createdAt {
+                        let api = APIHousehold(id: householdId, name: name, inviteCode: code, memberCount: response.data?.memberCount ?? 1, role: response.data?.role ?? "member", createdAt: createdAt, members: nil, statistics: nil)
+                        await syncHouseholdFromAPI(api)
+                        await MainActor.run {
                             self.memberUpdates = [
                                 "action": "member_joined",
                                 "memberId": currentUser.id?.uuidString ?? "",
                                 "memberName": currentUser.name ?? "",
-                                "householdId": apiHousehold.id
+                                "householdId": householdId
                             ]
-                            
                             self.isLoading = false
-                            LoggingManager.shared.info("Joined household successfully: \(apiHousehold.name)", 
+                            LoggingManager.shared.info("Joined household successfully: \(name)",
                                                       category: LoggingManager.Category.household.rawValue)
                         }
                     }

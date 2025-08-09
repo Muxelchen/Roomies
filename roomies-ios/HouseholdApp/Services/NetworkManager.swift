@@ -349,15 +349,31 @@ extension NetworkManager {
         )
     }
     
-    func joinHousehold(inviteCode: String) async throws -> HouseholdResponse {
+    struct JoinHouseholdAPIResponse: Codable { // flexible to handle pending or full household
+        let success: Bool
+        let message: String?
+        let data: JoinHouseholdData?
+    }
+    struct JoinHouseholdData: Codable {
+        // When approved immediately (legacy behavior)
+        let id: String?
+        let name: String?
+        let inviteCode: String?
+        let memberCount: Int?
+        let role: String?
+        let createdAt: String?
+        // When pending approval
+        let status: String?
+        let householdId: String?
+    }
+    func joinHousehold(inviteCode: String) async throws -> JoinHouseholdAPIResponse {
         let body = JoinHouseholdRequest(inviteCode: inviteCode)
         let bodyData = try JSONEncoder().encode(body)
-        
         return try await performRequest(
             endpoint: "/households/join",
             method: .POST,
             body: bodyData,
-            responseType: HouseholdResponse.self
+            responseType: JoinHouseholdAPIResponse.self
         )
     }
     
@@ -374,6 +390,28 @@ extension NetworkManager {
             endpoint: "/households/\(householdId)/members",
             method: .GET,
             responseType: MembersResponse.self
+        )
+    }
+
+    // Join Requests (admin)
+    struct JoinRequest: Codable {
+        let id: String
+        let user: APIUser
+        let createdAt: String
+    }
+    typealias JoinRequestsResponse = APIResponse<[JoinRequest]>
+    func listJoinRequests(householdId: String) async throws -> JoinRequestsResponse {
+        return try await performRequest(
+            endpoint: "/households/\(householdId)/requests",
+            method: .GET,
+            responseType: JoinRequestsResponse.self
+        )
+    }
+    func approveJoinRequest(householdId: String, requestId: String) async throws -> APIResponse<EmptyResponse> {
+        return try await performRequest(
+            endpoint: "/households/\(householdId)/requests/\(requestId)/approve",
+            method: .POST,
+            responseType: APIResponse<EmptyResponse>.self
         )
     }
 }

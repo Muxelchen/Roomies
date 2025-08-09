@@ -67,6 +67,20 @@ struct RoomiesApp: App {
             .environmentObject(PerformanceManager.shared)
                 .environmentObject(LocalizationManager.shared)
                 .environmentObject(PremiumAudioHapticSystem.shared)
+                .onOpenURL { url in
+                    // Deep link: roomies://join/<INVITECODE>
+                    let scheme = url.scheme?.lowercased() ?? ""
+                    if scheme == "roomies" || scheme == "householdapp" {
+                        let path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                        let parts = path.split(separator: "/")
+                        if parts.count == 2 && parts[0].lowercased() == "join" {
+                            let code = String(parts[1]).uppercased()
+                            Task { @MainActor in
+                                IntegratedAuthenticationManager.shared.joinHousehold(inviteCode: code)
+                            }
+                        }
+                    }
+                }
                 .onAppear {
                     PerformanceManager.shared.finishAppLaunch()
                     NotificationManager.shared.updateBadgeCount()
