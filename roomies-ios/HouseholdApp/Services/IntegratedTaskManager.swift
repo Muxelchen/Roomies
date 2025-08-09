@@ -448,11 +448,16 @@ class IntegratedTaskManager: ObservableObject {
         let request: NSFetchRequest<HouseholdTask> = HouseholdTask.fetchRequest()
         
         // Filter by current household
-        if let householdId = UserDefaults.standard.string(forKey: "currentHouseholdId") {
-            request.predicate = NSPredicate(
-                format: "household.id == %@ AND (isDeleted == nil OR isDeleted == false)",
-                householdId
-            )
+        if let householdIdString = UserDefaults.standard.string(forKey: "currentHouseholdId"),
+           let householdUUID = UUID(uuidString: householdIdString) {
+            var predicates: [NSPredicate] = [
+                NSPredicate(format: "household.id == %@", householdUUID as CVarArg)
+            ]
+            if let entity = NSEntityDescription.entity(forEntityName: "HouseholdTask", in: context),
+               entity.attributesByName["isDeleted"] != nil {
+                predicates.append(NSPredicate(format: "(isDeleted == nil) OR (isDeleted == NO)"))
+            }
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
         
         request.sortDescriptors = [
@@ -524,8 +529,8 @@ class IntegratedTaskManager: ObservableObject {
 
             let iso = ISO8601DateFormatter()
             let apiUpdatedAt = iso.date(from: apiTask.updatedAt) ?? Date.distantPast
-            let localUpdatedAt = (task.value(forKey: "updatedAt") as? Date) ?? (task.value(forKey: "lastSyncedAt") as? Date) ?? Date.distantPast
-            let hasLocalPendingChanges = (task.value(forKey: "needsSync") as? Bool) == true
+            let localUpdatedAt = task.dateIfHasAttribute(forKey: "updatedAt") ?? task.dateIfHasAttribute(forKey: "lastSyncedAt") ?? Date.distantPast
+            let hasLocalPendingChanges = task.boolIfHasAttribute(forKey: "needsSync") == true
 
             if task.id == nil { task.id = UUID(uuidString: apiTask.id) ?? UUID() }
 
@@ -583,13 +588,13 @@ class IntegratedTaskManager: ObservableObject {
             
             for task in tasksToSync {
                 // Skip if marked for deletion
-                if let isDeleted = task.value(forKey: "isDeleted") as? Bool, isDeleted {
+                if task.boolIfHasAttribute(forKey: "isDeleted") == true {
                     // TODO: Implement delete on backend
                     continue
                 }
                 
                 // If task has no backend ID, create it
-                if task.value(forKey: "localId") != nil {
+                if task.stringIfHasAttribute(forKey: "localId") != nil {
                     // This is a locally created task
                     if let householdId = UserDefaults.standard.string(forKey: "currentHouseholdId") {
                         do {
