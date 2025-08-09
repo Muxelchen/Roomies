@@ -365,8 +365,7 @@ struct PremiumButton: View {
     
     private func triggerPremiumButtonAction() {
         // Premium haptic sequence
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
         
         // Premium visual feedback
         withAnimation(PremiumDesignSystem.AnimationType.microInteraction.spring()) {
@@ -451,8 +450,94 @@ struct PremiumTextField: View {
             }
             
             if newValue {
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
+                PremiumAudioHapticSystem.playButtonTap(style: .light)
+            }
+        }
+    }
+}
+
+/// Premium Secure Field with visibility toggle matching PremiumTextField style
+struct PremiumSecureField: View {
+    let title: String
+    let icon: String
+    @Binding var text: String
+    let sectionColor: PremiumDesignSystem.SectionColor
+
+    @State private var isRevealed = false
+    @FocusState private var isFocused: Bool
+    @State private var fieldScale: CGFloat = 1.0
+    @State private var glowIntensity: Double = 0.2
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PremiumDesignSystem.Spacing.micro.value) {
+            HStack(spacing: PremiumDesignSystem.Spacing.micro.value) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(sectionColor.primary)
+
+                Text(title)
+                    .font(PremiumDesignSystem.Typography.body.font)
+                    .foregroundColor(PremiumDesignSystem.Typography.body.color)
+            }
+
+            HStack(spacing: 8) {
+                Group {
+                    if isRevealed {
+                        TextField("", text: $text)
+                            .textContentType(.password)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($isFocused)
+                    } else {
+                        SecureField("", text: $text)
+                            .textContentType(.password)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                            .focused($isFocused)
+                    }
+                }
+
+                Button {
+                    PremiumAudioHapticSystem.playButtonTap(style: .light)
+                    withAnimation(PremiumDesignSystem.AnimationType.stateChange.spring()) {
+                        isRevealed.toggle()
+                    }
+                } label: {
+                    Image(systemName: isRevealed ? "eye.slash" : "eye")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel(isRevealed ? Text("Hide password") : Text("Show password"))
+                }
+                .buttonStyle(.plain)
+                .minTappableArea()
+            }
+            .padding(.horizontal, PremiumDesignSystem.Spacing.medium.value)
+            .padding(.vertical, PremiumDesignSystem.Spacing.small.value)
+            .background(
+                RoundedRectangle(cornerRadius: PremiumDesignSystem.CornerRadius.medium.value)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: PremiumDesignSystem.CornerRadius.medium.value)
+                            .stroke(
+                                isFocused ? sectionColor.primary.opacity(0.6) : Color(UIColor.separator).opacity(0.3),
+                                lineWidth: isFocused ? 2 : 1
+                            )
+                    )
+                    .shadow(
+                        color: isFocused ? sectionColor.primary.opacity(glowIntensity) : Color.clear,
+                        radius: 12,
+                        x: 0,
+                        y: 4
+                    )
+            )
+            .scaleEffect(fieldScale)
+        }
+        .onChange(of: isFocused) { _, newValue in
+            withAnimation(PremiumDesignSystem.AnimationType.stateChange.spring()) {
+                fieldScale = newValue ? 1.02 : 1.0
+                glowIntensity = newValue ? 0.6 : 0.2
+            }
+            if newValue {
+                PremiumAudioHapticSystem.playButtonTap(style: .light)
             }
         }
     }
@@ -503,8 +588,7 @@ struct PremiumSwipeGesture: ViewModifier {
         
         if abs(translation.width) > swipeThreshold {
             // Premium haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            PremiumAudioHapticSystem.playButtonTap(style: .medium)
             
             if translation.width > 0 {
                 onSwipeRight?()
@@ -522,8 +606,7 @@ struct PremiumSwipeGesture: ViewModifier {
     
     private func handleLongPress() {
         // Premium haptic sequence for long press
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        PremiumAudioHapticSystem.playButtonTap(style: .heavy)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             let selectionFeedback = UISelectionFeedbackGenerator()

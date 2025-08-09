@@ -326,8 +326,7 @@ struct RedemptionCelebrationAnimation: View {
                         )
                         
                         Button("Awesome!") {
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-                            impactFeedback.impactOccurred()
+                            PremiumAudioHapticSystem.playSuccess()
                             onComplete()
                         }
                         .font(.system(.headline, design: .rounded, weight: .bold))

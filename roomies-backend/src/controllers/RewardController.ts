@@ -1,11 +1,11 @@
-import { Request, Response } from 'express';
 import { AppDataSource } from '@/config/database';
+import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { Reward } from '@/models/Reward';
 import { RewardRedemption } from '@/models/RewardRedemption';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 export class RewardController {
   private rewardRepository = AppDataSource.getRepository(Reward);
@@ -111,6 +111,30 @@ export class RewardController {
       await this.redemptionRepository.save(redemption);
 
       logger.info('Reward redeemed', { rewardId: reward.id, userId: user.id });
+
+      // Emit WebSocket/SSE events to the household room
+      try {
+        const io = req.app.get('io');
+        const payload = {
+          redemptionId: redemption.id,
+          reward: { id: reward.id, name: reward.name, cost: reward.cost },
+          user: { id: user.id, name: user.name, avatarColor: user.avatarColor },
+          householdId: reward.household.id,
+          redeemedAt: redemption.redeemedAt,
+          newUserPoints: user.points
+        };
+        if (io) {
+          io.to(`household:${reward.household.id}`).emit('reward_redeemed', payload);
+        }
+        try {
+          const { eventBroker } = require('@/services/EventBroker');
+          eventBroker.broadcast(reward.household.id, 'reward_redeemed', payload);
+        } catch (e) {
+          logger.warn('SSE broadcast failed (continuing):', e);
+        }
+      } catch (e) {
+        logger.warn('Reward redemption event emission failed (continuing):', e);
+      }
 
       res.status(201).json(createResponse({
         id: redemption.id,

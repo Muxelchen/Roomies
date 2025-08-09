@@ -1,3 +1,4 @@
+import { IsNotEmpty, Min } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,10 +9,10 @@ import {
   OneToMany,
   JoinColumn
 } from 'typeorm';
-import { IsNotEmpty, Min } from 'class-validator';
-import { User } from './User';
+
 import { Household } from './Household';
 import { RewardRedemption } from './RewardRedemption';
+import { User } from './User';
 
 @Entity('rewards')
 export class Reward {

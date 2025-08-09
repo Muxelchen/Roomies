@@ -4,7 +4,6 @@ import CoreData
 import SwiftUI
 
 // MARK: - Cloud Sync Configuration (runtime driven by backend status)
-private var CLOUD_SYNC_ENABLED: Bool { CloudRuntime.shared.cloudEnabled && CloudRuntime.shared.cloudAvailable }
 
 @MainActor
 class CloudSyncManager: ObservableObject {
@@ -16,15 +15,17 @@ class CloudSyncManager: ObservableObject {
     private var container: CKContainer?
     private var database: CKDatabase?
     
+    private var cloudEnabled: Bool { CloudRuntime.shared.cloudEnabled && CloudRuntime.shared.cloudAvailable }
+
     private init() {
         // Defer CloudKit initialization until enabled by runtime status
-        if !CLOUD_SYNC_ENABLED {
+        if !cloudEnabled {
             LoggingManager.shared.info("CloudKit sync disabled (runtime)", category: "CloudSync")
         }
     }
 
     private func getDatabase() -> CKDatabase? {
-        guard CLOUD_SYNC_ENABLED else { return nil }
+        guard cloudEnabled else { return nil }
         if database == nil {
             container = CKContainer.default()
             database = container?.publicCloudDatabase
@@ -34,7 +35,7 @@ class CloudSyncManager: ObservableObject {
     
     // MARK: - Household Sync
     func syncHousehold(_ household: Household) async {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping household sync - CloudKit disabled", category: "CloudSync")
             return
         }
@@ -69,7 +70,7 @@ class CloudSyncManager: ObservableObject {
     }
     
     func joinHouseholdFromInvite(code: String) async throws -> Household? {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping household join - CloudKit disabled", category: "CloudSync")
             throw NSError(domain: "CloudSyncDisabled", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cloud sync is disabled for personal development teams"])
         }
@@ -142,7 +143,7 @@ class CloudSyncManager: ObservableObject {
     
     // MARK: - Task Sync
     func syncTask(_ task: HouseholdTask) async {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping task sync - CloudKit disabled", category: "CloudSync")
             return
         }
@@ -175,7 +176,7 @@ class CloudSyncManager: ObservableObject {
     
     // MARK: - User Membership Sync
     private func syncUserMembership(_ membership: UserHouseholdMembership) async throws {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping membership sync - CloudKit disabled", category: "CloudSync")
             return
         }
@@ -197,7 +198,7 @@ class CloudSyncManager: ObservableObject {
     
     // MARK: - Activity Sync
     func syncActivity(_ activity: Activity) async {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping activity sync - CloudKit disabled", category: "CloudSync")
             return
         }
@@ -226,7 +227,7 @@ class CloudSyncManager: ObservableObject {
     
     // MARK: - Fetch Remote Changes
     func fetchHouseholdUpdates(for household: Household) async {
-        guard CLOUD_SYNC_ENABLED else {
+        guard cloudEnabled else {
             LoggingManager.shared.debug("Skipping fetch updates - CloudKit disabled", category: "CloudSync")
             return
         }

@@ -1,3 +1,4 @@
+import { IsNotEmpty } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,15 +7,16 @@ import {
   UpdateDateColumn,
   OneToMany,
   ManyToOne,
+  JoinColumn,
   BeforeInsert
 } from 'typeorm';
-import { IsNotEmpty } from 'class-validator';
-import { UserHouseholdMembership } from './UserHouseholdMembership';
+
+import { Activity } from './Activity';
+import { Challenge } from './Challenge';
 import { HouseholdTask } from './HouseholdTask';
 import { Reward } from './Reward';
-import { Challenge } from './Challenge';
-import { Activity } from './Activity';
 import { User } from './User';
+import { UserHouseholdMembership } from './UserHouseholdMembership';
 
 @Entity('households')
 export class Household {
@@ -42,6 +44,7 @@ export class Household {
 
   // Relationships
   @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by', referencedColumnName: 'id' })
   creator!: User;
 
   @OneToMany(() => UserHouseholdMembership, membership => membership.household)

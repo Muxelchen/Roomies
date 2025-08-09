@@ -23,12 +23,13 @@ struct SuperLazyStoreView: View {
     
     private var storePreviewContent: some View {
         ZStack {
-            // Beautiful gradient background
+            PremiumScreenBackground(sectionColor: .store, style: .minimal)
+            // Subtle overlay gradient for extra depth
             LinearGradient(
                 colors: [
                     .clear,
-                    Color.purple.opacity(0.1),
-                    Color.blue.opacity(0.05)
+                    Color.purple.opacity(0.06),
+                    Color.blue.opacity(0.04)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing

@@ -109,7 +109,7 @@ class IntegratedTaskManager: ObservableObject {
             switch event.name {
             case "hello", "ping":
                 break
-            case "task_created", "task_updated", "task_completed", "comment_added", "member_joined", "member_left", "household_updated":
+            case "task_created", "task_updated", "task_completed", "task_assigned", "task_deleted", "comment_added", "member_joined", "member_left", "household_updated":
                 Task { @MainActor in
                     await self.syncTasks()
                     let evt = (event.json["event"] as? String) ?? event.name
@@ -119,6 +119,10 @@ class IntegratedTaskManager: ObservableObject {
                             self.showRealTimeNotification("Task Completed! 🎉", message: "A task was completed")
                         case "task_created":
                             self.showRealTimeNotification("New Task", message: "A new task was created")
+                        case "task_deleted":
+                            self.showRealTimeNotification("Task Deleted", message: "A task was removed")
+                        case "task_assigned":
+                            self.showRealTimeNotification("Task Assigned", message: "A task assignment changed")
                         case "member_joined":
                             self.showRealTimeNotification("New Member", message: "Someone joined your household")
                         case "member_left":
@@ -187,18 +191,18 @@ class IntegratedTaskManager: ObservableObject {
         localTask.points = Int32(points)
         localTask.isCompleted = false
         // CoreData model may not include recurrence; set via KVC when available
-        localTask.setValue(isRecurring, forKey: "isRecurring")
-        localTask.setValue(recurringType?.rawValue, forKey: "recurringType")
+        localTask.setIfHasAttribute(isRecurring, forKey: "isRecurring")
+        localTask.setIfHasAttribute(recurringType?.rawValue, forKey: "recurringType")
         localTask.createdAt = Date()
         
         // Mark for sync
-        localTask.setValue(true, forKey: "needsSync")
-        localTask.setValue(UUID().uuidString, forKey: "localId")
+        localTask.setIfHasAttribute(true, forKey: "needsSync")
+        localTask.setIfHasAttribute(UUID().uuidString, forKey: "localId")
         
         // Set assigned user if provided
-        if let assignedUserId = assignedUserId {
+        if let assignedUserId = assignedUserId, let uuid = UUID(uuidString: assignedUserId) {
             let userRequest: NSFetchRequest<User> = User.fetchRequest()
-            userRequest.predicate = NSPredicate(format: "id == %@", assignedUserId)
+            userRequest.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
             userRequest.fetchLimit = 1
             
             if let user = try? context.fetch(userRequest).first {
@@ -272,6 +276,8 @@ class IntegratedTaskManager: ObservableObject {
         // Update locally first
         task.isCompleted = true
         task.completedAt = Date()
+        task.setIfHasAttribute(true, forKey: "needsSync")
+        task.setIfHasAttribute(Date(), forKey: "updatedAt")
         
         // Award points
         if let assignedUser = task.assignedTo {
@@ -279,8 +285,8 @@ class IntegratedTaskManager: ObservableObject {
             GameificationManager.shared.awardPoints(Int(task.points), to: assignedUser, for: "task_completion")
         }
         
-        // Mark for sync
-        task.setValue(true, forKey: "needsSync")
+        // Mark for sync (already set above, keep for clarity)
+        task.setIfHasAttribute(true, forKey: "needsSync")
         
         try context.save()
         
@@ -302,6 +308,7 @@ class IntegratedTaskManager: ObservableObject {
                 
                 // Emit socket event for real-time update when Socket.IO is available
                 #if canImport(SocketIO)
+                // Also broadcast a 'task_completed' event to match backend
                 SocketManager.shared.emitTaskCompleted(task)
                 #endif
                 
@@ -359,8 +366,9 @@ class IntegratedTaskManager: ObservableObject {
             }
         }
         
-        // Mark for sync
-        task.setValue(true, forKey: "needsSync")
+        // Mark for sync and bump local updatedAt
+        task.setIfHasAttribute(true, forKey: "needsSync")
+        task.setIfHasAttribute(Date(), forKey: "updatedAt")
         
         try context.save()
         
@@ -409,15 +417,14 @@ class IntegratedTaskManager: ObservableObject {
         defer { isLoading = false }
         
         // If online and task has backend ID, try to delete from backend first
-        if networkManager.isOnline, let _ = task.id?.uuidString {
+        if networkManager.isOnline, let taskId = task.id?.uuidString {
             do {
-                // Note: NetworkManager doesn't have deleteTask yet, we'll add it later
-                // For now, just mark as deleted locally
-                task.setValue(true, forKey: "isDeleted")
-                task.setValue(true, forKey: "needsSync")
+                _ = try await networkManager.deleteTask(taskId: taskId)
+                // Delete locally after successful backend deletion
+                context.delete(task)
                 try context.save()
                 
-                LoggingManager.shared.info("Task marked for deletion", 
+                LoggingManager.shared.info("Task deleted on backend and locally", 
                                          category: LoggingManager.Category.tasks.rawValue)
             } catch {
                 LoggingManager.shared.error("Failed to delete task", 
@@ -478,22 +485,22 @@ class IntegratedTaskManager: ObservableObject {
         }
         
         do {
-            // Fetch tasks from backend
+            // First upload local changes to avoid overwriting local toggles with stale server state
+            await uploadLocalChanges()
+
+            // Then fetch tasks from backend
             let response = try await networkManager.getHouseholdTasks(householdId: householdId)
-            
+
             if let apiTasks = response.data {
                 // Sync each task
                 for apiTask in apiTasks {
                     await syncTaskFromAPI(apiTask, localTask: nil)
                 }
-                
-                // Upload local changes that need sync
-                await uploadLocalChanges()
-                
+
                 // Reload tasks
                 loadLocalTasks()
-                
-                LoggingManager.shared.info("Tasks synced successfully", 
+
+                LoggingManager.shared.info("Tasks synced successfully",
                                          category: LoggingManager.Category.tasks.rawValue)
             }
         } catch {
@@ -514,39 +521,36 @@ class IntegratedTaskManager: ObservableObject {
         do {
             let existingTasks = try context.fetch(request)
             let task = localTask ?? existingTasks.first ?? HouseholdTask(context: context)
-            
-            // Update with API data
-            if task.id == nil {
-                task.id = UUID(uuidString: apiTask.id) ?? UUID()
+
+            let iso = ISO8601DateFormatter()
+            let apiUpdatedAt = iso.date(from: apiTask.updatedAt) ?? Date.distantPast
+            let localUpdatedAt = (task.value(forKey: "updatedAt") as? Date) ?? (task.value(forKey: "lastSyncedAt") as? Date) ?? Date.distantPast
+            let hasLocalPendingChanges = (task.value(forKey: "needsSync") as? Bool) == true
+
+            if task.id == nil { task.id = UUID(uuidString: apiTask.id) ?? UUID() }
+
+            // Conflict resolution policy:
+            // - If local has pending changes and localUpdatedAt > apiUpdatedAt, keep local; else apply server
+            let shouldApplyServer = !hasLocalPendingChanges || apiUpdatedAt > localUpdatedAt
+
+            if shouldApplyServer {
+                task.title = apiTask.title
+                task.taskDescription = apiTask.description
+                if let dueDateString = apiTask.dueDate { task.dueDate = iso.date(from: dueDateString) } else { task.dueDate = nil }
+                task.priority = apiTask.priority
+                task.points = Int32(apiTask.points)
+                task.isCompleted = apiTask.isCompleted
+                task.setIfHasAttribute(apiTask.isRecurring, forKey: "isRecurring")
+                task.setIfHasAttribute(apiTask.recurringType, forKey: "recurringType")
+                if let completedAtString = apiTask.completedAt { task.completedAt = iso.date(from: completedAtString) } else { task.completedAt = nil }
+                if task.createdAt == nil { task.createdAt = iso.date(from: apiTask.createdAt) }
+                task.setIfHasAttribute(false, forKey: "needsSync")
+                task.setIfHasAttribute(Date(), forKey: "lastSyncedAt")
+                task.setIfHasAttribute(Date(), forKey: "updatedAt")
+            } else {
+                // Keep local changes; just refresh lastSynced timestamps
+                task.setIfHasAttribute(Date(), forKey: "lastSyncedAt")
             }
-            task.title = apiTask.title
-            task.taskDescription = apiTask.description
-            
-            if let dueDateString = apiTask.dueDate {
-                let formatter = ISO8601DateFormatter()
-                task.dueDate = formatter.date(from: dueDateString)
-            }
-            
-            task.priority = apiTask.priority
-            task.points = Int32(apiTask.points)
-            task.isCompleted = apiTask.isCompleted
-            task.setValue(apiTask.isRecurring, forKey: "isRecurring")
-            task.setValue(apiTask.recurringType, forKey: "recurringType")
-            
-            if let completedAtString = apiTask.completedAt {
-                let formatter = ISO8601DateFormatter()
-                task.completedAt = formatter.date(from: completedAtString)
-            }
-            
-            if task.createdAt == nil {
-                let createdAtString = apiTask.createdAt
-                let formatter = ISO8601DateFormatter()
-                task.createdAt = formatter.date(from: createdAtString)
-            }
-            
-            // Clear sync flag
-            task.setValue(false, forKey: "needsSync")
-            task.setValue(Date(), forKey: "lastSyncedAt")
             
             // Set assigned user if available
             if let assignedUserId = apiTask.assignedUserId {
@@ -570,7 +574,9 @@ class IntegratedTaskManager: ObservableObject {
     
     private func uploadLocalChanges() async {
         let request: NSFetchRequest<HouseholdTask> = HouseholdTask.fetchRequest()
-        request.predicate = NSPredicate(format: "needsSync == true")
+        if let _ = HouseholdTask.entity().attributesByName["needsSync"] {
+            request.predicate = NSPredicate(format: "needsSync == true")
+        }
         
         do {
             let tasksToSync = try context.fetch(request)
@@ -595,8 +601,8 @@ class IntegratedTaskManager: ObservableObject {
                                 points: Int(task.points),
                                 assignedUserId: task.assignedTo?.id?.uuidString,
                                 householdId: householdId,
-                                 isRecurring: (task.value(forKey: "isRecurring") as? Bool) ?? false,
-                                  recurringType: task.value(forKey: "recurringType") as? String
+                                 isRecurring: task.boolIfHasAttribute(forKey: "isRecurring") ?? false,
+                                  recurringType: task.stringIfHasAttribute(forKey: "recurringType")
                             )
                             
                             if let apiTask = response.data {

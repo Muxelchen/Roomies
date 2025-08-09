@@ -1,11 +1,12 @@
-import { logger, cloudLogger } from '@/utils/logger';
 import crypto from 'crypto';
 import https from 'https';
-import { User } from '@/models/User';
+
+import { AppDataSource } from '@/config/database';
+import { Activity } from '@/models/Activity';
 import { Household } from '@/models/Household';
 import { HouseholdTask } from '@/models/HouseholdTask';
-import { Activity } from '@/models/Activity';
-import { AppDataSource } from '@/config/database';
+import { User } from '@/models/User';
+import { logger, cloudLogger } from '@/utils/logger';
 
 type CloudKitClient = {
   isConfigured: boolean;

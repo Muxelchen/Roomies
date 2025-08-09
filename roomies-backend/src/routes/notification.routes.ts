@@ -1,7 +1,6 @@
-import express from 'express';
-import { Request, Response } from 'express';
-import CloudKitService from '@/services/CloudKitService';
 import { authenticateToken } from '@/middleware/auth';
+import CloudKitService from '@/services/CloudKitService';
+import express, { Request, Response } from 'express';
 
 const router = express.Router();
 

@@ -100,10 +100,11 @@ struct AddRewardView: View {
                 }
         }
         .premiumFormAppearance()
+        .premiumFormAppearance()
             .navigationTitle("Add Reward")
             .navigationBarTitleDisplayMode(.inline)
             .onSubmit {
-                if !name.isEmpty {
+                if !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     saveReward()
                 }
             }
@@ -120,7 +121,7 @@ struct AddRewardView: View {
                     PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         saveReward()
                     }
-                    .disabled(name.isEmpty)
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
@@ -142,8 +143,10 @@ struct AddRewardView: View {
         withAnimation {
             let newReward = Reward(context: viewContext)
             newReward.id = UUID()
-            newReward.name = name
-            newReward.rewardDescription = description.isEmpty ? nil : description
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            newReward.name = trimmedName
+            newReward.rewardDescription = trimmedDescription.isEmpty ? nil : trimmedDescription
             newReward.cost = Int32(cost)
             newReward.createdAt = Date()
             

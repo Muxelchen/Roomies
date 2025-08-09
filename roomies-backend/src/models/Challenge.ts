@@ -1,3 +1,4 @@
+import { IsNotEmpty, Min } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,9 +10,9 @@ import {
   JoinTable,
   JoinColumn
 } from 'typeorm';
-import { IsNotEmpty, Min } from 'class-validator';
-import { User } from './User';
+
 import { Household } from './Household';
+import { User } from './User';
 
 @Entity('challenges')
 export class Challenge {

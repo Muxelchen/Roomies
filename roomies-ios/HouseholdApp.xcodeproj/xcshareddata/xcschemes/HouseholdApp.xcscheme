@@ -65,16 +65,16 @@
             value = "development"
             isEnabled = "YES">
          </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "API_BASE_URL"
-            value = "http://localhost:3000/api"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "SOCKET_URL"
-            value = "http://localhost:3000"
-            isEnabled = "YES">
-         </EnvironmentVariable>
+          <EnvironmentVariable
+             key = "API_BASE_URL"
+             value = "http://127.0.0.1:3001/api"
+             isEnabled = "YES">
+          </EnvironmentVariable>
+          <EnvironmentVariable
+             key = "SOCKET_URL"
+             value = "http://127.0.0.1:3001"
+             isEnabled = "YES">
+          </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

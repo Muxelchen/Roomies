@@ -158,7 +158,7 @@ class SocketManager: ObservableObject {
             userId: task.createdBy?.id?.uuidString ?? "",
             timestamp: Date()
         )
-        socket?.emit("task:created", event.toDictionary())
+        socket?.emit("task_created", event.toDictionary())
         taskCreatedPublisher.send(event)
     }
     
@@ -171,7 +171,7 @@ class SocketManager: ObservableObject {
             userId: task.assignedTo?.id?.uuidString ?? "",
             timestamp: Date()
         )
-        socket?.emit("task:updated", event.toDictionary())
+        socket?.emit("task_updated", event.toDictionary())
         taskUpdatedPublisher.send(event)
     }
     
@@ -185,7 +185,7 @@ class SocketManager: ObservableObject {
             timestamp: Date(),
             points: Int(task.points)
         )
-        socket?.emit("task:completed", event.toDictionary())
+        socket?.emit("task_completed", event.toDictionary())
         taskCompletedPublisher.send(event)
     }
     

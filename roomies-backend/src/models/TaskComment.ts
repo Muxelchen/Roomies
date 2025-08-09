@@ -1,3 +1,4 @@
+import { IsNotEmpty } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,9 +8,9 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { IsNotEmpty } from 'class-validator';
-import { User } from './User';
+
 import { HouseholdTask } from './HouseholdTask';
+import { User } from './User';
 
 @Entity('task_comments')
 export class TaskComment {

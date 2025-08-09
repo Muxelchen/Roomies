@@ -120,6 +120,10 @@ class ErrorHandlingManager: ObservableObject {
         self.retryAction = retryAction
         self.hasError = true
         self.retryAttempts = 0
+        // UITest instrumentation hook: record error occurrence for automated crawls
+        #if DEBUG
+        UITestInstrumentation.shared.logError(type: String(describing: type), message: message)
+        #endif
         
         // Auto-dismiss after 5 seconds for non-critical errors
         if type == .general || type == .dataLoad {

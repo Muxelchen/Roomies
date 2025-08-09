@@ -1,3 +1,5 @@
+import bcrypt from 'bcrypt';
+import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,15 +12,15 @@ import {
   BeforeInsert,
   BeforeUpdate
 } from 'typeorm';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
-import { UserHouseholdMembership } from './UserHouseholdMembership';
-import { HouseholdTask } from './HouseholdTask';
+
 import { Activity } from './Activity';
+import { Badge } from './Badge';
+import { Challenge } from './Challenge';
+import { HouseholdTask } from './HouseholdTask';
 import { RewardRedemption } from './RewardRedemption';
 import { TaskComment } from './TaskComment';
-import { Challenge } from './Challenge';
-import { Badge } from './Badge';
-import bcrypt from 'bcrypt';
+import { UserHouseholdMembership } from './UserHouseholdMembership';
+
 
 @Entity('users')
 export class User {
@@ -42,6 +44,10 @@ export class User {
 
   @Column({ name: 'avatar_url', nullable: true })
   avatarUrl?: string | null;
+
+  // Sign in with Apple linkage (nullable for non-Apple accounts)
+  @Column({ name: 'apple_user_id', type: 'varchar', unique: true, nullable: true })
+  appleUserId?: string | null;
 
   @Column({ default: 0 })
   points!: number;

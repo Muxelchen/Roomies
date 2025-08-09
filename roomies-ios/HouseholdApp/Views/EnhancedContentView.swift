@@ -12,7 +12,9 @@ struct EnhancedContentView: View {
     
     var body: some View {
         ZStack {
-            // Animated background gradient
+            // Premium background + animated overlay
+            PremiumScreenBackground(sectionColor: authManager.isAuthenticated ? .dashboard : .profile, style: .minimal)
+                .ignoresSafeArea()
             AnimatedBackgroundView()
                 .ignoresSafeArea()
             
@@ -84,14 +86,13 @@ struct EnhancedContentView: View {
         }
         .animation(.spring(response: 0.8, dampingFraction: 0.7), value: showSplash)
         .onAppear {
-            setupNotBoringSounds()
+            setupPremiumAudio()
             setupPremiumAudioHandlers()
         }
     }
     
-    private func setupNotBoringSounds() {
-        NotBoringSoundManager.shared.preloadSounds()
-        LoggingManager.shared.debug("Sound system initialized", category: "audio")
+    private func setupPremiumAudio() {
+        LoggingManager.shared.debug("Premium audio system initialized", category: "audio")
     }
     
     // MARK: - Premium Audio Integration

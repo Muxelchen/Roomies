@@ -161,16 +161,11 @@ struct MembersTabView: View {
                     HouseholdMemberRowView(member: member)
                 }
             }
-            .listStyle(PlainListStyle())
+            .premiumListAppearance()
             
-            Button("Invite Member") {
+            PremiumButton("Invite Member", icon: "person.badge.plus", sectionColor: .dashboard) {
                 showingInviteSheet = true
             }
-            .font(.headline)
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(Color.blue)
-            .cornerRadius(25)
             .padding()
         }
         .sheet(isPresented: $showingInviteSheet) {
@@ -284,25 +279,15 @@ struct InvitationsTabView: View {
             
             // Share Options
             VStack(spacing: 12) {
-                Button("Show QR Code") {
+                PremiumButton("Show QR Code", icon: "qrcode", sectionColor: .dashboard) {
                     PremiumAudioHapticSystem.playModalPresent()
                     showingQRCode = true
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Color.blue)
-                .cornerRadius(25)
                 
-                Button("Share Invitation") {
+                PremiumButton("Share Invitation", icon: "square.and.arrow.up", sectionColor: .dashboard) {
                     PremiumAudioHapticSystem.playButtonTap(style: .medium)
                     shareInvite()
                 }
-                .font(.headline)
-                .foregroundColor(.blue)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(25)
             }
             
             Spacer()
@@ -366,6 +351,7 @@ struct HouseholdSettingsTabView: View {
                 .foregroundColor(.red)
             }
         }
+        .premiumFormAppearance()
         .alert("Delete Household", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -451,23 +437,13 @@ struct NoHouseholdView: View {
             }
             
             VStack(spacing: 16) {
-                Button("Create Household") {
+                PremiumButton("Create Household", icon: "house.badge.plus", sectionColor: .dashboard) {
                     showingCreateHousehold = true
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Color.blue)
-                .cornerRadius(25)
                 
-                Button("Join Household") {
+                PremiumButton("Join Household", icon: "person.2.badge.plus", sectionColor: .dashboard) {
                     showingJoinHousehold = true
                 }
-                .font(.headline)
-                .foregroundColor(.blue)
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(25)
             }
         }
         .padding()

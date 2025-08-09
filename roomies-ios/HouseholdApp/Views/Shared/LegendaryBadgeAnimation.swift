@@ -160,8 +160,9 @@ struct LegendaryBadgeAnimation: View {
     }
     
     private func triggerLegendarySequence() {
-        // Initial flash and haptic
-        NotBoringSoundManager.shared.playLevelUp()
+        // Initial flash and premium haptic/audio
+        PremiumAudioHapticSystem.playSuccess()
+        PremiumAudioHapticSystem.shared.play(.epicCelebration, context: .celebration)
         
         // Background flash
         withAnimation(.easeOut(duration: 0.2)) {

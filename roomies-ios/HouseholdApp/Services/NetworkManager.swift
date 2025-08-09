@@ -218,12 +218,18 @@ class NetworkManager: ObservableObject {
                 // Fetch cloud status and toggle CloudKit runtime flag
                 do {
                     let status = try await performRequest(
-                        endpoint: "/cloud/status",
+                        endpoint: "/events/status",
                         method: .GET,
                         responseType: CloudStatusResponse.self,
                         requiresAuth: false
                     )
-                    CloudRuntime.shared.update(from: status)
+                    // Map backend status into CloudRuntime
+                    await MainActor.run {
+                        CloudRuntime.shared.setCloud(
+                            enabled: status.cloud.enabled,
+                            available: status.cloud.available
+                        )
+                    }
                 } catch {
                     // Ignore cloud status failures; remain offline for cloud
                 }
@@ -278,6 +284,26 @@ extension NetworkManager {
             saveAuthTokens(accessToken: token, refreshToken: refreshToken)
         }
         
+        return response
+    }
+    
+    func loginWithApple(identityToken: String, email: String? = nil, name: String? = nil) async throws -> AuthResponse {
+        let body = AppleLoginRequest(identityToken: identityToken, email: email, name: name)
+        let bodyData = try JSONEncoder().encode(body)
+
+        let response = try await performRequest(
+            endpoint: "/auth/apple",
+            method: .POST,
+            body: bodyData,
+            responseType: AuthResponse.self,
+            requiresAuth: false
+        )
+
+        if let token = response.data?.token {
+            let maybeRefresh = response.data?.refreshToken
+            saveAuthTokens(accessToken: token, refreshToken: maybeRefresh)
+        }
+
         return response
     }
     
@@ -536,6 +562,12 @@ struct LoginRequest: Codable {
     let password: String
 }
 
+struct AppleLoginRequest: Codable {
+    let identityToken: String
+    let email: String?
+    let name: String?
+}
+
 struct CreateHouseholdRequest: Codable {
     let name: String
 }
@@ -623,6 +655,7 @@ struct APITask: Codable {
     let isCompleted: Bool
     let completedAt: String?
     let createdAt: String
+    let updatedAt: String
     let assignedUserId: String?
     let assignedUser: APIUser?
     let createdBy: APIUser
@@ -701,18 +734,3 @@ struct CloudStatusEnvelope: Codable {
 
 typealias CloudStatusResponse = CloudStatusEnvelope
 
-// MARK: - Cloud runtime gating
-final class CloudRuntime: ObservableObject {
-    static let shared = CloudRuntime()
-    @Published private(set) var cloudEnabled: Bool = false
-    @Published private(set) var cloudAvailable: Bool = false
-    @Published private(set) var lastError: String?
-
-    private init() {}
-
-    func update(from response: CloudStatusResponse) {
-        self.cloudEnabled = response.cloud.enabled
-        self.cloudAvailable = response.cloud.available
-        self.lastError = response.cloud.error
-    }
-}

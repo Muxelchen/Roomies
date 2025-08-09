@@ -1,7 +1,8 @@
-import { logger } from '@/utils/logger';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { promisify } from 'util';
+
+import { logger } from '@/utils/logger';
 
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);

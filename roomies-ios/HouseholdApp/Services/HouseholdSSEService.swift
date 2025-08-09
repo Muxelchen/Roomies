@@ -36,6 +36,7 @@ final class HouseholdSSEService: NSObject, URLSessionDataDelegate {
         guard let url = URL(string: "\(baseURL)/events/household/\(householdId)") else { return }
         var req = URLRequest(url: url)
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        req.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         if let token = authTokenProvider() {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -43,7 +44,6 @@ final class HouseholdSSEService: NSObject, URLSessionDataDelegate {
         let task = session.dataTask(with: req)
         self.task = task
         task.resume()
-        onOpen?()
     }
     
     func feed(_ data: Data) {
@@ -73,9 +73,36 @@ final class HouseholdSSEService: NSObject, URLSessionDataDelegate {
             }
         }
         onEvent?(Event(name: eventName, json: dataJSON))
+        // Surface specific events to UI via NotificationCenter for quick MVP wiring
+        switch eventName {
+        case "reward_redeemed":
+            NotificationCenter.default.post(name: Notification.Name("rewardRedeemed"), object: nil, userInfo: dataJSON)
+        case "challenge_completed":
+            NotificationCenter.default.post(name: Notification.Name("challengeCompleted"), object: nil, userInfo: dataJSON)
+        default:
+            break
+        }
     }
     
     // URLSessionDataDelegate
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        if let http = response as? HTTPURLResponse {
+            if (200...299).contains(http.statusCode) {
+                // Successful SSE handshake
+                reconnectDelay = 3
+                onOpen?()
+                completionHandler(.allow)
+                return
+            } else {
+                // Non-success response; close and schedule reconnect
+                onClose?(NSError(domain: "SSE", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "SSE HTTP \(http.statusCode)"]))
+                completionHandler(.cancel)
+                scheduleReconnect()
+                return
+            }
+        }
+        completionHandler(.allow)
+    }
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         feed(data)
     }

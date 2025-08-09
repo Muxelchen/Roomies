@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
 import { AppDataSource } from '@/config/database';
 import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -190,10 +190,11 @@ export class HealthCheckService {
       const usedMemoryMB = Math.round(usage.heapUsed / 1024 / 1024);
       const usagePercentage = Math.round((usage.heapUsed / usage.heapTotal) * 100);
       
-      // Warn if memory usage is above 80%, fail if above 95% (but relax to warn in development)
+      // Warn if memory usage is above 80%, fail if above 95% (but relax to warn in non-production envs)
+      const env = (process.env.NODE_ENV || 'development').toLowerCase();
       const highUsage = usagePercentage > 95;
       const status = highUsage
-        ? ((process.env.NODE_ENV || 'development') === 'development' ? 'warn' as const : 'fail' as const)
+        ? (env === 'production' ? 'fail' as const : 'warn' as const)
         : (usagePercentage > 80 ? 'warn' as const : 'pass' as const);
       
       return {

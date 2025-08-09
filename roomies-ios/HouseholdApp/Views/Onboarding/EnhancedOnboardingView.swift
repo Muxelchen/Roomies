@@ -221,57 +221,42 @@ struct OnboardingPageView: View {
             }
         }
         
-        // Continuous animation based on type
+        // Continuous animation based on type (single, battery-safe cycle)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            guard !reduceMotion else { return }
             switch page.animation {
             case .bounce:
-                if !reduceMotion {
-Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
-                    withAnimation(.easeInOut(duration: 0.75)) {
-                        iconOffset = CGSize(width: 0, height: -10)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                        withAnimation(.easeInOut(duration: 0.75)) {
-                            iconOffset = .zero
-                        }
-                    }
+                withAnimation(.easeInOut(duration: 0.75)) {
+                    iconOffset = CGSize(width: 0, height: -10)
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                    withAnimation(.easeInOut(duration: 0.75)) {
+                        iconOffset = .zero
+                    }
                 }
             case .rotate:
-                if !reduceMotion {
-Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
-                    withAnimation(.linear(duration: 8.0)) {
-                        iconRotation += 360
-                    }
-                }
+                withAnimation(.linear(duration: 8.0)) {
+                    iconRotation += 360
                 }
             case .pulse:
-                if !reduceMotion {
-Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        iconScale = 1.1
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                        withAnimation(.easeInOut(duration: 0.6)) {
-                            iconScale = 1.0
-                        }
-                    }
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    iconScale = 1.1
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        iconScale = 1.0
+                    }
                 }
             case .float:
-                if !reduceMotion {
-Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                    withAnimation(.easeInOut(duration: 1.0)) {
-                        iconOffset = CGSize(width: 0, height: -5)
-                        iconRotation = 5
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        withAnimation(.easeInOut(duration: 1.0)) {
-                            iconOffset = .zero
-                            iconRotation = 0
-                        }
-                    }
+                withAnimation(.easeInOut(duration: 1.0)) {
+                    iconOffset = CGSize(width: 0, height: -5)
+                    iconRotation = 5
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        iconOffset = .zero
+                        iconRotation = 0
+                    }
                 }
             }
         }
@@ -503,22 +488,17 @@ struct AnimatedGradientBackground: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            if !reduceMotion {
-Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { _ in
-                withAnimation(.linear(duration: 20.0)) {
-                    rotation += 360
-                }
+            guard !reduceMotion else { return }
+            withAnimation(.linear(duration: 20.0)) {
+                rotation += 360
             }
-            Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 4.0)) {
+                gradientOffset = 1.0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
                 withAnimation(.easeInOut(duration: 4.0)) {
-                    gradientOffset = 1.0
+                    gradientOffset = 0.0
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    withAnimation(.easeInOut(duration: 4.0)) {
-                        gradientOffset = 0.0
-                    }
-                }
-            }
             }
         }
     }

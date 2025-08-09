@@ -47,9 +47,8 @@ struct TaskCompletionAnimation: View {
     }
     
     private func triggerAnimation() {
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        // Premium audio-haptic feedback
+        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
         
         // Pulse animation
         withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
@@ -232,9 +231,8 @@ struct LevelUpAnimation: View {
     }
     
     private func triggerLevelUpAnimation() {
-        // Heavy haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
+        // Premium audio-haptic feedback for level up
+        PremiumAudioHapticSystem.playLevelUp(newLevel: newLevel)
         
         // Burst effect
         withAnimation(.easeOut(duration: 0.8)) {

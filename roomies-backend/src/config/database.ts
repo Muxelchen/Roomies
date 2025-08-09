@@ -1,14 +1,16 @@
 import { DataSource } from 'typeorm';
-import { User } from '@/models/User';
+
+import { Activity } from '@/models/Activity';
+import { Badge } from '@/models/Badge';
+import { Challenge } from '@/models/Challenge';
 import { Household } from '@/models/Household';
 import { HouseholdTask } from '@/models/HouseholdTask';
 import { Reward } from '@/models/Reward';
-import { Challenge } from '@/models/Challenge';
-import { Activity } from '@/models/Activity';
-import { Badge } from '@/models/Badge';
-import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { RewardRedemption } from '@/models/RewardRedemption';
+import { RefreshToken } from '@/models/RefreshToken';
 import { TaskComment } from '@/models/TaskComment';
+import { User } from '@/models/User';
+import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { logger } from '@/utils/logger';
 
 const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.DB_TYPE === 'sqlite';
@@ -41,6 +43,7 @@ export const AppDataSource = new DataSource(
           Badge,
           UserHouseholdMembership,
           RewardRedemption,
+          RefreshToken,
           TaskComment
         ],
         migrations: [],
@@ -61,6 +64,7 @@ export const AppDataSource = new DataSource(
           Badge,
           UserHouseholdMembership,
           RewardRedemption,
+          RefreshToken,
           TaskComment
         ],
         migrations: ['src/database/migrations/*.ts'],

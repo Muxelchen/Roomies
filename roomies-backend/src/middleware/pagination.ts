@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
 import { ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 export interface PaginationParams {
   page: number;
@@ -32,11 +32,11 @@ export function paginationMiddleware(options?: {
   const maxLimit = options?.maxLimit || 100;
   const allowedSortFields = options?.allowedSortFields || ['createdAt', 'updatedAt', 'name', 'title'];
 
-  return (req: Request, res: Response, next: NextFunction) => {
+      return (req: Request, res: Response, next: NextFunction) => {
     try {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       let limit = parseInt(req.query.limit as string) || defaultLimit;
-      const sortBy = req.query.sortBy as string || 'createdAt';
+          const sortBy = (req.query.sortBy as string)?.trim() || 'createdAt';
       const sortOrder = ((req.query.sortOrder as string)?.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
 
       // Enforce maximum limit to prevent abuse
@@ -52,7 +52,7 @@ export function paginationMiddleware(options?: {
       }
 
       // Validate sort field to prevent SQL injection and ensure column exists
-      if (!allowedSortFields.includes(sortBy)) {
+          if (!allowedSortFields.includes(sortBy)) {
         throw new ValidationError(`Invalid sort field. Allowed fields: ${allowedSortFields.join(', ')}`);
       }
 
@@ -77,9 +77,9 @@ export function paginationMiddleware(options?: {
       });
 
       next();
-    } catch (error) {
-      next(error);
-    }
+      } catch (error) {
+        next(error);
+      }
   };
 }
 

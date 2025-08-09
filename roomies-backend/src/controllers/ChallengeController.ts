@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
 import { AppDataSource } from '@/config/database';
+import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { Challenge } from '@/models/Challenge';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { createResponse, createErrorResponse, asyncHandler, ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 export class ChallengeController {
   private challengeRepository = AppDataSource.getRepository(Challenge);
@@ -88,6 +88,28 @@ export class ChallengeController {
       await this.challengeRepository.save(challenge);
 
       logger.info('User joined challenge', { challengeId: challenge.id, userId: user.id });
+
+      // Emit WebSocket/SSE event to household participants
+      try {
+        const io = req.app.get('io');
+        const payload = {
+          challenge: { id: challenge.id, title: challenge.title },
+          user: { id: user.id, name: user.name, avatarColor: user.avatarColor },
+          householdId: challenge.household.id,
+          participantCount: challenge.participantCount
+        };
+        if (io) {
+          io.to(`household:${challenge.household.id}`).emit('challenge_joined', payload);
+        }
+        try {
+          const { eventBroker } = require('@/services/EventBroker');
+          eventBroker.broadcast(challenge.household.id, 'challenge_joined', payload);
+        } catch (e) {
+          logger.warn('SSE broadcast failed (continuing):', e);
+        }
+      } catch (e) {
+        logger.warn('Challenge join event emission failed (continuing):', e);
+      }
 
       res.json(createResponse({
         id: challenge.id,

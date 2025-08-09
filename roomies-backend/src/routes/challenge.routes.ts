@@ -1,7 +1,7 @@
-import express from 'express';
+import { ChallengeController } from '@/controllers/ChallengeController';
 import { authenticateToken } from '@/middleware/auth';
 import { validateUUID } from '@/middleware/validation';
-import { ChallengeController } from '@/controllers/ChallengeController';
+import express from 'express';
 
 const router = express.Router();
 const controller = new ChallengeController();

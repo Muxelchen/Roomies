@@ -8,6 +8,7 @@ import householdRoutes from '@/routes/household.routes';
 import taskRoutes from '@/routes/task.routes';
 import rewardRoutes from '@/routes/reward.routes';
 import gamificationRoutes from '@/routes/gamification.routes';
+import challengeRoutes from '@/routes/challenge.routes';
 import notificationRoutes from '@/routes/notification.routes';
 import eventRoutes from '@/routes/events.routes';
 import { AppDataSource } from '@/config/database';
@@ -48,6 +49,7 @@ export async function createTestApp() {
   app.use('/api/tasks', taskRoutes);
   app.use('/api/rewards', rewardRoutes);
   app.use('/api/gamification', gamificationRoutes);
+  app.use('/api/challenges', challengeRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/events', eventRoutes);
 

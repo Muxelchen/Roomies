@@ -321,8 +321,8 @@ struct RedemptionCelebrationAnimation: View {
     }
     
     private func triggerCelebration() {
-        // Play celebration sound
-        NotBoringSoundManager.shared.playSuccess()
+        // Premium celebration audio-haptic
+        PremiumAudioHapticSystem.playSuccess()
         
         // Background pulse
         withAnimation(.easeInOut(duration: 0.8).repeatCount(3, autoreverses: true)) {

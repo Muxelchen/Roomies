@@ -6,8 +6,9 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { User } from './User';
+
 import { Household } from './Household';
+import { User } from './User';
 
 export type ActivityType = 
   | 'task_completed' 

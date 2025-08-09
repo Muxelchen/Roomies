@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { corsConfig, securityMiddlewareStack } from '@/middleware/security';
+import * as Sentry from '@sentry/node';
 import { AppDataSource } from '@/config/database';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import { verifyToken } from '@/utils/jwt';
@@ -37,7 +38,8 @@ import eventRoutes from '@/routes/events.routes';
 dotenv.config();
 const secureEnvPath = path.resolve(process.cwd(), '.env.secure');
 if (fs.existsSync(secureEnvPath)) {
-  dotenv.config({ path: secureEnvPath });
+  // Ensure secure env overrides any .env or process defaults
+  dotenv.config({ path: secureEnvPath, override: true });
 }
 
 class RoomiesServer {
@@ -82,6 +84,22 @@ class RoomiesServer {
       logger.info('🔌 Socket.IO Redis adapter enabled');
     } catch (error) {
       logger.warn('⚠️  Socket.IO Redis adapter initialization failed (continuing without adapter)', error);
+    }
+  }
+
+  private initializeMonitoring(): void {
+    try {
+      const dsn = process.env.SENTRY_DSN;
+      if (dsn) {
+        Sentry.init({
+          dsn,
+          environment: process.env.NODE_ENV || 'development',
+          tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
+        });
+        logger.info('🛰️  Sentry monitoring initialized');
+      }
+    } catch (error) {
+      logger.warn('⚠️  Failed to initialize Sentry (continuing without it)', error as any);
     }
   }
 
@@ -148,6 +166,8 @@ class RoomiesServer {
   }
 
   private initializeMiddleware(): void {
+    // Monitoring must be initialized before other middleware to capture context
+    this.initializeMonitoring();
     // Enhanced Security Stack
     securityMiddlewareStack().forEach(middleware => {
       this.app.use(middleware);
@@ -261,6 +281,7 @@ class RoomiesServer {
     });
 
     // Error handler
+    // Note: Sentry's built-in error handler is optional; custom handler already logs and masks in prod
     this.app.use(errorHandler);
   }
 

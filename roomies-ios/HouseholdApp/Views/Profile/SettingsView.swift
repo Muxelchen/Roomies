@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     @State private var isLoading = false
+    @State private var showingSignOutAlert = false
     
     // MARK: - Error Handling State
     @State private var hasLoadingError = false
@@ -244,6 +245,23 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    // Account Section
+                    NotBoringSettingsCard(
+                        title: "Account",
+                        icon: "person.fill",
+                        color: .red
+                    ) {
+                        VStack(spacing: 12) {
+                            NotBoringActionButton(
+                                title: "Sign Out",
+                                icon: "rectangle.portrait.and.arrow.right",
+                                color: .red
+                            ) {
+                                showingSignOutAlert = true
+                            }
+                        }
+                    }
                     
                     // App Info Section
                     NotBoringSettingsCard(
@@ -321,6 +339,16 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Do you really want to delete all data? This action cannot be undone.")
+            }
+            .alert("Sign Out", isPresented: $showingSignOutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    PremiumAudioHapticSystem.playButtonTap(style: .heavy)
+                    IntegratedAuthenticationManager.shared.signOut()
+                    dismiss()
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
             }
         }
     }

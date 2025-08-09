@@ -18,7 +18,7 @@ struct EnhancedSettingsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+                PremiumScreenBackground(sectionColor: .settings, style: .minimal)
                 
                 ScrollView {
                     LazyVStack(spacing: 20) {
@@ -379,7 +379,7 @@ struct NotificationSettingsContent: View {
                 icon: "speaker.wave.2.fill",
                 isOn: $soundEnabled
             ) {
-                NotBoringSoundManager.shared.setSoundEnabled(soundEnabled)
+                PremiumAudioHapticSystem.shared.setAudioEnabled(soundEnabled)
             }
             
             EnhancedToggleRow(
@@ -388,7 +388,7 @@ struct NotificationSettingsContent: View {
                 icon: "iphone.radiowaves.left.and.right",
                 isOn: $hapticEnabled
             ) {
-                NotBoringSoundManager.shared.setHapticEnabled(hapticEnabled)
+                PremiumAudioHapticSystem.shared.setHapticEnabled(hapticEnabled)
             }
         }
     }
@@ -649,9 +649,12 @@ struct EnhancedSignOutButton: View {
 struct PrivacyPolicyView: View {
     var body: some View {
         NavigationView {
-            ScrollView {
-                Text("Privacy Policy Content")
-                    .padding()
+            ZStack {
+                PremiumScreenBackground(sectionColor: .settings, style: .minimal)
+                ScrollView {
+                    Text("Privacy Policy Content")
+                        .padding()
+                }
             }
             .navigationTitle("Privacy Policy")
             .navigationBarTitleDisplayMode(.large)
@@ -662,9 +665,12 @@ struct PrivacyPolicyView: View {
 struct AboutAppView: View {
     var body: some View {
         NavigationView {
-            ScrollView {
-                Text("About App Content")
-                    .padding()
+            ZStack {
+                PremiumScreenBackground(sectionColor: .settings, style: .minimal)
+                ScrollView {
+                    Text("About App Content")
+                        .padding()
+                }
             }
             .navigationTitle("About Roomies")
             .navigationBarTitleDisplayMode(.large)
@@ -696,6 +702,7 @@ struct LanguagePickerView: View {
                     }
                 }
             }
+            .premiumListAppearance()
             .navigationTitle("Select Language")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

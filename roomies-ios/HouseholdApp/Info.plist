@@ -13,10 +13,10 @@
 			</array>
 		</dict>
 	</array>
-	<key>CloudSyncAvailable</key>
-	<true/>
-	<key>CloudSyncEnabled</key>
-	<true/>
+    <key>CloudSyncAvailable</key>
+    <false/>
+    <key>CloudSyncEnabled</key>
+    <false/>
 	<key>LSMinimumSystemVersion</key>
 	<string>17.0</string>
 	<key>MTLCaptureEnabled</key>

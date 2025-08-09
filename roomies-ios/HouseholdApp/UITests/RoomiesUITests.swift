@@ -56,6 +56,7 @@ final class RoomiesUITests: XCTestCase {
     }
 
     func testStoreSearchShowsPremiumLoadingOverlay() {
+        app.launchArguments += ["UITEST_SKIP_ONBOARDING", "UITEST_DEMO_LOGIN", "UITEST_MOCK_API"]
         app.launch()
 
         let storeTab = app.tabBars.buttons["Store"]
@@ -74,7 +75,7 @@ final class RoomiesUITests: XCTestCase {
 
     func testRewardRedemptionSuccessAndErrorBanner() {
         // Force overlay animation deterministically without backend
-        app.launchArguments += ["UITEST_FORCE_REDEEMING"]
+        app.launchArguments += ["UITEST_SKIP_ONBOARDING", "UITEST_DEMO_LOGIN", "UITEST_MOCK_API", "UITEST_FORCE_REDEEMING"]
         app.launch()
 
         let storeTab = app.tabBars.buttons["Store"]
@@ -89,6 +90,49 @@ final class RoomiesUITests: XCTestCase {
         // integration test can drive mock data or a staging backend.
         // UI-only expectation is that overlay appears. Error banner is
         // triggered by real model failure; verify it does not crash.
+    }
+
+    // Smoke test: tap all visible buttons across tabs and common screens
+    func testTapAllVisibleButtonsAcrossApp() {
+        app.launchArguments += ["UITEST_SKIP_ONBOARDING", "UITEST_DEMO_LOGIN", "UITEST_MOCK_API"]
+        app.launch()
+
+        // Ensure tab bar is present by visiting each tab title we know
+        let tabNames = ["Dashboard", "Tasks", "Store", "Challenges", "Leaderboard", "Profile"]
+
+        // Helper to tap all visible buttons on current screen
+        func tapAllVisibleButtons(maxTaps: Int = 50) {
+            let buttons = app.buttons.allElementsBoundByIndex
+            var tapped = 0
+            let skipKeywords = ["delete", "remove", "sign out", "log out", "logout", "reset", "erase"]
+            for button in buttons {
+                if tapped >= maxTaps { break }
+                guard button.exists && button.isHittable else { continue }
+                let label = button.label.lowercased()
+                if skipKeywords.contains(where: { label.contains($0) }) {
+                    continue
+                }
+                button.tap()
+                tapped += 1
+            }
+        }
+
+        // Iterate through each tab and tap buttons within
+        for tab in ["Dashboard", "Tasks", "Store", "Challenges", "Leaderboard", "Profile"] {
+            let tabButton = app.tabBars.buttons[tab]
+            XCTAssertTrue(tabButton.waitForExistence(timeout: 5))
+            tabButton.tap()
+
+            // Wait briefly for content
+            _ = app.otherElements.firstMatch.waitForExistence(timeout: 1)
+
+            // Tap common FAB if present (Tasks)
+            let fab = app.buttons.matching(identifier: "FloatingActionButton").firstMatch
+            if fab.exists && fab.isHittable { fab.tap() }
+
+            // Tap all non-destructive hittable buttons on the screen
+            tapAllVisibleButtons()
+        }
     }
 }
 

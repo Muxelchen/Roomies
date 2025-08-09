@@ -11,7 +11,7 @@ struct PremiumAudioSettingsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                PremiumScreenBackground(sectionColor: .profile, style: .minimal)
+                PremiumScreenBackground(sectionColor: .settings, style: .minimal)
                 Form {
                 // MARK: - Audio Controls Section
                 Section(header: Label("Audio Controls", systemImage: "speaker.wave.3")) {

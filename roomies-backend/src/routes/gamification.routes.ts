@@ -1,11 +1,10 @@
-import express from 'express';
-import { authenticateToken } from '@/middleware/auth';
-import { createResponse } from '@/middleware/errorHandler';
 import { AppDataSource } from '@/config/database';
+import { authenticateToken } from '@/middleware/auth';
+import { createResponse , createErrorResponse } from '@/middleware/errorHandler';
 import { Activity } from '@/models/Activity';
 import { User } from '@/models/User';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { createErrorResponse } from '@/middleware/errorHandler';
+import express from 'express';
 
 const router = express.Router();
 

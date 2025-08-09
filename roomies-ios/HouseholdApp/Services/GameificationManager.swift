@@ -44,6 +44,12 @@ class GameificationManager: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.updateCurrentUserPoints()
         }
+
+        // Refresh points on reward redemption
+        NotificationCenter.default.addObserver(forName: Notification.Name("rewardRedeemed"), object: nil, queue: .main) { [weak self] note in
+            guard let self = self else { return }
+            self.updateCurrentUserPoints()
+        }
     }
     
     deinit {

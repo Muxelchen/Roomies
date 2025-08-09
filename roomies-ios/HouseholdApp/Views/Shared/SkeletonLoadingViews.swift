@@ -501,10 +501,7 @@ struct InteractiveEmptyStateIllustration: View {
     private func triggerInteraction() {
         tapCount += 1
         
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
-        
-        EnhancedAudioSystem.shared.play(.buttonTap)
+        PremiumAudioHapticSystem.playButtonTap(style: .light)
         
         withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
             isInteracting = true
@@ -518,7 +515,7 @@ struct InteractiveEmptyStateIllustration: View {
         
         // Special effect on 3rd tap
         if tapCount == 3 {
-            EnhancedAudioSystem.shared.playVictoryFanfare(level: .small)
+            PremiumAudioHapticSystem.shared.play(.miniCelebration, context: .celebration)
         }
     }
 }

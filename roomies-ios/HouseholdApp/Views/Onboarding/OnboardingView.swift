@@ -36,6 +36,7 @@ struct OnboardingView: View {
     
     var body: some View {
         ZStack {
+            PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
             // Dynamic background based on current page
             RoomiesOnboardingBackground(currentPage: currentPage)
             

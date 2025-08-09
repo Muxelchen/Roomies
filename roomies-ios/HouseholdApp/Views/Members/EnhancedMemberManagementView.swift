@@ -239,7 +239,7 @@ struct EnhancedMemberManagementView: View {
                     .listRowBackground(Color.clear)
                 }
             }
-            .listStyle(PlainListStyle())
+            .premiumListAppearance()
             
             if householdMembers.isEmpty {
                 EmptyStateView(
@@ -318,7 +318,7 @@ struct EnhancedMemberManagementView: View {
                         ]
                     )
                 }
-                .listStyle(InsetGroupedListStyle())
+                .premiumListAppearance()
             } else {
                 EmptyStateView(
                     icon: "lock.shield",

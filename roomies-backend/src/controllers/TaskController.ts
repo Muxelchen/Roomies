@@ -1,11 +1,7 @@
-import { Request, Response } from 'express';
+import { validate } from 'class-validator';
+import { In } from 'typeorm';
+
 import { AppDataSource } from '@/config/database';
-import { User } from '@/models/User';
-import { HouseholdTask } from '@/models/HouseholdTask';
-import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { Activity } from '@/models/Activity';
-import { TaskComment } from '@/models/TaskComment';
-import { logger } from '@/utils/logger';
 import { 
   createResponse, 
   asyncHandler, 
@@ -14,8 +10,13 @@ import {
   NotFoundError,
   ConflictError 
 } from '@/middleware/errorHandler';
-import { validate } from 'class-validator';
-import { In } from 'typeorm';
+import { Activity } from '@/models/Activity';
+import { HouseholdTask } from '@/models/HouseholdTask';
+import { TaskComment } from '@/models/TaskComment';
+import { User } from '@/models/User';
+import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
+import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 export class TaskController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
@@ -23,6 +24,42 @@ export class TaskController {
   private membershipRepository = AppDataSource.getRepository(UserHouseholdMembership);
   private activityRepository = AppDataSource.getRepository(Activity);
   private commentRepository = AppDataSource.getRepository(TaskComment);
+  private async toAPITask(task: HouseholdTask, fallbackCreator?: User): Promise<any> {
+    const creatorUser: User | undefined = (task as any).creator || fallbackCreator || await this.userRepository.findOne({ where: { id: task.createdBy } });
+    const assignedUser: User | undefined = (task as any).assignedTo || (task as any).assignedUser;
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description || '',
+      dueDate: task.dueDate ?? null,
+      priority: task.priority,
+      points: task.points,
+      isRecurring: task.isRecurring,
+      recurringType: task.recurringType,
+      isCompleted: task.isCompleted,
+      completedAt: task.completedAt ?? null,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      assignedUserId: assignedUser?.id ?? null,
+      assignedUser: assignedUser ? {
+        id: assignedUser.id,
+        name: assignedUser.name,
+        email: assignedUser.email,
+        avatarColor: assignedUser.avatarColor
+      } : null,
+      createdBy: creatorUser ? {
+        id: creatorUser.id,
+        name: creatorUser.name,
+        email: creatorUser.email,
+        avatarColor: creatorUser.avatarColor
+      } : {
+        id: task.createdBy,
+        name: 'Unknown',
+        email: 'unknown@roomies.app',
+        avatarColor: 'blue'
+      }
+    };
+  }
 
   /**
    * Create a new task - ENHANCED with asyncHandler
@@ -78,7 +115,7 @@ export class TaskController {
       description: description?.trim() || '',
       dueDate: dueDate ? new Date(dueDate) : undefined,
       priority: priority || 'medium',
-      points: Math.max(0, parseInt(points) || 10),
+      points: Math.max(1, Number.isFinite(Number(points)) ? Number(points) : 10),
       recurringType: isRecurring ? (recurringType || 'none') : 'none',
       assignedTo: assignedUser,
       createdBy: req.userId,
@@ -120,19 +157,8 @@ export class TaskController {
 
     logger.info('Task created', { taskId: finalTask.id, userId: req.userId, householdId });
 
-    res.status(201).json(createResponse({
-      id: finalTask.id,
-      title: finalTask.title,
-      description: finalTask.description,
-      dueDate: finalTask.dueDate,
-      priority: finalTask.priority,
-      points: finalTask.points,
-      isRecurring: finalTask.isRecurring,
-      recurringType: finalTask.recurringType,
-      assignedUserId: finalTask.assignedTo?.id,
-      isCompleted: finalTask.isCompleted,
-      createdAt: finalTask.createdAt
-    }, 'Task created successfully'));
+    const apiTask = await this.toAPITask(finalTask, req.user!);
+    res.status(201).json(createResponse(apiTask, 'Task created successfully'));
   });
 
   /**
@@ -197,41 +223,15 @@ export class TaskController {
       commentCounts.map(cc => [cc.taskId, parseInt(cc.count)])
     );
 
-    res.json(createResponse({
-      tasks: tasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        dueDate: task.dueDate,
-        priority: task.priority,
-        points: task.points,
-        isRecurring: task.isRecurring,
-        recurringType: task.recurringType,
-        isCompleted: task.isCompleted,
-        completedAt: task.completedAt,
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-        assignedUser: task.assignedTo ? {
-          id: task.assignedTo.id,
-          name: task.assignedTo.name,
-          avatarColor: task.assignedTo.avatarColor
-        } : null,
-        createdBy: {
-          id: task.creator.id,
-          name: task.creator.name,
-          avatarColor: task.creator.avatarColor
-        },
+    const apiTasks = await Promise.all(tasks.map(async task => {
+      const base = await this.toAPITask(task);
+      return {
+        ...base,
         commentCount: commentCountMap.get(task.id) || 0,
         isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
-      })),
-      pagination: {
-        currentPage: pageNum,
-        totalPages: Math.ceil(total / limitNum),
-        totalItems: total,
-        hasNextPage: pageNum * limitNum < total,
-        hasPreviousPage: pageNum > 1
-      }
+      };
     }));
+    res.json(createResponse(apiTasks));
   });
 
   /**
@@ -413,7 +413,7 @@ export class TaskController {
     // OPTIMIZED: Single query with all needed relations
     const task = await this.taskRepository.findOne({
       where: { id: taskId },
-      relations: ['assignedTo', 'household']
+      relations: ['assignedTo', 'household', 'creator']
     });
 
     if (!task) {
@@ -492,14 +492,8 @@ export class TaskController {
 
     logger.info('Task completed', { taskId: task.id, userId: req.userId, points: task.points });
 
-    res.json(createResponse({
-      id: task.id,
-      title: task.title,
-      isCompleted: task.isCompleted,
-      completedAt: task.completedAt,
-      pointsAwarded: task.points,
-      newUserPoints: completingUser?.points
-    }, 'Task completed successfully'));
+    const apiTask = await this.toAPITask(task);
+    res.json(createResponse(apiTask, 'Task completed successfully'));
   });
 
   /**
@@ -613,7 +607,7 @@ export class TaskController {
     // Get task with relations
     const task = await this.taskRepository.findOne({
       where: { id: taskId },
-      relations: ['household', 'assignedTo']
+      relations: ['household', 'assignedTo', 'creator']
     });
 
     if (!task) {
@@ -653,7 +647,8 @@ export class TaskController {
     }
 
     if (points !== undefined) {
-      task.points = Math.max(0, parseInt(points) || 10);
+      const numericPoints = Number(points);
+      task.points = Math.max(1, Number.isFinite(numericPoints) ? numericPoints : 10);
     }
 
     // Handle assignee change
@@ -697,16 +692,8 @@ export class TaskController {
 
     logger.info('Task updated', { taskId: task.id, userId: req.userId });
 
-    res.json(createResponse({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      dueDate: task.dueDate,
-      priority: task.priority,
-      points: task.points,
-      assignedUserId: task.assignedTo?.id,
-      updatedAt: task.updatedAt
-    }, 'Task updated successfully'));
+    const apiTask = await this.toAPITask(task);
+    res.json(createResponse(apiTask, 'Task updated successfully'));
   });
 
   /**

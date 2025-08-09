@@ -90,7 +90,7 @@ struct AddChallengeView: View {
                         .foregroundColor(.secondary)
                 }
                 }
-                .scrollContentBackground(.hidden)
+                .premiumFormAppearance()
             }
             .navigationTitle("New Challenge")
             .navigationBarTitleDisplayMode(.inline)
@@ -106,7 +106,7 @@ struct AddChallengeView: View {
                     Button("Create") {
                         createChallenge()
                     }
-                    .disabled(title.isEmpty)
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
@@ -127,8 +127,10 @@ struct AddChallengeView: View {
         withAnimation {
             let newChallenge = Challenge(context: viewContext)
             newChallenge.id = UUID()
-            newChallenge.title = title
-            newChallenge.challengeDescription = description
+            let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            newChallenge.title = trimmedTitle
+            newChallenge.challengeDescription = trimmedDescription
             newChallenge.isActive = true
             newChallenge.createdAt = Date()
             newChallenge.dueDate = Calendar.current.date(byAdding: .day, value: duration, to: Date())

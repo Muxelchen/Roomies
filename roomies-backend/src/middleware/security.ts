@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
+
 import { logger } from '@/utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 // Extend Request type to include userId
 declare module 'express-serve-static-core' {
@@ -28,7 +29,9 @@ export function enforceHTTPS(req: Request, res: Response, next: NextFunction) {
                    req.get('x-forwarded-ssl') === 'on' ||
                    (req.connection && 'encrypted' in req.connection && (req.connection as any).encrypted);
 
-  if (!isSecure) {
+  // Allow health endpoints even if proxy headers are missing
+  const isHealth = req.path?.startsWith('/health') || req.path === '/api/health' || req.path === '/ping';
+  if (!isSecure && !isHealth) {
     logger.warn('Insecure HTTP request blocked', {
       url: req.url,
       method: req.method,

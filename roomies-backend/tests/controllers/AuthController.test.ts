@@ -1,4 +1,5 @@
 import { AuthController } from '@/controllers/AuthController';
+import TokenService from '@/services/TokenService';
 import { testHelpers } from '../setup';
 import { ValidationError, UnauthorizedError, ConflictError } from '@/middleware/errorHandler';
 import { AppDataSource } from '@/config/database';
@@ -483,6 +484,245 @@ expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
 
       await authController.refreshToken(req, res, next);
       expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should request password reset without leaking existence', async () => {
+      const req = testHelpers.createMockRequest({
+        body: { email: 'test@example.com' }
+      });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      // User exists
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue(mockUser);
+
+      await authController.forgotPassword(req, res, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true })
+      );
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should validate email presence', async () => {
+      const req = testHelpers.createMockRequest({ body: {} });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.forgotPassword(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should reset password with valid token', async () => {
+      const rawToken = 'reset-token';
+      const userWithReset = { ...mockUser } as any;
+      userWithReset.passwordResetTokenHash = TokenService.hashToken(rawToken);
+      userWithReset.passwordResetExpires = new Date(Date.now() + 60_000);
+      mockUserRepository.findOne.mockResolvedValue(userWithReset);
+      mockUserRepository.save.mockResolvedValue(userWithReset);
+
+      const req = testHelpers.createMockRequest({
+        body: { token: rawToken, newPassword: 'NewPassword123!', email: 'test@example.com' }
+      });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.resetPassword(req, res, next);
+      expect(next).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should reject expired token', async () => {
+      const rawToken = 'expired-token';
+      const userWithReset = { ...mockUser } as any;
+      userWithReset.passwordResetTokenHash = TokenService.hashToken(rawToken);
+      userWithReset.passwordResetExpires = new Date(Date.now() - 60_000);
+      mockUserRepository.findOne.mockResolvedValue(userWithReset);
+
+      const req = testHelpers.createMockRequest({
+        body: { token: rawToken, newPassword: 'NewPassword123!', email: 'test@example.com' }
+      });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.resetPassword(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should validate required fields', async () => {
+      const req = testHelpers.createMockRequest({ body: {} });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.resetPassword(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
+    });
+  });
+
+  describe('verifyEmail and verifyEmailLink', () => {
+    it('should verify email with valid token', async () => {
+      const rawToken = 'verify-token';
+      const userWithVerification = { ...mockUser } as any;
+      userWithVerification.emailVerificationTokenHash = TokenService.hashToken(rawToken);
+      userWithVerification.emailVerificationExpires = new Date(Date.now() + 60_000);
+      userWithVerification.emailVerified = false;
+      mockUserRepository.findOne.mockResolvedValue(userWithVerification);
+      mockUserRepository.save.mockResolvedValue(userWithVerification);
+
+      const req = testHelpers.createMockRequest({
+        body: { token: rawToken, email: 'test@example.com' }
+      });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.verifyEmail(req, res, next);
+      expect(next).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('should verify via link with query params', async () => {
+      const rawToken = 'verify-token';
+      const userWithVerification = { ...mockUser } as any;
+      userWithVerification.emailVerificationTokenHash = TokenService.hashToken(rawToken);
+      userWithVerification.emailVerificationExpires = new Date(Date.now() + 60_000);
+      userWithVerification.emailVerified = false;
+      mockUserRepository.findOne.mockResolvedValue(userWithVerification);
+      mockUserRepository.save.mockResolvedValue(userWithVerification);
+
+      const req = testHelpers.createMockRequest({
+        query: { token: rawToken, email: 'test@example.com' }
+      });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.verifyEmailLink(req as any, res, next);
+      expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Email verified'));
+    });
+
+    it('should handle invalid link parameters', async () => {
+      const req = testHelpers.createMockRequest({ query: {} });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.verifyEmailLink(req as any, res, next);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('appleSignIn - error paths', () => {
+    it('should validate missing identityToken', async () => {
+      const req = testHelpers.createMockRequest({ body: {} });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.appleSignIn(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
+    });
+
+    it('should reject when jwt.decode returns no kid', async () => {
+      jest.resetModules();
+      const jwt = require('jsonwebtoken');
+      jest.spyOn(jwt, 'decode').mockReturnValue({ header: {} });
+
+      const req = testHelpers.createMockRequest({ body: { identityToken: 'abc' } });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.appleSignIn(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should reject when JWK not found', async () => {
+      const jwt = require('jsonwebtoken');
+      jest.spyOn(jwt, 'decode').mockReturnValue({ header: { kid: 'kid1', alg: 'RS256' } });
+
+      // Force fetchAppleJWKs to return no matching key
+      jest.spyOn(authController as any, 'fetchAppleJWKs').mockResolvedValue({ keys: [] });
+
+      const req = testHelpers.createMockRequest({ body: { identityToken: 'abc' } });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.appleSignIn(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should handle key conversion failure', async () => {
+      const jwt = require('jsonwebtoken');
+      jest.spyOn(jwt, 'decode').mockReturnValue({ header: { kid: 'kid1', alg: 'RS256' } });
+      jest.spyOn(authController as any, 'fetchAppleJWKs').mockResolvedValue({ keys: [{ kid: 'kid1', kty: 'RSA' }] });
+
+      const req = testHelpers.createMockRequest({ body: { identityToken: 'abc' } });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.appleSignIn(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should handle verification failure', async () => {
+      const jwt = require('jsonwebtoken');
+      jest.spyOn(jwt, 'decode').mockReturnValue({ header: { kid: 'kid1', alg: 'RS256' } });
+      jest.spyOn(authController as any, 'fetchAppleJWKs').mockResolvedValue({ keys: [{ kid: 'kid1', kty: 'RSA' }] });
+
+      // Mock crypto.createPublicKey to bypass conversion
+      const crypto = require('crypto');
+      jest.spyOn(crypto, 'createPublicKey').mockReturnValue({ export: () => 'pem' } as any);
+
+      // Force verify to throw
+      jest.spyOn(jwt, 'verify').mockImplementation(() => { throw new Error('invalid'); });
+
+      const req = testHelpers.createMockRequest({ body: { identityToken: 'abc' } });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      await authController.appleSignIn(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+  });
+
+  // Success path for Apple Sign-In is validated in a dedicated isolated test file
+
+  describe('additional branches', () => {
+    it('should handle deleteAccount with anonymization and cleanup', async () => {
+      const req = testHelpers.createMockRequest({ user: mockUser, userId: mockUser.id });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+
+      // Mock repository chaining used in deleteAccount
+      const mockQueryBuilder: any = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({})
+      };
+
+      (AppDataSource.getRepository as jest.Mock).mockImplementation((entity) => {
+        return {
+          ...mockUserRepository,
+          createQueryBuilder: jest.fn(() => mockQueryBuilder),
+          findOne: jest.fn().mockResolvedValue({ ...mockUser })
+        };
+      });
+
+      await authController.deleteAccount(req, res, next);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('should throw when getCurrentUser cannot find user', async () => {
+      const req = testHelpers.createMockRequest({ user: mockUser, userId: 'missing' });
+      const res = testHelpers.createMockResponse();
+      const next = testHelpers.createMockNext();
+      mockUserRepository.findOne.mockResolvedValue(null);
+      await authController.getCurrentUser(req, res, next);
+      expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
     });
   });
 });

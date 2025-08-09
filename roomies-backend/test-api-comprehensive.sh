@@ -104,7 +104,7 @@ echo "⏳ Waiting for server to start..."
 sleep 5
 
 echo -e "\n${BLUE}1. Health Check${NC}"
-test_endpoint "GET" "/../../health" "" "200" "Health endpoint"
+test_endpoint "GET" "/health" "" "200" "Health endpoint"
 
 echo -e "\n${BLUE}2. Authentication Tests${NC}"
 test_endpoint "POST" "/auth/register" '{"email":"'$EMAIL'","password":"Testpass123","name":"Test User"}' "201" "User registration"

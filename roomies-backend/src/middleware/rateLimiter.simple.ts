@@ -5,8 +5,9 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import { Request, Response } from 'express';
+
 import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 // Extend Request type to include userId
 declare module 'express-serve-static-core' {

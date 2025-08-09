@@ -1,14 +1,15 @@
-import { Request, Response } from 'express';
-import { AppDataSource } from '@/config/database';
-import { User } from '@/models/User';
-import { Household } from '@/models/Household';
-import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { HouseholdTask } from '@/models/HouseholdTask';
-import { Activity } from '@/models/Activity';
-import { logger } from '@/utils/logger';
-import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
+
+import { AppDataSource } from '@/config/database';
+import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
+import { Activity } from '@/models/Activity';
+import { Household } from '@/models/Household';
+import { HouseholdTask } from '@/models/HouseholdTask';
+import { User } from '@/models/User';
+import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import CloudKitService from '@/services/CloudKitService';
+import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 const getCloudKitService = () => CloudKitService.getInstance();
 
 export class HouseholdController {
@@ -777,10 +778,18 @@ export class HouseholdController {
         throw new Error('User or household not found for activity');
       }
 
+      // Coerce to valid enum values only
+      const allowedTypes = [
+        'task_completed','task_created','task_assigned','reward_redeemed',
+        'challenge_joined','challenge_completed','member_joined','member_left',
+        'household_created','points_earned','badge_earned','level_up'
+      ] as const;
+      const safeType = (allowedTypes as readonly string[]).includes(type) ? (type as any) : 'member_joined';
+
       const activity = this.activityRepository.create({
         user: user,
         household: household,
-        type: type as any,
+        type: safeType as any,
         action,
         points
       });

@@ -101,6 +101,6 @@ struct QRCodeView: View {
 
 struct QRCodeView_Previews: PreviewProvider {
     static var previews: some View {
-        QRCodeView(inviteCode: "ABC123")
+        QRCodeView(inviteCode: "ABC12345")
     }
 }

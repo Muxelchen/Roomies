@@ -9,9 +9,10 @@
  */
 
 import 'reflect-metadata';
+import { connectDatabase, disconnectDatabase } from './connection';
+
 import { AppDataSource } from '@/config/database';
 import { logger } from '@/utils/logger';
-import { connectDatabase, disconnectDatabase } from './connection';
 
 async function runMigrations(): Promise<void> {
   try {
@@ -38,27 +39,26 @@ async function runMigrations(): Promise<void> {
  * Run custom migration queries that might not be handled by TypeORM entities
  */
 async function runCustomMigrations(): Promise<void> {
+  const queryRunner = AppDataSource.createQueryRunner();
   try {
-    const queryRunner = AppDataSource.createQueryRunner();
-    
     // Create any custom indexes or constraints
     await queryRunner.query(`
       -- Create partial index for active tasks
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_active 
-      ON household_task (household_id, is_completed) 
+      ON household_tasks (household_id, is_completed) 
       WHERE is_completed = false;
     `);
     
     await queryRunner.query(`
       -- Create index for user household memberships
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_household_membership 
-      ON user_household_membership (user_id, household_id);
+      ON user_household_memberships (user_id, household_id);
     `);
     
     await queryRunner.query(`
       -- Create index for activities by user and household
       CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activities_user_household 
-      ON activity (user_id, household_id, created_at DESC);
+      ON activities (user_id, household_id, created_at DESC);
     `);
 
     // Ensure users table has verification and reset fields
@@ -70,13 +70,13 @@ async function runCustomMigrations(): Promise<void> {
         ADD COLUMN IF NOT EXISTS password_reset_token_hash VARCHAR NULL,
         ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMPTZ NULL;
     `);
-    
-    await queryRunner.release();
-    
+
     logger.info('🔧 Custom migrations applied successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.warn('⚠️  Custom migrations failed (this may be expected):', errorMessage);
+  } finally {
+    try { await queryRunner.release(); } catch {}
   }
 }
 

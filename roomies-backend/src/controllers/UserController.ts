@@ -1,13 +1,14 @@
-import { Request, Response } from 'express';
-import { AppDataSource } from '@/config/database';
-import { User } from '@/models/User';
-import { HouseholdTask } from '@/models/HouseholdTask';
-import { Activity } from '@/models/Activity';
-import { RewardRedemption } from '@/models/RewardRedemption';
-import { logger } from '@/utils/logger';
-import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
 import { validate } from 'class-validator';
+
+import { AppDataSource } from '@/config/database';
+import { createResponse, createErrorResponse, asyncHandler } from '@/middleware/errorHandler';
+import { Activity } from '@/models/Activity';
+import { HouseholdTask } from '@/models/HouseholdTask';
+import { RewardRedemption } from '@/models/RewardRedemption';
+import { User } from '@/models/User';
 import FileStorageService from '@/services/FileStorageService';
+import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 export class UserController {
   private taskRepository = AppDataSource.getRepository(HouseholdTask);
@@ -276,15 +277,13 @@ export class UserController {
       }
 
       const weeklyPoints = weeklyActivities.reduce((sum, activity) => sum + (activity.points || 0), 0);
-
-      const tasksCreatedToReport = taskStats.createdTotal >= 100 ? taskStats.createdTotal : undefined;
       res.json(createResponse({
         overall: {
           totalPoints: user.points,
           currentLevel: user.level,
           currentStreak: user.streakDays,
           tasksCompleted: taskStats.completed,
-          ...(tasksCreatedToReport !== undefined ? { tasksCreated: tasksCreatedToReport } : {}),
+          ...(taskStats.createdTotal >= 100 ? { tasksCreated: taskStats.createdTotal } : {}),
           badgesEarned: user.badges?.length || 0,
           rewardsRedeemed: rewardCount
         },
@@ -398,13 +397,28 @@ export class UserController {
    */
   private async getTaskStatistics(userId: string) {
     const completedTasks = await this.taskRepository.count({
-      where: { 
-        assignedTo: { id: userId },
-        isCompleted: true 
-      }
+      where: { assignedTo: { id: userId }, isCompleted: true }
     });
 
-    const createdTasksTotal = await this.taskRepository.count({ where: { createdBy: userId } });
+    // Scope created tasks to the user's active household when available
+    let createdTasksTotal = 0;
+    try {
+      const membershipRepo = AppDataSource.getRepository('UserHouseholdMembership');
+      const activeMembership: any = await membershipRepo.findOne({
+        where: { user: { id: userId }, isActive: true },
+        relations: ['household']
+      });
+
+      if (activeMembership?.household?.id) {
+        createdTasksTotal = await this.taskRepository.count({
+          where: { creator: { id: userId }, household: { id: activeMembership.household.id } }
+        });
+      } else {
+        createdTasksTotal = await this.taskRepository.count({ where: { creator: { id: userId } } });
+      }
+    } catch {
+      createdTasksTotal = await this.taskRepository.count({ where: { creator: { id: userId } } });
+    }
 
     return {
       completed: completedTasks,

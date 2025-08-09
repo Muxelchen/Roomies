@@ -30,7 +30,7 @@ struct SampleDataManager {
         let household = Household(context: context)
         household.id = UUID()
         household.name = "Demo Household"
-        household.inviteCode = "DEMO123"
+        household.inviteCode = "DEMO1234"
         household.createdAt = Date()
         
         // Create sample users

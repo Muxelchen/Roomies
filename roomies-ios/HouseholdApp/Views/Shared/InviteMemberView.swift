@@ -65,25 +65,15 @@ struct InviteMemberView: View {
                 
                 // Action Buttons
                 VStack(spacing: 16) {
-                    Button("Show QR Code") {
+                    PremiumButton("Show QR Code", icon: "qrcode", sectionColor: .dashboard) {
                         PremiumAudioHapticSystem.playModalPresent()
                         showingQRCode = true
                     }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color.blue)
-                    .cornerRadius(25)
                     
-                    Button("Share Invitation") {
+                    PremiumButton("Share Invitation", icon: "square.and.arrow.up", sectionColor: .dashboard) {
                         PremiumAudioHapticSystem.playButtonTap(style: .medium)
                         shareInvite()
                     }
-                    .font(.headline)
-                    .foregroundColor(.blue)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(25)
                 }
                 
                 Spacer()
@@ -173,7 +163,7 @@ struct InviteMemberView_Previews: PreviewProvider {
         let sampleHousehold = Household(context: context)
         sampleHousehold.id = UUID()
         sampleHousehold.name = "Sample Family"
-        sampleHousehold.inviteCode = "ABC123"
+        sampleHousehold.inviteCode = "ABC12345"
         sampleHousehold.createdAt = Date()
         return sampleHousehold
     }

@@ -212,29 +212,21 @@ struct PremiumRewardCard: View {
             }
             
             if canAfford {
-                // Shimmer animation
+                // Shimmer animation (single run to avoid timers/leaks)
                 shimmerOffset = -200
-withAnimation(.linear(duration: 2.0).delay(animationDelay)) {
+                withAnimation(.linear(duration: 2.0).delay(animationDelay)) {
                     shimmerOffset = 200
                 }
-                Timer.scheduledTimer(withTimeInterval: 4.0, repeats: true) { _ in
-                    shimmerOffset = -200
-                    withAnimation(.linear(duration: 2.0)) {
-                        shimmerOffset = 200
-                    }
+
+                // Single pulse animation for icon
+                withAnimation(.easeInOut(duration: 0.75).delay(animationDelay + 0.2)) {
+                    pulseScale = 1.1
+                    glowIntensity = 0.6
                 }
-                
-                // Pulse animation for icon
-Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.95 + animationDelay) {
                     withAnimation(.easeInOut(duration: 0.75)) {
-                        pulseScale = 1.1
-                        glowIntensity = 0.6
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                        withAnimation(.easeInOut(duration: 0.75)) {
-                            pulseScale = 1.0
-                            glowIntensity = 0.3
-                        }
+                        pulseScale = 1.0
+                        glowIntensity = 0.3
                     }
                 }
             }

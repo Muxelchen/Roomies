@@ -1,13 +1,15 @@
-import express, { Request, Response } from 'express';
+import Joi from 'joi';
+
 import { AuthController } from '@/controllers/AuthController';
+import { authenticateToken } from '@/middleware/auth';
+import { asyncHandler, createResponse } from '@/middleware/errorHandler';
 import { 
   authRateLimiter, 
   passwordResetRateLimiter 
 } from '@/middleware/rateLimiter.simple';
-import { asyncHandler, createResponse } from '@/middleware/errorHandler';
-import { authenticateToken } from '@/middleware/auth';
 import { validateRequest, schemas } from '@/middleware/validation';
-import Joi from 'joi';
+import express, { Request, Response } from 'express';
+
 
 const router = express.Router();
 const authController = new AuthController();
@@ -45,6 +47,22 @@ router.post('/login',
   authRateLimiter,  // 5 attempts per 15 minutes
   validateRequest(schemas.login),
   authController.login
+);
+
+/**
+ * @route   POST /api/auth/apple
+ * @desc    Sign in with Apple
+ * @access  Public
+ * @body    { identityToken: string, email?: string, name?: string }
+ */
+router.post('/apple', 
+  authRateLimiter,
+  validateRequest(Joi.object({
+    identityToken: Joi.string().required(),
+    email: Joi.string().email({ tlds: { allow: false } }).optional().lowercase().trim(),
+    name: Joi.string().min(1).max(100).optional().trim()
+  })),
+  authController.appleSignIn
 );
 
 /**

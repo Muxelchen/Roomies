@@ -62,6 +62,7 @@
 		A1000053 /* IntegratedTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000056 /* IntegratedTaskManager.swift */; };
 		A1000054 /* HouseholdSSEService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000057 /* HouseholdSSEService.swift */; };
 		A1000055 /* CloudRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000058 /* CloudRuntime.swift */; };
+		A2000060 /* CoreData+SafeKVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000060 /* CoreData+SafeKVC.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -123,6 +124,7 @@
 		B1000056 /* IntegratedTaskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegratedTaskManager.swift; sourceTree = "<group>"; };
 		B1000057 /* HouseholdSSEService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSSEService.swift; sourceTree = "<group>"; };
 		B1000058 /* CloudRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudRuntime.swift; sourceTree = "<group>"; };
+		B2000060 /* CoreData+SafeKVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Extensions/CoreData+SafeKVC.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +154,7 @@
 				B1000042 /* Info.plist */,
 				B1000003 /* Assets.xcassets */,
 				B1000044 /* HouseholdModel.xcdatamodeld */,
+				B2000060 /* CoreData+SafeKVC.swift */,
 				D0000020 /* Configuration */,
 				D0000004 /* Models */,
 				D0000005 /* Services */,
@@ -483,6 +486,7 @@
 				A1000051 /* SkeletonLoadingViews.swift in Sources */,
 				A1000053 /* IntegratedTaskManager.swift in Sources */,
 				A1000054 /* HouseholdSSEService.swift in Sources */,
+				A2000060 /* CoreData+SafeKVC.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

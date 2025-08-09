@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 # Configuration
 EC2_HOST="${1:-54.93.77.238}"
 EC2_USER="ec2-user"
-KEY_PATH="~/.ssh/roomies-backend.pem"
+KEY_PATH="${HOME}/.ssh/roomies-backend.pem"
 REMOTE_DIR="/opt/roomies"
 
 echo -e "${GREEN}Starting deployment to EC2 instance: ${EC2_HOST}${NC}"

@@ -122,7 +122,7 @@ struct TaskDropDelegate: DropDelegate {
                      toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
         }
         
-        EnhancedAudioSystem.shared.play(.taskEdit)
+        PremiumAudioHapticSystem.shared.play(.taskEdit, context: .premium)
         onReorder(tasks)
         
         self.draggedTask = nil

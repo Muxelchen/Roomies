@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
-import { Request, Response } from 'express';
+
 import { logger } from '@/utils/logger';
+import { Request, Response } from 'express';
 
 // General API rate limiter
 export const rateLimiter = rateLimit({

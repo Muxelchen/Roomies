@@ -1,3 +1,4 @@
+import { IsNotEmpty, Min, Max } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,10 +9,10 @@ import {
   OneToMany,
   JoinColumn
 } from 'typeorm';
-import { IsNotEmpty, Min, Max } from 'class-validator';
-import { User } from './User';
+
 import { Household } from './Household';
 import { TaskComment } from './TaskComment';
+import { User } from './User';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type RecurringType = 'none' | 'daily' | 'weekly' | 'monthly';
@@ -70,7 +71,7 @@ export class HouseholdTask {
   @JoinColumn({ name: 'completed_by' })
   completedBy?: User;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'created_by', referencedColumnName: 'id' })
   creator!: User;
 

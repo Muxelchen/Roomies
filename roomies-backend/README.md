@@ -263,6 +263,8 @@ npm run test:coverage
 - **SQL Injection Protection** via TypeORM
 - **XSS Protection** with helmet middleware
 - **CORS Configuration** for secure cross-origin requests
+- In production, Apple Sign-In strictly enforces `APP_BUNDLE_ID` audience matching
+- Optional DB-backed refresh tokens (`ENABLE_REFRESH_TOKENS=true`) with revoke on logout/account deletion
 
 ## 📈 Performance & Monitoring
 
@@ -283,6 +285,13 @@ NODE_ENV=development
 PORT=3000
 DATABASE_URL=postgresql://localhost:5432/roomies_dev
 JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+
+# Apple Sign-In (production requires APP_BUNDLE_ID)
+APP_BUNDLE_ID=com.yourcompany.Roomies
+
+# Refresh tokens (MVP off by default)
+ENABLE_REFRESH_TOKENS=false
 
 # CloudKit (when ready)
 CLOUDKIT_ENABLED=false  # Set to true with paid account

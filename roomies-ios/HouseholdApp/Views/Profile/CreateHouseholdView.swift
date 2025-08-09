@@ -101,7 +101,7 @@ struct CreateHouseholdView: View {
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• Unique 6-digit invitation code")
+                            Text("• Unique 8-character invitation code")
                             Text("• Admin privileges for your household")
                             Text("• Task management and point system")
                             Text("• Challenges and rewards system")
@@ -220,7 +220,7 @@ struct CreateHouseholdView: View {
     private func generateInviteCode() -> String {
         let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         // FIXED: Safe unwrapping to prevent crashes
-        return String((0..<6).compactMap { _ in characters.randomElement() })
+        return String((0..<8).compactMap { _ in characters.randomElement() })
     }
     
     private func createInitialTasks(household: Household, user: User) async {

@@ -14,6 +14,7 @@ final class CloudRuntime: ObservableObject {
     private init() {
         // Read defaults from Info.plist (Bool)
         let info = Bundle.main.infoDictionary ?? [:]
+        // Disable by default to avoid entitlements/build/runtime issues on personal teams
         let enabledDefault = info["CloudSyncEnabled"] as? Bool ?? false
         let availableDefault = info["CloudSyncAvailable"] as? Bool ?? false
 

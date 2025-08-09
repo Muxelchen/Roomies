@@ -95,9 +95,8 @@ struct ContentView: View {
     }
     
     private func setupNotBoringSounds() {
-        // ✅ FIX: Restore NotBoringSoundManager reference now that we confirmed it exists
-        NotBoringSoundManager.shared.preloadSounds()
-        LoggingManager.shared.debug("Sound system initialized", category: "audio")
+        // Unified on PremiumAudioHapticSystem; legacy NotBoring preload removed
+        LoggingManager.shared.debug("Premium audio system initialized", category: "audio")
     }
     
     // MARK: - Premium Audio Integration
@@ -418,8 +417,7 @@ struct EnhancedMainTabView: View {
             }
         }
         
-        // Keep existing NotBoringSoundManager for compatibility
-        NotBoringSoundManager.shared.playSound(.tabSwitch)
+        // Unified audio-haptic handled by PremiumAudioHapticSystem above
     }
     
     private func setupEnhancedTabBar() {

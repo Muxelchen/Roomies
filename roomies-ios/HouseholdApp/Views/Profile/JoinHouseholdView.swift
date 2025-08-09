@@ -30,12 +30,12 @@ struct JoinHouseholdView: View {
                 PremiumScreenBackground(sectionColor: .profile, style: .minimal)
                 Form {
                 Section("Invitation Code") {
-                    TextField("6-digit code", text: $inviteCode)
+                    TextField("8-character code", text: $inviteCode)
                         .textCase(.uppercase)
                         .autocapitalization(.allCharacters)
                         .disableAutocorrection(true)
                         .onChange(of: inviteCode) { oldValue, newValue in
-                            inviteCode = String(newValue.prefix(6)).uppercased()
+                            inviteCode = String(newValue.prefix(8)).uppercased()
                         }
                 }
                 
@@ -111,7 +111,7 @@ struct JoinHouseholdView: View {
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("1. Enter the 6-digit invitation code")
+                            Text("1. Enter the 8-character invitation code")
                             Text("2. Create your account with email and password")
                             Text("3. Choose an avatar color")
                             Text("4. Join the household!")
@@ -153,7 +153,7 @@ struct JoinHouseholdView: View {
     }
     
     private var isFormValid: Bool {
-        return inviteCode.count == 6 &&
+        return inviteCode.count == 8 &&
                !userName.isEmpty &&
                 authManager.isValidEmail(email) &&
                 authManager.isValidPassword(password) &&

@@ -76,7 +76,7 @@ struct HouseholdActivityView: View {
                 .listRowBackground(Color(.systemBackground))
                 .listRowSeparator(.hidden)
         }
-        .listStyle(PlainListStyle())
+        .premiumListAppearance()
         .overlay(
             Group {
                 if refreshing {

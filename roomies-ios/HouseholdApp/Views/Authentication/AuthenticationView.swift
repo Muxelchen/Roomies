@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 // Authentication screen wired to IntegratedAuthenticationManager.signIn/signUp
 struct AuthenticationView: View {
     @EnvironmentObject private var authManager: IntegratedAuthenticationManager
@@ -84,6 +85,47 @@ struct AuthenticationView: View {
                         .accessibilityLabel(Text("Try Demo"))
                         .accessibilityHint(Text("Opens Roomies demo without signing in"))
                         
+                        // Sign in with Apple (inline to avoid target membership issues)
+                        #if canImport(AuthenticationServices)
+                        SignInWithAppleButton(.signIn, onRequest: { request in
+                            request.requestedScopes = [.fullName, .email]
+                        }, onCompletion: { result in
+                            switch result {
+                            case .success(let authorization):
+                                if let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                                   let tokenData = credential.identityToken,
+                                   let token = String(data: tokenData, encoding: .utf8) {
+                                    let email = credential.email
+                                    let name: String? = {
+                                        if let fullName = credential.fullName {
+                                            let formatter = PersonNameComponentsFormatter()
+                                            formatter.style = .medium
+                                            return formatter.string(from: fullName).trimmingCharacters(in: .whitespacesAndNewlines)
+                                        }
+                                        return nil
+                                    }()
+                                    Task { @MainActor in
+                                        await authManager.signInWithApple(identityToken: token, email: email, name: name)
+                                    }
+                                } else {
+                                    Task { @MainActor in
+                                        authManager.errorMessage = "Unable to retrieve Apple identity token"
+                                        authManager.isLoading = false
+                                    }
+                                }
+                            case .failure(let error):
+                                Task { @MainActor in
+                                    authManager.errorMessage = error.localizedDescription
+                                    authManager.isLoading = false
+                                }
+                            }
+                        })
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.top, 4.0)
+                        #endif
+
                         Button {
                             PremiumAudioHapticSystem.playButtonTap(style: .light)
                             withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.8)) {
@@ -186,59 +228,30 @@ struct AuthenticationView: View {
     private var authFormCard: some View {
         VStack(spacing: 14) {
             if isSignUp {
-                TextField("Name", text: $name)
-                    .textContentType(.name)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled(true)
-                    .padding(14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(UIColor.secondarySystemBackground))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
-                            )
-                    )
+                PremiumTextField(
+                    title: "Name",
+                    icon: "person.fill",
+                    text: $name,
+                    sectionColor: .profile
+                )
             }
-            
-            TextField("Email", text: $email)
+
+            PremiumTextField(
+                title: "Email",
+                icon: "envelope.fill",
+                text: $email,
+                sectionColor: .profile
+            )
                 .keyboardType(.emailAddress)
                 .textContentType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.secondarySystemBackground))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
-                        )
-                )
             
-            HStack {
-                Group {
-                    if showPassword {
-                        TextField("Password", text: $password)
-                            .textContentType(.password)
-                    } else {
-                        SecureField("Password", text: $password)
-                            .textContentType(.password)
-                    }
-                }
-                Button(action: { withAnimation(reduceMotion ? .none : .easeInOut) { showPassword.toggle() } }) {
-                    Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(UIColor.separator).opacity(0.15), lineWidth: 1)
-                    )
+            PremiumSecureField(
+                title: "Password",
+                icon: "lock.fill",
+                text: $password,
+                sectionColor: .profile
             )
         }
         .padding(18)

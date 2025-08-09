@@ -1,9 +1,9 @@
-import express from 'express';
 import { TaskController } from '@/controllers/TaskController';
 import { authenticateToken } from '@/middleware/auth';
-import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
 import { taskPaginationMiddleware, paginationMonitoringMiddleware } from '@/middleware/pagination';
 import { expensiveOperationLimiter } from '@/middleware/rateLimiter';
+import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
+import express from 'express';
 
 const router = express.Router();
 const taskController = new TaskController();
@@ -60,7 +60,7 @@ router.get('/:taskId',
  */
 router.put('/:taskId', 
   validateUUID('taskId'),
-  // TODO: Add update task validation schema
+  validateRequest(schemas.updateTask),
   taskController.updateTask
 );
 
@@ -102,7 +102,7 @@ router.post('/:taskId/assign',
  */
 router.post('/:taskId/comments', 
   validateUUID('taskId'),
-  validateRequest(schemas.completeTask), // Reuse for basic content validation
+  validateRequest(schemas.taskComment),
   expensiveOperationLimiter(100), // Limit comment spam
   taskController.addComment
 );

@@ -27,15 +27,15 @@ RUN apk add --no-cache \
 COPY package*.json ./
 COPY tsconfig*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --ignore-scripts \
+# Install dependencies (include devDeps for build-time types; allow native builds)
+RUN npm ci \
     && npm cache clean --force
 
 # Copy source code
 COPY src/ src/
 
-# Build application
-RUN npm run build
+# Build application and prune to production deps
+RUN npm run build && npm prune --production
 
 # ===== PRODUCTION STAGE =====
 FROM node:18-alpine AS production
@@ -56,7 +56,7 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Copy built application from builder stage
+# Copy built application and production node_modules from builder stage
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./

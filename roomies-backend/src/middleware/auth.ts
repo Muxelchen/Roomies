@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '@/config/database';
 import { User } from '@/models/User';
 import { verifyToken, extractToken, JWTPayload } from '@/utils/jwt';
 import { logger } from '@/utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include user
 declare global {
@@ -68,12 +68,19 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
         return res.status(500).json({ success: false, message: 'Authentication error' });
       }
     } else {
-      // In test mode, also populate req.user minimally so downstream code relying on req.user continues to work
+      // In test mode, also populate req.user and householdId for parity with production path
       try {
         const userRepository = AppDataSource.getRepository(User);
-        const user = await userRepository.findOne({ where: { id: resolvedUserId } });
+        const user = await userRepository.findOne({
+          where: { id: resolvedUserId },
+          relations: ['householdMemberships', 'householdMemberships.household']
+        });
         if (user) {
           req.user = user;
+          const activeMembership = user.householdMemberships?.find(m => m.isActive);
+          if (activeMembership) {
+            req.householdId = activeMembership.household.id;
+          }
         }
       } catch (e) {
         // ignore, controller tests often mock repository failures intentionally
@@ -129,9 +136,14 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
     if (token) {
       try {
         const payload = verifyToken(token);
+        const anyPayload = payload as any;
+        const resolvedUserId = (anyPayload && (anyPayload.userId || anyPayload.id || anyPayload.sub)) as string | undefined;
+        if (!resolvedUserId) {
+          throw new Error('Invalid token payload');
+        }
         const userRepository = AppDataSource.getRepository(User);
         const user = await userRepository.findOne({
-          where: { id: payload.userId },
+          where: { id: resolvedUserId },
           relations: ['householdMemberships', 'householdMemberships.household']
         });
 

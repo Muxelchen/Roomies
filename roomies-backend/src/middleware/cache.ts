@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
 import { getCacheService, CacheKeys } from '@/services/CacheService';
 import { logger } from '@/utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include cache context
 declare global {
@@ -44,7 +44,7 @@ export function cache(options: CacheOptions = {}) {
       skip: false
     };
 
-    // If cache service unavailable, just continue
+    // If cache service unavailable, just continue (health fallback)
     if (!cacheService?.isAvailable()) {
       return next();
     }
@@ -56,7 +56,7 @@ export function cache(options: CacheOptions = {}) {
 
     try {
       // Try to get from cache
-      const cachedData = await cacheService.get(cacheKey);
+      const cachedData = await cacheService.get(cacheKey).catch(() => null);
       
       if (cachedData) {
         logger.debug(`Cache hit for key: ${cacheKey}`);

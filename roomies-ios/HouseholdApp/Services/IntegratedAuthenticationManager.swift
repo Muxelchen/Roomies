@@ -97,6 +97,36 @@ class IntegratedAuthenticationManager: ObservableObject {
         }
     }
     
+    func signInWithApple(identityToken: String, email: String? = nil, name: String? = nil) async {
+        isLoading = true
+        errorMessage = ""
+        
+        do {
+            guard networkManager.isOnline else {
+                throw NetworkError.networkUnavailable
+            }
+            let response = try await networkManager.loginWithApple(identityToken: identityToken, email: email, name: name)
+            if let apiUser = response.data?.user {
+                await syncUserFromAPI(apiUser)
+                LoggingManager.shared.info("User signed in via Apple successfully", 
+                                            category: LoggingManager.Category.authentication.rawValue)
+            } else {
+                await MainActor.run {
+                    self.errorMessage = "Unexpected response from server"
+                    self.isLoading = false
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+            }
+            LoggingManager.shared.error("Sign in with Apple error", 
+                                       category: LoggingManager.Category.authentication.rawValue, 
+                                       error: error)
+        }
+    }
+    
     func signUp(email: String, password: String, name: String) {
         isLoading = true
         errorMessage = ""
@@ -321,7 +351,7 @@ class IntegratedAuthenticationManager: ObservableObject {
             localUser.points = Int32(apiUser.points ?? 0)
             
             // Mark as synced
-            localUser.setValue(false, forKey: "needsSync")
+            localUser.setIfHasAttribute(false, forKey: "needsSync")
             localUser.setValue(Date(), forKey: "lastSyncedAt")
             
             if localUser.hashedPassword == nil {
@@ -545,7 +575,7 @@ class IntegratedAuthenticationManager: ObservableObject {
         newUser.createdAt = Date()
         
         // Mark for sync
-        newUser.setValue(true, forKey: "needsSync")
+        newUser.setIfHasAttribute(true, forKey: "needsSync")
         
         try context.save()
         
@@ -559,7 +589,7 @@ class IntegratedAuthenticationManager: ObservableObject {
     
     private func markUserForSync(_ user: User) {
         let context = PersistenceController.shared.container.viewContext
-        user.setValue(true, forKey: "needsSync")
+        user.setIfHasAttribute(true, forKey: "needsSync")
         
         do {
             try context.save()
@@ -796,7 +826,8 @@ class IntegratedAuthenticationManager: ObservableObject {
     
     private static func generateLocalInviteCode() -> String {
         let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        return String((0..<6).compactMap { _ in characters.randomElement() })
+        // Align with backend validation: 8-character uppercase alphanumeric
+        return String((0..<8).compactMap { _ in characters.randomElement() })
     }
     
     // MARK: - Task Synchronization (addresses Journey 2)
@@ -842,7 +873,7 @@ class IntegratedAuthenticationManager: ObservableObject {
                 } else {
                     // Mark task for sync when online
                     await MainActor.run {
-                        task.setValue(true, forKey: "needsSync")
+                        task.setIfHasAttribute(true, forKey: "needsSync")
                         
                         do {
                             try PersistenceController.shared.container.viewContext.save()
@@ -895,7 +926,7 @@ class IntegratedAuthenticationManager: ObservableObject {
         membership.joinedAt = Date()
         
         // Mark household for sync
-        newHousehold.setValue(true, forKey: "needsSync")
+        newHousehold.setIfHasAttribute(true, forKey: "needsSync")
         
         try context.save()
         
@@ -935,7 +966,7 @@ class IntegratedAuthenticationManager: ObservableObject {
         membership.joinedAt = Date()
         
         // Mark membership for sync
-        membership.setValue(true, forKey: "needsSync")
+        membership.setIfHasAttribute(true, forKey: "needsSync")
         
         try context.save()
         

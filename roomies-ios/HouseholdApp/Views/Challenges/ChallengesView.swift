@@ -41,6 +41,7 @@ struct ChallengesView: View {
         animation: .default)
     private var completedChallenges: FetchedResults<Challenge>
     
+    @State private var showChallengeToast: Bool = false
     var body: some View {
         ZStack {
             PremiumScreenBackground(sectionColor: .challenges, style: .minimal)
@@ -127,6 +128,22 @@ struct ChallengesView: View {
             }
             }
         }
+        .overlay(alignment: .top) {
+            if showChallengeToast {
+                Text("Challenge completed! 🏁")
+                    .padding(12)
+                    .background(Color.blue.opacity(0.9))
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding()
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation { showChallengeToast = false }
+                        }
+                    }
+            }
+        }
         .navigationTitle("Challenges")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -141,6 +158,9 @@ struct ChallengesView: View {
         }
         .sheet(item: $selectedChallenge) { challenge in
             ChallengeDetailView(challenge: challenge)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("challengeCompleted"))) { _ in
+            withAnimation { showChallengeToast = true }
         }
     }
 }

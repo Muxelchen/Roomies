@@ -1,3 +1,4 @@
+import { IsNotEmpty } from 'class-validator';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +7,7 @@ import {
   UpdateDateColumn,
   ManyToMany
 } from 'typeorm';
-import { IsNotEmpty } from 'class-validator';
+
 import { User } from './User';
 
 export type BadgeType = 

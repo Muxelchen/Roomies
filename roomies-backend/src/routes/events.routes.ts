@@ -1,10 +1,10 @@
-import express from 'express';
-import { authenticateToken } from '@/middleware/auth';
 import { AppDataSource } from '@/config/database';
+import { authenticateToken } from '@/middleware/auth';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
-import { eventBroker } from '@/services/EventBroker';
 import CloudKitService from '@/services/CloudKitService';
+import { eventBroker } from '@/services/EventBroker';
 import { logger } from '@/utils/logger';
+import express from 'express';
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.get('/household/:householdId', async (req, res) => {
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
     // Disable proxy buffering (nginx) and compression interference
     res.setHeader('X-Accel-Buffering', 'no');

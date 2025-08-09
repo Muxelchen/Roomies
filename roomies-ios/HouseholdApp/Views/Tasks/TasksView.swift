@@ -924,7 +924,7 @@ struct TasksView: View {
     private var premiumTasksList: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(Array(filteredTasks.enumerated()), id: \.element.id) { index, task in
+                ForEach(Array(filteredTasks.enumerated()), id: \.element.objectID) { index, task in
                     PremiumTaskCard(
                         task: task, 
                         animationDelay: Double(index) * 0.05
@@ -1015,9 +1015,14 @@ struct TasksView: View {
     }
     
     private func completeTaskWithAnimation(_ task: HouseholdTask) {
-        guard let currentUser = IntegratedAuthenticationManager.shared.currentUser else { 
+        guard let globalCurrentUser = IntegratedAuthenticationManager.shared.currentUser else {
             print("Error: No current user found")
-            return 
+            return
+        }
+        // Ensure we use a User from the same context as the task to avoid cross-context relationship crashes
+        guard let currentUser = try? viewContext.existingObject(with: globalCurrentUser.objectID) as? User else {
+            print("Error: Failed to resolve current user in viewContext")
+            return
         }
         
         // Handle both completion and un-completion
@@ -1029,9 +1034,10 @@ struct TasksView: View {
             earnedPoints = Int(task.points)
         }
         
-        withAnimation {
+        // Perform state changes without animating list reordering to avoid UI jank/freezes
+        withTransaction(Transaction(animation: nil)) {
             task.isCompleted.toggle()
-            
+
             if task.isCompleted {
                 // Completing task
                 task.completedAt = Date()
@@ -1041,85 +1047,96 @@ struct TasksView: View {
                 task.completedAt = nil
                 task.completedBy = nil
             }
-            
-            // ✅ FIX: Save context BEFORE awarding points to prevent race condition
-            do {
-                try viewContext.save()
-                
-                if task.isCompleted && !wasCompleted {
-                    // Task was just completed
-                    print("✅ DEBUG: Task completion saved successfully for: \(task.title ?? "Unknown task")")
-                    
-                        // Award points AFTER successful save using GameificationManager
-                        GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
-                    
-                    // Track daily task completion for streaks
-                    completedTasksToday += 1
-                    let _ = completedTasksToday > 0 && completedTasksToday % 3 == 0  // isStreak
-                    let _ = completedTasksToday > 0 && completedTasksToday % 10 == 0  // isMilestone
-                    
-                    // Premium audio haptic feedback for task completion with context
-                    PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
-                    
-                    // Log task completion instead of using ActivityTracker
-                    LoggingManager.shared.info("Task completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
-                    
-                    // Premium feedback for completion
-                    PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
-                    
-                    // Start animation sequence
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        showingCompletionAnimation = true
-                    }
-                    
-                } else if !task.isCompleted && wasCompleted {
-                    // Task was un-completed
-                    print("✅ DEBUG: Task un-completion saved successfully for: \(task.title ?? "Unknown task")")
-                    
-                        // ✅ FIX: Deduct points when un-completing to prevent infinite points exploit
-                        GameificationManager.shared.deductPoints(from: currentUser, points: Int32(task.points), reason: "task_uncompleted")
-                    
-                    // Premium feedback for un-completion
-                    PremiumAudioHapticSystem.playButtonTap(style: .light)
-                    
-                    // Premium feedback already provided above
-                    
-                    // Log task un-completion
-                    LoggingManager.shared.info("Task un-completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
+        }
+
+        // Save context BEFORE awarding points or triggering heavy UI
+        do {
+            // Mark for backend sync so remote state is updated
+                task.setIfHasAttribute(true, forKey: "needsSync")
+            try viewContext.save()
+
+            if task.isCompleted && !wasCompleted {
+                // Task was just completed
+                print("✅ DEBUG: Task completion saved successfully for: \(task.title ?? "Unknown task")")
+
+                // Award points AFTER successful save using GameificationManager
+                GameificationManager.shared.awardPoints(Int(task.points), to: currentUser, for: "task_completion")
+
+                // Track daily task completion for streaks
+                completedTasksToday += 1
+                let _ = completedTasksToday > 0 && completedTasksToday % 3 == 0  // isStreak
+                let _ = completedTasksToday > 0 && completedTasksToday % 10 == 0  // isMilestone
+
+                // Premium audio haptic feedback for task completion with context (single trigger)
+                PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
+
+                // Log task completion
+                LoggingManager.shared.info("Task completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
+
+                // Start animation sequence separately
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    showingCompletionAnimation = true
                 }
-                
-                // Trigger integrated sync to backend when online
+
+            } else if !task.isCompleted && wasCompleted {
+                // Task was un-completed
+                print("✅ DEBUG: Task un-completion saved successfully for: \(task.title ?? "Unknown task")")
+
+                // ✅ Deduct points when un-completing to prevent infinite points exploit
+                GameificationManager.shared.deductPoints(from: currentUser, points: Int32(task.points), reason: "task_uncompleted")
+
+                // Premium feedback for un-completion
+                PremiumAudioHapticSystem.playButtonTap(style: .light)
+
+                // Log task un-completion
+                LoggingManager.shared.info("Task un-completed: \(task.title ?? "Unknown") by \(currentUser.name ?? "Unknown")", category: "Tasks")
+            }
+
+            // Trigger lightweight backend update for this task when online; avoid full sync
+            if NetworkManager.shared.isOnline, let taskId = task.id?.uuidString {
                 Task {
-                    await IntegratedTaskManager.shared.syncTasks()
-                }
-                
-                // Schedule/cancel task reminder based on completion status
-                if let taskId = task.id {
-                    if task.isCompleted {
-                        NotificationManager.shared.cancelTaskReminder(taskId: taskId)
-                    } else if let dueDate = task.dueDate, dueDate > Date() {
-                        // Re-schedule reminder if task was un-completed and has future due date
-                        NotificationManager.shared.scheduleTaskReminder(task: task)
+                    do {
+                        if task.isCompleted {
+                            _ = try await NetworkManager.shared.completeTask(taskId: taskId)
+                        } else {
+                            // No un-complete endpoint yet; leave needsSync for uploader
+                        }
+                        // Clear sync flag on success for completion
+                        if task.isCompleted { task.setValue(false, forKey: "needsSync") }
+                        try? viewContext.save()
+                    } catch {
+                        // Keep needsSync true for later upload
+                        LoggingManager.shared.error("Failed lightweight task status upload", category: LoggingManager.Category.tasks.rawValue, error: error)
                     }
                 }
-                
-                // Update badge count
-                NotificationManager.shared.updateBadgeCount()
-                
-            } catch {
-                print("❌ ERROR: Failed to save task completion: \(error)")
-                // Premium audio haptic feedback for error
-                PremiumAudioHapticSystem.playError(context: .systemError)
-                
-                // Revert the change if save fails
-                task.isCompleted = wasCompleted
-                if wasCompleted {
-                    task.completedAt = Date() // Restore previous state
-                    task.completedBy = currentUser
-                } else {
-                    task.completedAt = nil
-                    task.completedBy = nil
+            }
+
+            // Schedule/cancel task reminder based on completion status
+            if let taskId = task.id {
+                if task.isCompleted {
+                    NotificationManager.shared.cancelTaskReminder(taskId: taskId)
+                } else if let dueDate = task.dueDate, dueDate > Date() {
+                    // Re-schedule reminder if task was un-completed and has future due date
+                    NotificationManager.shared.scheduleTaskReminder(task: task)
                 }
+            }
+
+            // Update badge count
+            NotificationManager.shared.updateBadgeCount()
+
+        } catch {
+            print("❌ ERROR: Failed to save task completion: \(error)")
+            // Premium audio haptic feedback for error
+            PremiumAudioHapticSystem.playError(context: .systemError)
+
+            // Revert the change if save fails
+            task.isCompleted = wasCompleted
+            if wasCompleted {
+                task.completedAt = Date() // Restore previous state
+                task.completedBy = currentUser
+            } else {
+                task.completedAt = nil
+                task.completedBy = nil
             }
         }
     }

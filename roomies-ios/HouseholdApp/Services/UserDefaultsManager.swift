@@ -121,7 +121,7 @@ class UserDefaultsManager: ObservableObject {
     }
     
     func isValidPassword(_ password: String) -> Bool {
-        return password.count >= 6
+        return password.count >= 8
     }
 }
 

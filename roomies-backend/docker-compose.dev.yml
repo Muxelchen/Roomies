@@ -63,8 +63,10 @@ services:
   backend:
     image: node:18-alpine
     container_name: roomies-backend-dev
-    env_file:
-      - .env.secure
+    # Note: env_file intentionally removed for local dev to avoid parsing issues with multiline keys
+    # If you need to load secrets, ensure .env.secure uses properly quoted values and re-add:
+    # env_file:
+    #   - .env.secure
     working_dir: /app
     environment:
       NODE_ENV: development

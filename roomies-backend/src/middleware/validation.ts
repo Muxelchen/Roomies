@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
+
 import { ValidationError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 // Sanitize input to prevent XSS
 function sanitizeString(input: any): string {
@@ -86,7 +87,7 @@ export function validateRequest(schema: Joi.Schema, target: 'body' | 'query' | '
 }
 
 // Common validation schemas
-export const schemas = {
+export const schemas: { [k: string]: Joi.Schema } = {
   // Authentication
   register: Joi.object({
     email: Joi.string()
@@ -269,6 +270,39 @@ export const schemas = {
       })
   }),
 
+  // Update task (all fields optional; server enforces permissions)
+  updateTask: Joi.object({
+    title: Joi.string()
+      .min(1)
+      .max(200)
+      .trim()
+      .messages({
+        'string.min': 'Task title cannot be empty',
+        'string.max': 'Task title cannot exceed 200 characters'
+      }),
+    description: Joi.string()
+      .max(1000)
+      .allow('', null)
+      .trim()
+      .messages({ 'string.max': 'Description cannot exceed 1000 characters' }),
+    points: Joi.number()
+      .integer()
+      .min(1)
+      .max(1000)
+      .messages({
+        'number.min': 'Points must be at least 1',
+        'number.max': 'Points cannot exceed 1000'
+      }),
+    priority: Joi.string()
+      .valid('low', 'medium', 'high')
+      .messages({ 'any.only': 'Priority must be low, medium, or high' }),
+    dueDate: Joi.date().iso().allow(null).messages({ 'date.format': 'Due date must be ISO formatted' }),
+    assignedUserId: Joi.string()
+      .uuid({ version: 'uuidv4' })
+      .allow(null, '')
+      .messages({ 'string.uuid': 'Invalid assigned user ID format' })
+  }),
+
   completeTask: Joi.object({
     proof: Joi.string()
       .max(500)
@@ -284,6 +318,8 @@ export const schemas = {
         'string.uri': 'Image URL must be a valid URL'
       })
   }),
+
+  
 
   // Common parameters
   uuid: Joi.string()
@@ -317,6 +353,21 @@ export const schemas = {
     sortOrder: Joi.string()
       .valid('asc', 'desc')
       .default('desc')
+  })
+  ,
+
+  // Comments
+  taskComment: Joi.object({
+    content: Joi.string()
+      .min(1)
+      .max(1000)
+      .required()
+      .trim()
+      .messages({
+        'string.min': 'Comment content cannot be empty',
+        'string.max': 'Comment content cannot exceed 1000 characters',
+        'any.required': 'Comment content is required'
+      })
   })
 };
 

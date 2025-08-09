@@ -39,6 +39,7 @@ services:
       - DATABASE_URL=postgresql://roomies_prod:${DB_PASSWORD}@postgres:5432/roomies_production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=24h
       - LOG_LEVEL=info
@@ -206,22 +207,14 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.25.0.0/16
 
 # ===== VOLUMES =====
 volumes:
   postgres_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/roomies/postgres
   redis_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/roomies/redis
 
 # ===== ENVIRONMENT VARIABLES =====
 # Create a .env.prod file with the following variables:

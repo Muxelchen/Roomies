@@ -24,9 +24,8 @@ struct AnimatedPointsStepper: View {
             HStack(spacing: 12) {
                 Button(action: {
                     if points > 1 {
-                        points -= 5
+                        points = max(1, points - 5)
                         triggerPulse()
-                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
                         PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }) {
@@ -63,10 +62,9 @@ struct AnimatedPointsStepper: View {
                 
                 Button(action: {
                     if points < 100 {
-                        points += 5
+                        points = min(100, points + 5)
                         triggerPulse()
                         triggerPointsAnimation()
-                        // ✅ FIX: Remove reference to missing NotBoringSoundManager
                         PremiumAudioHapticSystem.playButtonTap(style: .light)
                     }
                 }) {
@@ -335,6 +333,13 @@ struct AddTaskView: View {
                 PremiumScreenBackground(sectionColor: .tasks, style: .minimal)
                 mainContent
                 successAnimationOverlay
+                // Lightweight progress overlay while creating to avoid heavy UI work
+                if isCreating {
+                    Color.black.opacity(0.15).ignoresSafeArea()
+                    PremiumLoadingView(message: isEditing ? "Updating task…" : "Creating task…", sectionColor: .tasks)
+                        .padding()
+                        .transition(.opacity)
+                }
             }
             .navigationBarHidden(true)
             .onTapGesture {
@@ -648,74 +653,69 @@ struct AddTaskView: View {
         guard !isCreating else { return }
         isCreating = true
         
-        // Show success animation
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            showSuccessAnimation = true
+        // Fast local create to avoid blocking UI on network
+        let newTask = HouseholdTask(context: viewContext)
+        newTask.id = UUID()
+        newTask.title = title
+        newTask.taskDescription = description.isEmpty ? nil : description
+        newTask.points = Int32(points)
+        newTask.priority = selectedPriority.rawValue
+        newTask.createdAt = Date()
+        newTask.isCompleted = false
+        if hasDueDate { newTask.dueDate = dueDate }
+
+        // Assign to selected user or current user
+        if let firstSelectedUserId = assignedUserIDs.first,
+           let assignedUser = users.first(where: { $0.objectID == firstSelectedUserId }) {
+            newTask.assignedTo = assignedUser
+        } else {
+            newTask.assignedTo = authManager.currentUser
         }
-        
-        PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
-        
-        Task { @MainActor in
-            // Map UI priority to IntegratedTaskManager priority
-            let managerPriority: IntegratedTaskManager.TaskPriority = {
-                switch selectedPriority {
-                case .low: return .low
-                case .medium: return .medium
-                case .high: return .high
-                }
-            }()
-            
-            // Map recurring selection
-            let isRecurringTask = recurringType != .none
-            let managerRecurring: IntegratedTaskManager.RecurringType? = {
-                switch recurringType {
-                case .daily: return .daily
-                case .weekly: return .weekly
-                case .monthly: return .monthly
-                case .none: return nil
-                }
-            }()
-            
-            // Determine assignee id
-            var assignedUserId: String? = nil
-            if let firstSelectedUserId = assignedUserIDs.first,
-               let assignedUser = users.first(where: { $0.objectID == firstSelectedUserId }) {
-                assignedUserId = assignedUser.id?.uuidString
-            } else {
-                assignedUserId = authManager.currentUser?.id?.uuidString
+
+        // Set household from current context if available
+        if let household = authManager.getCurrentUserHousehold() {
+            newTask.household = household
+        }
+
+        // Recurrence flags (optional in model)
+        newTask.setIfHasAttribute(recurringType != .none, forKey: "isRecurring")
+        newTask.setIfHasAttribute(recurringType == .none ? nil : recurringType.rawValue, forKey: "recurringType")
+
+        // Mark for sync
+        newTask.setIfHasAttribute(true, forKey: "needsSync")
+        newTask.setIfHasAttribute(UUID().uuidString, forKey: "localId")
+
+        do {
+            try viewContext.save()
+
+            // Schedule reminder if task has due date
+            if hasDueDate {
+                NotificationManager.shared.scheduleTaskReminder(task: newTask)
             }
-            
-            do {
-                // Normalize priority casing to match backend expectations (lowercase)
-                let createdTask = try await IntegratedTaskManager.shared.createTask(
-                    title: title,
-                    description: description.isEmpty ? nil : description,
-                    dueDate: hasDueDate ? dueDate : nil,
-                    priority: managerPriority,
-                    points: points,
-                    assignedUserId: assignedUserId,
-                    isRecurring: isRecurringTask,
-                    recurringType: managerRecurring
-                )
-                
-                // Schedule reminder if task has due date
-                if hasDueDate {
-                    NotificationManager.shared.scheduleTaskReminder(task: createdTask)
-                }
-                
-                // Update badge count
-                NotificationManager.shared.updateBadgeCount()
-                
-                // Dismiss after brief animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    dismiss()
-                }
-            } catch {
-                print("Error creating task via IntegratedTaskManager: \(error)")
-                isCreating = false
-                withAnimation(.easeOut(duration: 0.3)) {
-                    showSuccessAnimation = false
-                }
+
+            // Update badge count
+            NotificationManager.shared.updateBadgeCount()
+
+            // Success feedback and quick celebration
+            PremiumAudioHapticSystem.playTaskComplete(context: .taskCompletion)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                showSuccessAnimation = true
+            }
+
+            // Kick off background sync without blocking UI
+            Task {
+                await IntegratedTaskManager.shared.syncTasks()
+            }
+
+            // Dismiss shortly after success cue
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                dismiss()
+            }
+        } catch {
+            print("Error creating local task: \(error)")
+            isCreating = false
+            withAnimation(.easeOut(duration: 0.3)) {
+                showSuccessAnimation = false
             }
         }
     }

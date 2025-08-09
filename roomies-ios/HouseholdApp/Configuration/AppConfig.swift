@@ -9,28 +9,21 @@ struct AppConfig {
         case production = "production"
         
         static var current: Environment {
-            // Force development mode while fixing connectivity issues
-            // This will be updated after backend deployment
-            return .development
-            
-            // Original logic (disabled for now):
-            /*
             #if DEBUG
-            // For debug builds, always use development unless explicitly overridden
+            // Debug builds default to development, but allow override via APP_ENV
             if let envString = ProcessInfo.processInfo.environment["APP_ENV"],
                let env = Environment(rawValue: envString) {
                 return env
             }
             return .development
             #else
-            // For release builds, check for environment override first
+            // Release/TestFlight builds default to production, but allow override via APP_ENV if explicitly provided
             if let envString = ProcessInfo.processInfo.environment["APP_ENV"],
                let env = Environment(rawValue: envString) {
                 return env
             }
             return .production
             #endif
-            */
         }
     }
     
@@ -47,12 +40,11 @@ struct AppConfig {
         // Use environment-specific URLs
         switch Environment.current {
         case .development:
-            return "http://localhost:3000/api"
+            // Default local backend port (matches backend server.ts default)
+            return "http://127.0.0.1:3000/api"
         case .staging:
-            // TODO: Replace with actual staging URL
             return ProcessInfo.processInfo.environment["STAGING_API_URL"] ?? "https://staging-api.roomies.app/api"
         case .production:
-            // TODO: Replace with actual production URL
             return ProcessInfo.processInfo.environment["PROD_API_URL"] ?? "https://api.roomies.app/api"
         }
     }
@@ -67,7 +59,8 @@ struct AppConfig {
         // Use environment-specific URLs
         switch Environment.current {
         case .development:
-            return "http://localhost:3000"
+            // Match API port for local dev
+            return "http://127.0.0.1:3000"
         case .staging:
             return ProcessInfo.processInfo.environment["STAGING_SOCKET_URL"] ?? "https://staging-api.roomies.app"
         case .production:

@@ -100,8 +100,10 @@ struct ConnectionDetailsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .dashboard, style: .minimal)
+                ScrollView {
+                    VStack(spacing: 20) {
                     // Network Status Card
                     StatusCard(
                         title: "Network Connection",
@@ -145,49 +147,26 @@ struct ConnectionDetailsView: View {
                     
                     // Actions
                     VStack(spacing: 12) {
-                        Button(action: {
-                            PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                        PremiumButton("Force Sync", icon: "arrow.clockwise", sectionColor: .dashboard) {
                             Task {
                                 await IntegratedTaskManager.shared.syncTasks()
                             }
-                        }) {
-                            Label("Force Sync", systemImage: "arrow.clockwise")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
                         }
                         
                         if socketManager.isConnected {
-                            Button(action: {
-                                PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            PremiumButton("Disconnect Socket", icon: "xmark.circle", sectionColor: .leaderboard) {
                                 socketManager.disconnect()
-                            }) {
-                                Label("Disconnect Socket", systemImage: "xmark.circle")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.red.opacity(0.1))
-                                    .foregroundColor(.red)
-                                    .cornerRadius(12)
                             }
                         } else {
-                            Button(action: {
-                                PremiumAudioHapticSystem.playButtonTap(style: .light)
+                            PremiumButton("Connect Socket", icon: "bolt.circle", sectionColor: .tasks) {
                                 socketManager.connect()
-                            }) {
-                                Label("Connect Socket", systemImage: "bolt.circle")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.green.opacity(0.1))
-                                    .foregroundColor(.green)
-                                    .cornerRadius(12)
                             }
                         }
                     }
                     .padding(.top)
                 }
                 .padding()
+            }
             }
             .navigationTitle("Connection Status")
             .navigationBarTitleDisplayMode(.inline)

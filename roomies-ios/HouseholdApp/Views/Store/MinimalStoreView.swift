@@ -34,7 +34,9 @@ struct MinimalStoreView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack {
+                PremiumScreenBackground(sectionColor: .store, style: .minimal)
+                VStack(spacing: 0) {
                 // Simple points header
                 simplePointsHeader
                     .padding()
@@ -71,6 +73,7 @@ struct MinimalStoreView: View {
                 }
                 
                 Spacer()
+                }
             }
             .navigationTitle("Store")
             .toolbar {
@@ -100,18 +103,28 @@ struct MinimalStoreView: View {
                 Text("\(gameificationManager.currentUserPoints)")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(.purple)
+                    .foregroundColor(.primary)
             }
             
             Spacer()
             
-            Image(systemName: "star.fill")
-                .foregroundColor(.yellow)
-                .font(.title)
+            HStack(spacing: 6) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.yellow)
+                        .font(.title3)
+                }
+            }
         }
         .padding()
-        .background(Color.purple.opacity(0.1))
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(UIColor.secondarySystemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.purple.opacity(0.15), lineWidth: 1)
+                )
+        )
     }
     
     private var simpleTabPicker: some View {

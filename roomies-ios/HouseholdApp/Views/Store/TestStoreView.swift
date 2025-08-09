@@ -14,7 +14,9 @@ struct TestStoreView: View {
     private var availableRewards: FetchedResults<Reward>
     
     var body: some View {
-        VStack {
+        ZStack {
+            PremiumScreenBackground(sectionColor: .store, style: .minimal)
+            VStack {
             // Simple points display (no animations)
             HStack {
                 Text("Points: \(gameificationManager.currentUserPoints)")
@@ -24,8 +26,10 @@ struct TestStoreView: View {
             .padding()
             
             // Simple list (no animations)
-            List(availableRewards, id: \.id) { reward in
+                List(availableRewards, id: \.id) { reward in
                 SimpleRewardRow(reward: reward, userPoints: gameificationManager.currentUserPoints)
+            }
+                .premiumListAppearance()
             }
         }
         .navigationTitle("Test Store")
