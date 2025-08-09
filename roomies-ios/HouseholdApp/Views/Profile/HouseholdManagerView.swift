@@ -4,6 +4,7 @@ import CoreData
 struct HouseholdManagerView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     @State private var selectedTab: HouseholdTab = .members
     @State private var showingCreateHousehold = false
     @State private var showingJoinHousehold = false
@@ -47,7 +48,10 @@ struct HouseholdManagerView: View {
                 case .members:
                     MembersTabView(household: household)
                 case .invitations:
-                    InvitationsTabView(household: household)
+                    InvitationsTabView(
+                        household: household,
+                        isAdmin: authManager.isCurrentUserHouseholdAdmin()
+                    )
                 case .settings:
                     HouseholdSettingsTabView(household: household)
                 }
@@ -149,6 +153,7 @@ struct HouseholdHeaderView: View {
 struct MembersTabView: View {
     let household: Household
     @State private var showingInviteSheet = false
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     
     var members: [User] {
         (household.memberships?.allObjects as? [UserHouseholdMembership])?.compactMap { $0.user } ?? []
@@ -167,6 +172,7 @@ struct MembersTabView: View {
                 showingInviteSheet = true
             }
             .padding()
+            .disabled(!authManager.isCurrentUserHouseholdAdmin())
         }
         .sheet(isPresented: $showingInviteSheet) {
             InviteMemberView(household: household)
@@ -229,6 +235,11 @@ struct HouseholdMemberRowView: View {
 
 struct InvitationsTabView: View {
     let household: Household
+    let isAdmin: Bool
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
+    @State private var pendingRequests: [JoinRequestViewModel] = []
+    @State private var isLoading = false
+    @State private var error: String = ""
     @State private var showingQRCode = false
     
     var body: some View {
@@ -290,6 +301,71 @@ struct InvitationsTabView: View {
                 }
             }
             
+            if isAdmin {
+                // Pending Requests Section
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Image(systemName: "person.crop.circle.badge.questionmark")
+                            .foregroundColor(.blue)
+                        Text("Pending Join Requests")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                        if isLoading { ProgressView().scaleEffect(0.9) }
+                    }
+                    .padding(.horizontal, 4)
+
+                    if !error.isEmpty {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+
+                    if pendingRequests.isEmpty {
+                        Text("No pending requests")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.vertical, 6)
+                    } else {
+                        ForEach(pendingRequests) { req in
+                            HStack {
+                                Circle()
+                                    .fill(Color(req.user.avatarColor ?? "blue"))
+                                    .frame(width: 32, height: 32)
+                                    .overlay(Text(String(req.user.name.prefix(1))).foregroundColor(.white).font(.footnote).bold())
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(req.user.name)
+                                        .font(.subheadline).fontWeight(.semibold)
+                                    Text(req.user.email)
+                                        .font(.caption).foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                PremiumButton("Approve", icon: "checkmark.circle.fill", sectionColor: .dashboard) {
+                                    Task { await approve(req) }
+                                }
+                                .buttonStyle(PremiumPressButtonStyle())
+                                .frame(width: 120)
+                            }
+                            .padding(10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(UIColor.secondarySystemBackground))
+                            )
+                        }
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .onAppear { Task { await loadRequests() } }
+            }
+            
             Spacer()
         }
         .padding()
@@ -317,12 +393,44 @@ struct InvitationsTabView: View {
             window.rootViewController?.present(activityViewController, animated: true)
         }
     }
+
+    // MARK: - Pending Join Requests (Admin)
+    struct JoinRequestViewModel: Identifiable { let id: String; let user: APIUser }
+    @MainActor
+    private func loadRequests() async {
+        guard isAdmin, let hid = household.id?.uuidString else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let resp = try await NetworkManager.shared.listJoinRequests(householdId: hid)
+            let items = resp.data ?? []
+            pendingRequests = items.map { JoinRequestViewModel(id: $0.id, user: $0.user) }
+            error = ""
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+    @MainActor
+    private func approve(_ req: JoinRequestViewModel) async {
+        guard let hid = household.id?.uuidString else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            _ = try await NetworkManager.shared.approveJoinRequest(householdId: hid, requestId: req.id)
+            pendingRequests.removeAll { $0.id == req.id }
+            PremiumAudioHapticSystem.playSuccess()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
 }
 
 struct HouseholdSettingsTabView: View {
     let household: Household
     @State private var householdName: String
     @State private var showingDeleteAlert = false
+    @State private var leaving = false
+    @EnvironmentObject private var authManager: IntegratedAuthenticationManager
     
     init(household: Household) {
         self.household = household
@@ -330,28 +438,63 @@ struct HouseholdSettingsTabView: View {
     }
     
     var body: some View {
-        Form {
-            Section("Household Settings") {
-                TextField("Name", text: $householdName)
-                    .onSubmit {
-                        updateHouseholdName()
-                    }
+        VStack(spacing: 16) {
+            // Pretty card for name editing
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: "gearshape.fill").foregroundColor(.blue)
+                    Text("Household Settings").font(.headline).fontWeight(.semibold)
+                }
+                TextField("Household Name", text: $householdName)
+                    .textFieldStyle(.roundedBorder)
+                    .submitLabel(.done)
+                    .onSubmit { updateHouseholdName() }
+                PremiumButton("Save Name", icon: "square.and.pencil", sectionColor: .dashboard) {
+                    PremiumAudioHapticSystem.playButtonTap(style: .medium)
+                    updateHouseholdName()
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            
-            Section("Actions") {
-                Button("Leave Household") {
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.blue.opacity(0.15), lineWidth: 1)
+                    )
+            )
+
+            // Actions card
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Image(systemName: "person.fill.xmark").foregroundColor(.orange)
+                    Text("Actions").font(.headline).fontWeight(.semibold)
+                }
+                PremiumButton("Leave Household", icon: "rectangle.portrait.and.arrow.right", sectionColor: .dashboard) {
                     PremiumAudioHapticSystem.playButtonTap(style: .medium)
                     leaveHousehold()
                 }
                 .foregroundColor(.orange)
-                
-                Button("Delete Household") {
+                .disabled(leaving)
+
+                PremiumButton("Delete Household", icon: "trash.fill", sectionColor: .dashboard) {
                     showingDeleteAlert = true
                 }
                 .foregroundColor(.red)
             }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(UIColor.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.red.opacity(0.12), lineWidth: 1)
+                    )
+            )
+            Spacer()
         }
-        .premiumFormAppearance()
+        .padding()
         .alert("Delete Household", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
