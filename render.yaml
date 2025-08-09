@@ -25,7 +25,7 @@ services:
 
       # First deploy: let TypeORM create tables automatically
       - key: DB_SYNCHRONIZE
-        value: "true"
+        value: "false"
 
       # CloudKit (enable when ready)
       - key: CLOUDKIT_ENABLED
