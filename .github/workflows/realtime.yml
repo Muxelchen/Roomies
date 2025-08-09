@@ -51,9 +51,12 @@ jobs:
           NODE_ENV: test
           DB_TYPE: sqlite
           PORT: 3000
-          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
           SOCKET_REDIS_ENABLED: 'false'
-        run: node dist/server.js > roomies-backend/logs/combined.log 2> roomies-backend/logs/error.log &
+        run: |
+          mkdir -p roomies-backend/logs
+          node dist/server.js > roomies-backend/logs/combined.log 2> roomies-backend/logs/error.log & echo $! > server.pid
 
       - name: Wait for server to be ready
         run: |
