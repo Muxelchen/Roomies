@@ -66,10 +66,11 @@ export class AuthController {
 
     if (existingUser) {
       // Return standardized error envelope for clients to handle gracefully
-      return res.status(409).json(createErrorResponse(
+      res.status(409).json(createErrorResponse(
         'An account with this email already exists. Try logging in or resetting your password.',
         'USER_EXISTS'
       ));
+      return;
     }
 
     // Create new user
