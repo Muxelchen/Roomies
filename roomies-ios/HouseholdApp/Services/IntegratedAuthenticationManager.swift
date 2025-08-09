@@ -105,7 +105,20 @@ class IntegratedAuthenticationManager: ObservableObject {
             guard networkManager.isOnline else {
                 throw NetworkError.networkUnavailable
             }
-            let response = try await networkManager.loginWithApple(identityToken: identityToken, email: email, name: name)
+            // Normalize optional fields: backend rejects empty strings for name and email
+            let cleanEmail: String?
+            if let e = email?.trimmingCharacters(in: .whitespacesAndNewlines), !e.isEmpty {
+                cleanEmail = e
+            } else {
+                cleanEmail = nil
+            }
+            let cleanName: String?
+            if let n = name?.trimmingCharacters(in: .whitespacesAndNewlines), !n.isEmpty {
+                cleanName = n
+            } else {
+                cleanName = nil
+            }
+            let response = try await networkManager.loginWithApple(identityToken: identityToken, email: cleanEmail, name: cleanName)
             if let apiUser = response.data?.user {
                 await syncUserFromAPI(apiUser)
                 LoggingManager.shared.info("User signed in via Apple successfully", 
@@ -352,7 +365,7 @@ class IntegratedAuthenticationManager: ObservableObject {
             
             // Mark as synced
             localUser.setIfHasAttribute(false, forKey: "needsSync")
-            localUser.setValue(Date(), forKey: "lastSyncedAt")
+            localUser.setIfHasAttribute(Date(), forKey: "lastSyncedAt")
             
             if localUser.hashedPassword == nil {
                 localUser.hashedPassword = "backend_authenticated"

@@ -1,0 +1,50 @@
+# Render Blueprint for Roomies backend + Postgres
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: roomies-backend
+    env: node
+    rootDir: roomies-backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: roomies-postgres
+          property: connectionString
+
+      # CloudKit (enable when ready)
+      - key: CLOUDKIT_ENABLED
+        value: "true"
+      - key: CLOUDKIT_CONTAINER_ID
+        value: iCloud.de.roomies.HouseholdApp
+
+      # Optional Web Services (set when you have Apple key)
+      - key: CLOUDKIT_USE_WEB_SERVICES
+        value: "false"
+      # - key: CLOUDKIT_ENV
+      #   value: production
+      # - key: CLOUDKIT_KEY_ID
+      #   value: <your_apple_key_id>
+      # - key: CLOUDKIT_PRIVATE_KEY
+      #   value: "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+      # Apple Sign-In
+      - key: APP_BUNDLE_ID
+        value: de.roomies.HouseholdApp
+
+databases:
+  - name: roomies-postgres
+    databaseName: roomies_prod
+    user: roomies_user
+    plan: starter

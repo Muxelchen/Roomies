@@ -30,7 +30,8 @@ export class Household {
   @Column({ name: 'invite_code', unique: true })
   inviteCode!: string;
 
-  @Column({ name: 'created_by' })
+  // Make nullable to allow existing rows to pass schema sync; can be enforced via migration later
+  @Column({ name: 'created_by', nullable: true })
   createdBy!: string;
 
   @Column({ default: '{}' })
