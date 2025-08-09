@@ -6,7 +6,7 @@ services:
     name: roomies-backend
     env: node
     rootDir: roomies-backend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --omit=optional && npm run build
     startCommand: npm start
     plan: starter
     autoDeploy: true
