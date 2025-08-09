@@ -3,19 +3,25 @@ import { Response } from 'express';
 
 export type SSEClient = {
   id: string;
+  userId: string;
+  ip: string;
+  connectedAt: number;
   res: Response;
 };
 
 class EventBroker {
   private clientsByHousehold: Map<string, Map<string, SSEClient>> = new Map();
+  private totalConnectedClients: number = 0;
+  private totalDroppedClients: number = 0;
 
-  addClient(householdId: string, clientId: string, res: Response): void {
+  addClient(householdId: string, clientId: string, userId: string, ip: string, res: Response): void {
     if (!this.clientsByHousehold.has(householdId)) {
       this.clientsByHousehold.set(householdId, new Map());
     }
     const bucket = this.clientsByHousehold.get(householdId)!;
-    bucket.set(clientId, { id: clientId, res });
-    logger.info(`SSE client added: ${clientId} for household ${householdId} (total: ${bucket.size})`);
+    bucket.set(clientId, { id: clientId, userId, ip, connectedAt: Date.now(), res });
+    this.totalConnectedClients += 1;
+    logger.info(`SSE client added: ${clientId} for household ${householdId} (total in household: ${bucket.size}, total: ${this.totalConnectedClients})`);
     // Defensive: ensure response is in flowing mode and socket timeout disabled
     try {
       (res as any).socket?.setTimeout?.(0);
@@ -31,7 +37,8 @@ class EventBroker {
     if (bucket.size === 0) {
       this.clientsByHousehold.delete(householdId);
     }
-    logger.info(`SSE client removed: ${clientId} for household ${householdId} (remaining: ${bucket?.size || 0})`);
+    this.totalDroppedClients += 1;
+    logger.info(`SSE client removed: ${clientId} for household ${householdId} (remaining in household: ${bucket?.size || 0}, total dropped: ${this.totalDroppedClients})`);
   }
 
   broadcast(householdId: string, event: string, data: any): void {
@@ -61,11 +68,42 @@ class EventBroker {
     for (const clientId of staleClientIds) {
       try {
         bucket.delete(clientId);
+        this.totalDroppedClients += 1;
       } catch {}
     }
     if (bucket.size === 0) {
       this.clientsByHousehold.delete(householdId);
     }
+  }
+
+  // Metrics and limits helpers
+  getHouseholdClientCount(householdId: string): number {
+    return this.clientsByHousehold.get(householdId)?.size || 0;
+  }
+
+  getUserClientCount(householdId: string, userId: string): number {
+    const bucket = this.clientsByHousehold.get(householdId);
+    if (!bucket) return 0;
+    let count = 0;
+    for (const [, client] of bucket) {
+      if (client.userId === userId) count++;
+    }
+    return count;
+  }
+
+  getMetrics() {
+    let households = 0;
+    let total = 0;
+    for (const [, bucket] of this.clientsByHousehold) {
+      households++;
+      total += bucket.size;
+    }
+    return {
+      households,
+      total,
+      totalConnected: this.totalConnectedClients,
+      totalDropped: this.totalDroppedClients
+    };
   }
 }
 

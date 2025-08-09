@@ -731,6 +731,21 @@ export class HouseholdController {
       return;
     }
 
+    // Safeguard: prevent demoting the last admin
+    if (targetMembership.role === 'admin' && role === 'member') {
+      const activeMemberships = await this.membershipRepository.find({
+        where: { household: { id: householdId }, isActive: true }
+      });
+      const adminCount = activeMemberships.filter(m => m.role === 'admin').length;
+      if (adminCount <= 1) {
+        res.status(409).json(createErrorResponse(
+          'Cannot demote the last admin in the household',
+          'LAST_ADMIN'
+        ));
+        return;
+      }
+    }
+
     targetMembership.role = role;
     await this.membershipRepository.save(targetMembership);
 

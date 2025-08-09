@@ -190,7 +190,13 @@ export function createResponse(data: any, message?: string, pagination?: any) {
   }
 
   if (pagination) {
+    // Back-compat: keep top-level pagination for clients already relying on it
     response.pagination = pagination;
+    // Standardized location
+    response.meta = {
+      ...(response.meta || {}),
+      pagination
+    };
   }
 
   return response;

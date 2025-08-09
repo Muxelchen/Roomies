@@ -223,12 +223,14 @@ class NetworkManager: ObservableObject {
                         responseType: CloudStatusResponse.self,
                         requiresAuth: false
                     )
-                    // Map backend status into CloudRuntime
-                    await MainActor.run {
-                        CloudRuntime.shared.setCloud(
-                            enabled: status.cloud.enabled,
-                            available: status.cloud.available
-                        )
+                    // Map standardized envelope { success, data: { cloud } }
+                    if let cloud = status.data?.cloud {
+                        await MainActor.run {
+                            CloudRuntime.shared.setCloud(
+                                enabled: cloud.enabled,
+                                available: cloud.available
+                            )
+                        }
                     }
                 } catch {
                     // Ignore cloud status failures; remain offline for cloud
@@ -602,6 +604,21 @@ struct APIResponse<T: Codable>: Codable {
     let success: Bool
     let message: String?
     let data: T?
+    let meta: MetaEnvelope?
+}
+
+// MARK: - Pagination Meta
+struct MetaEnvelope: Codable {
+    let pagination: Pagination
+}
+
+struct Pagination: Codable {
+    let currentPage: Int
+    let totalPages: Int
+    let totalItems: Int
+    let hasNextPage: Bool
+    let hasPreviousPage: Bool
+    let itemsPerPage: Int
 }
 
 struct HealthResponse: Codable {
@@ -727,9 +744,22 @@ struct CloudStatus: Codable {
     let error: String?
 }
 
+struct SSEStatus: Codable {
+    let households: Int?
+    let total: Int?
+    let totalConnected: Int?
+    let totalDropped: Int?
+    let backpressureSkips: Int?
+}
+
+struct CloudStatusData: Codable {
+    let cloud: CloudStatus
+    let sse: SSEStatus?
+}
+
 struct CloudStatusEnvelope: Codable {
     let success: Bool
-    let cloud: CloudStatus
+    let data: CloudStatusData?
 }
 
 typealias CloudStatusResponse = CloudStatusEnvelope

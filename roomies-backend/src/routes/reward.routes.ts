@@ -19,13 +19,13 @@ router.get('/household/:householdId', validateUUID('householdId'), controller.li
  * @route   POST /api/rewards
  * @desc    Create a reward (admin)
  */
-router.post('/', controller.createReward);
+router.post('/', validateRequest(schemas.rewardCreate), controller.createReward);
 
 /**
  * @route   PUT /api/rewards/:rewardId
  * @desc    Update a reward (admin)
  */
-router.put('/:rewardId', validateUUID('rewardId'), controller.updateReward);
+router.put('/:rewardId', validateUUID('rewardId'), validateRequest(schemas.rewardUpdate), controller.updateReward);
 
 /**
  * @route   DELETE /api/rewards/:rewardId

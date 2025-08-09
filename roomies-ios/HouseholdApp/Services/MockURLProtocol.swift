@@ -56,7 +56,7 @@ class MockURLProtocol: URLProtocol {
                 let data = try JSONEncoder().encode(err)
                 return (HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: ["Content-Type":"application/json"])!, data)
             } else {
-                let ok = APIResponse<EmptyResponse>(success: true, message: "Redeemed", data: EmptyResponse())
+                let ok = APIResponse<EmptyResponse>(success: true, message: "Redeemed", data: EmptyResponse(), meta: nil)
                 let data = try JSONEncoder().encode(ok)
                 return (HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type":"application/json"])!, data)
             }

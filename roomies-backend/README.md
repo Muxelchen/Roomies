@@ -436,6 +436,15 @@ All CloudKit integration is marked with clear TODOs:
 
 This makes it easy to find and implement actual CloudKit code when your paid developer account is ready.
 
+### CloudKit Setup Docs
+
+See `documentation/CLOUDKIT_SETUP.md` for a complete guide on:
+
+- Required keys and secrets
+- .env variables to enable CloudKit
+- Local verification steps and health endpoints
+- iOS entitlements and runtime toggles
+
 ## 🏆 Architecture Highlights
 
 - **Modular Design** - Easy to extend and maintain

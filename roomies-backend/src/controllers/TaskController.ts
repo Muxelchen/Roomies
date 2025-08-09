@@ -231,7 +231,16 @@ export class TaskController {
         isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
       };
     }));
-    res.json(createResponse(apiTasks));
+    // Include pagination metadata in standardized meta.pagination
+    const pagination = {
+      currentPage: pageNum,
+      totalPages: Math.ceil(total / limitNum),
+      totalItems: total,
+      hasNextPage: pageNum * limitNum < total,
+      hasPreviousPage: pageNum > 1,
+      itemsPerPage: limitNum
+    };
+    res.json(createResponse(apiTasks, undefined, pagination));
   });
 
   /**
@@ -249,7 +258,7 @@ export class TaskController {
     });
 
     if (!membership) {
-      res.json(createResponse({ tasks: [], pagination: { currentPage: 1, totalPages: 0, totalItems: 0, hasNextPage: false, hasPreviousPage: false } }, 'No active household'));
+      res.json(createResponse([], 'No active household'));
       return;
     }
 
@@ -260,8 +269,8 @@ export class TaskController {
       take: 100
     });
 
-    res.json(createResponse({
-      tasks: tasks.map(task => ({
+    res.json(createResponse(
+      tasks.map(task => ({
         id: task.id,
         title: task.title,
         description: task.description,
@@ -275,7 +284,7 @@ export class TaskController {
         createdBy: { id: task.creator.id, name: task.creator.name, avatarColor: task.creator.avatarColor },
         isOverdue: task.dueDate && task.dueDate < new Date() && !task.isCompleted
       }))
-    }));
+    ));
   });
 
   /**

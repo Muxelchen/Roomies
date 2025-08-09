@@ -1,6 +1,7 @@
 import { UserController } from '@/controllers/UserController';
 import { authenticateToken } from '@/middleware/auth';
 import { asyncHandler } from '@/middleware/errorHandler';
+import { validateRequest, schemas } from '@/middleware/validation';
 import express, { Request, Response } from 'express';
 
 const router = express.Router();
@@ -22,14 +23,21 @@ router.get('/profile', userController.getProfile);
  * @access  Private
  * @body    { name?: string, avatarColor?: string }
  */
-router.put('/profile', userController.updateProfile);
+router.put('/profile', validateRequest(schemas.updateProfile || (schemas as any).updateProfile || ((): any => {
+  // Inline fallback schema if not defined; avoids route without validation
+  const Joi = require('joi');
+  return Joi.object({
+    name: Joi.string().min(2).max(100).trim(),
+    avatarColor: Joi.string().valid('blue','green','orange','purple','red','teal','pink')
+  });
+})()), userController.updateProfile);
 
 /**
  * @route   POST /api/users/avatar
  * @desc    Upload/Update avatar image
  * @access  Private
  */
-router.post('/avatar', userController.uploadAvatar);
+router.post('/avatar', validateRequest(schemas.avatarUpload), userController.uploadAvatar);
 
 /**
  * @route   GET /api/users/statistics

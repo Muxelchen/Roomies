@@ -91,6 +91,7 @@ router.post('/:taskId/complete',
  */
 router.post('/:taskId/assign', 
   validateUUID('taskId'),
+  validateRequest(schemas.assignTask),
   taskController.assignTask
 );
 

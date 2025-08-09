@@ -1,15 +1,26 @@
 import { AppDataSource } from '@/config/database';
+import { createResponse } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
 import { UserHouseholdMembership } from '@/models/UserHouseholdMembership';
 import CloudKitService from '@/services/CloudKitService';
 import { eventBroker } from '@/services/EventBroker';
 import { logger } from '@/utils/logger';
+import rateLimit from 'express-rate-limit';
 import express from 'express';
 
 const router = express.Router();
 
 // All event routes require auth
 router.use(authenticateToken);
+
+// Basic connection rate limit per IP
+const sseLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+router.use(sseLimiter);
 
 router.get('/household/:householdId', async (req, res) => {
   const { householdId } = req.params;
@@ -27,6 +38,12 @@ router.get('/household/:householdId', async (req, res) => {
       return res.status(403).json({ success: false, error: { message: 'Forbidden' } });
     }
 
+    // Per-user connection cap per household
+    const userConnections = eventBroker.getUserClientCount(householdId, userId);
+    if (userConnections >= 3) {
+      return res.status(429).json({ success: false, error: { message: 'Too many event streams open' } });
+    }
+
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -36,7 +53,7 @@ router.get('/household/:householdId', async (req, res) => {
     res.flushHeaders?.();
 
     const clientId = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    eventBroker.addClient(householdId, clientId, res);
+    eventBroker.addClient(householdId, clientId, userId, req.ip, res);
 
     // Send a hello event
     res.write(`event: hello\n`);
@@ -71,5 +88,8 @@ export default router;
 // Health/status for events and cloud
 router.get('/status', (req, res) => {
   const cloud = CloudKitService.getInstance();
-  res.json({ success: true, cloud: cloud.getCloudKitStatus() });
+  res.json(createResponse({
+    cloud: cloud.getCloudKitStatus(),
+    sse: eventBroker.getMetrics()
+  }));
 });

@@ -307,6 +307,27 @@ expect(next).toHaveBeenCalledWith(expect.any(ValidationError));
         })
       );
 
+      // Ensure pagination metadata is present
+      const jsonArg = (res.json as jest.Mock).mock.calls[0][0];
+      expect(jsonArg.pagination).toEqual(
+        expect.objectContaining({
+          currentPage: 1,
+          totalPages: expect.any(Number),
+          totalItems: 2,
+          hasNextPage: expect.any(Boolean),
+          hasPreviousPage: expect.any(Boolean),
+          itemsPerPage: 20
+        })
+      );
+      expect(jsonArg.meta).toEqual(
+        expect.objectContaining({
+          pagination: expect.objectContaining({
+            currentPage: 1,
+            totalPages: expect.any(Number)
+          })
+        })
+      );
+
       // Verify optimized queries were used
       expect(mockTaskRepository.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({

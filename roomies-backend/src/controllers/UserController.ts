@@ -328,6 +328,14 @@ export class UserController {
       relations: ['household']
     });
 
+    const pagination = {
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalItems: total,
+      hasNextPage: page * limit < total,
+      hasPreviousPage: page > 1,
+      itemsPerPage: limit
+    };
     res.json(createResponse({
       activities: activities.map(activity => ({
         id: activity.id,
@@ -340,14 +348,8 @@ export class UserController {
           name: activity.household.name
         } : null
       })),
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        hasNextPage: page * limit < total,
-        hasPreviousPage: page > 1
-      }
-    }));
+      pagination
+    }, undefined, pagination));
   });
 
   /**

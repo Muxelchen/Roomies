@@ -56,7 +56,10 @@ export function validateRequest(schema: Joi.Schema, target: 'body' | 'query' | '
       // Validate with Joi
       const { error, value } = schema.validate(req[target], {
         abortEarly: false, // Get all validation errors
-        stripUnknown: true, // Remove unknown fields
+        // Do not strip unknown for params so multiple param validators can run sequentially
+        stripUnknown: target !== 'params',
+        // Allow unknown keys in params so sequential param validators don't fail
+        allowUnknown: target === 'params',
         convert: true // Convert types where possible
       });
 
@@ -200,6 +203,22 @@ export const schemas: { [k: string]: Joi.Schema } = {
       })
   }),
 
+  updateHousehold: Joi.object({
+    name: Joi.string()
+      .min(2)
+      .max(100)
+      .trim()
+      .messages({
+        'string.min': 'Household name must be at least 2 characters long',
+        'string.max': 'Household name cannot exceed 100 characters'
+      }),
+    description: Joi.string()
+      .max(500)
+      .allow('', null)
+      .trim()
+      .messages({ 'string.max': 'Description cannot exceed 500 characters' })
+  }),
+
   joinHousehold: Joi.object({
     inviteCode: Joi.string()
       .length(8)
@@ -318,6 +337,70 @@ export const schemas: { [k: string]: Joi.Schema } = {
         'string.uri': 'Image URL must be a valid URL'
       })
   }),
+
+  assignTask: Joi.object({
+    userId: Joi.string()
+      .uuid({ version: 'uuidv4' })
+      .allow(null, '')
+      .messages({ 'string.uuid': 'Invalid user ID format' })
+  }),
+
+  // Rewards
+  rewardCreate: Joi.object({
+    name: Joi.string().min(1).max(100).required().trim(),
+    description: Joi.string().max(500).allow('', null).trim(),
+    cost: Joi.number().integer().min(1).required(),
+    iconName: Joi.string().max(50).allow('', null),
+    color: Joi.string().max(30).allow('', null),
+    quantityAvailable: Joi.number().integer().min(0).allow(null),
+    maxPerUser: Joi.number().integer().min(1).allow(null),
+    expiresAt: Joi.date().iso().allow(null),
+    householdId: Joi.string().uuid({ version: 'uuidv4' }).required(),
+    isAvailable: Joi.boolean().optional()
+  }),
+
+  rewardUpdate: Joi.object({
+    name: Joi.string().min(1).max(100).trim(),
+    description: Joi.string().max(500).allow('', null).trim(),
+    cost: Joi.number().integer().min(1),
+    iconName: Joi.string().max(50).allow('', null),
+    color: Joi.string().max(30).allow('', null),
+    quantityAvailable: Joi.number().integer().min(0).allow(null),
+    maxPerUser: Joi.number().integer().min(1).allow(null),
+    expiresAt: Joi.date().iso().allow(null),
+    isAvailable: Joi.boolean().optional()
+  }),
+
+  // Members
+  updateMemberRole: Joi.object({
+    role: Joi.string().valid('admin', 'member').required()
+  }),
+
+  // Household invite mgmt
+  inviteManage: Joi.object({
+    regenerate: Joi.boolean().optional()
+  }),
+
+  // Avatar upload (JSON body with base64 content)
+  avatarUpload: Joi.object({
+    imageBase64: Joi.string().base64({ paddingRequired: false }).required().messages({
+      'string.base64': 'imageBase64 must be a valid base64 string',
+      'any.required': 'imageBase64 is required'
+    }),
+    contentType: Joi.string().pattern(/^image\//).required().messages({
+      'string.pattern.base': 'contentType must be an image/* MIME type',
+      'any.required': 'contentType is required'
+    })
+  })
+  ,
+
+  // User profile update
+  updateProfile: Joi.object({
+    name: Joi.string().min(2).max(100).trim(),
+    // Allow any string here; controller enforces allowed values and returns specific error codes
+    avatarColor: Joi.string().trim()
+  })
+  ,
 
   
 

@@ -25,6 +25,7 @@ import CloudKitService from '@/services/CloudKitService';
 
 // Routes
 import authRoutes from '@/routes/auth.routes';
+import { createResponse } from '@/middleware/errorHandler';
 import userRoutes from '@/routes/user.routes';
 import householdRoutes from '@/routes/household.routes';
 import taskRoutes from '@/routes/task.routes';
@@ -269,7 +270,11 @@ class RoomiesServer {
     // Cloud status endpoint for frontend awareness
     this.app.get('/api/cloud/status', (req, res) => {
       const cloud = CloudKitService.getInstance();
-      res.json({ success: true, cloud: cloud.getCloudKitStatus() });
+      const { eventBroker } = require('@/services/EventBroker');
+      res.json(createResponse({
+        cloud: cloud.getCloudKitStatus(),
+        sse: eventBroker.getMetrics()
+      }));
     });
 
     // 404 handler

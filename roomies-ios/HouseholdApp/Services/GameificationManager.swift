@@ -42,13 +42,17 @@ class GameificationManager: ObservableObject {
         
         // Initial points update after a delay to ensure everything is set up
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.updateCurrentUserPoints()
+            Task { @MainActor in
+                self.updateCurrentUserPoints()
+            }
         }
 
         // Refresh points on reward redemption
-        NotificationCenter.default.addObserver(forName: Notification.Name("rewardRedeemed"), object: nil, queue: .main) { [weak self] note in
+        NotificationCenter.default.addObserver(forName: Notification.Name("rewardRedeemed"), object: nil, queue: .main) { [weak self] _ in
             guard let self = self else { return }
-            self.updateCurrentUserPoints()
+            Task { @MainActor in
+                self.updateCurrentUserPoints()
+            }
         }
     }
     
@@ -70,10 +74,9 @@ class GameificationManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            DispatchQueue.main.async {
-                if let self = self {
-                    self.updateCurrentUserPointsSync()
-                }
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.updateCurrentUserPointsSync()
             }
         }
     }

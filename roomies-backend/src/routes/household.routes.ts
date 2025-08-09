@@ -1,6 +1,7 @@
 import { HouseholdController } from '@/controllers/HouseholdController';
 import { authenticateToken } from '@/middleware/auth';
 import { asyncHandler } from '@/middleware/errorHandler';
+import { validateRequest, schemas, validateUUID } from '@/middleware/validation';
 import express, { Request, Response } from 'express';
 
 const router = express.Router();
@@ -15,7 +16,7 @@ router.use(authenticateToken);
  * @access  Private
  * @body    { name: string, description?: string }
  */
-router.post('/', householdController.createHousehold);
+router.post('/', validateRequest(schemas.createHousehold), householdController.createHousehold);
 
 /**
  * @route   POST /api/households/join
@@ -23,7 +24,7 @@ router.post('/', householdController.createHousehold);
  * @access  Private
  * @body    { inviteCode: string }
  */
-router.post('/join', householdController.joinHousehold);
+router.post('/join', validateRequest(schemas.joinHousehold), householdController.joinHousehold);
 
 /**
  * @route   GET /api/households/current
@@ -36,7 +37,7 @@ router.get('/current', householdController.getCurrentHousehold);
  * @route   GET /api/households/:householdId
  * @desc    Get a specific household (members only)
  */
-router.get('/:householdId', householdController.getHouseholdById);
+router.get('/:householdId', validateUUID('householdId'), householdController.getHouseholdById);
 
 /**
  * @route   PUT /api/households/:householdId
@@ -44,7 +45,7 @@ router.get('/:householdId', householdController.getHouseholdById);
  * @access  Private (Admin)
  * @body    { name?: string, description?: string }
  */
-router.put('/:householdId', householdController.updateHousehold);
+router.put('/:householdId', validateUUID('householdId'), validateRequest(schemas.updateHousehold), householdController.updateHousehold);
 
 /**
  * @route   POST /api/households/leave
@@ -58,7 +59,7 @@ router.post('/leave', householdController.leaveHousehold);
  * @desc    Get household members
  * @access  Private (Members only)
  */
-router.get('/:householdId/members', householdController.getMembers);
+router.get('/:householdId/members', validateUUID('householdId'), householdController.getMembers);
 
 /**
  * @route   PUT /api/households/:householdId/members/:memberId/role
@@ -66,18 +67,18 @@ router.get('/:householdId/members', householdController.getMembers);
  * @access  Private (Admin)
  * @body    { role: 'admin' | 'member' }
  */
-router.put('/:householdId/members/:memberId/role', householdController.updateMemberRole);
+router.put('/:householdId/members/:memberId/role', validateUUID('householdId'), validateRequest(schemas.updateMemberRole), householdController.updateMemberRole);
 
 /**
  * @route   DELETE /api/households/:householdId/members/:memberId
  * @desc    Remove a member (admin only)
  */
-router.delete('/:householdId/members/:memberId', householdController.removeMember);
+router.delete('/:householdId/members/:memberId', validateUUID('householdId'), validateUUID('memberId'), householdController.removeMember);
 
 /**
  * @route   POST /api/households/:householdId/invite
  * @desc    Get or regenerate invite code (admin only)
  */
-router.post('/:householdId/invite', householdController.getInvite);
+router.post('/:householdId/invite', validateUUID('householdId'), householdController.getInvite);
 
 export default router;

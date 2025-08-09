@@ -94,6 +94,39 @@ final class APINetworkParsingTests: XCTestCase {
             {"id":"r2","name":"Snack","description":null,"cost":20,"isAvailable":true,"iconName":null,"color":null,"quantityAvailable":null,"timesRedeemed":2,"maxPerUser":null,"expiresAt":null,"createdAt":"2025-01-02T00:00:00Z"}
           ]
         }
+
+  func testTasksResponsePaginationMeta() throws {
+      let json = """
+      {
+        "success": true,
+        "data": [],
+        "pagination": {
+          "currentPage": 2,
+          "totalPages": 5,
+          "totalItems": 100,
+          "hasNextPage": true,
+          "hasPreviousPage": true,
+          "itemsPerPage": 20
+        },
+        "meta": {
+          "pagination": {
+            "currentPage": 2,
+            "totalPages": 5,
+            "totalItems": 100,
+            "hasNextPage": true,
+            "hasPreviousPage": true,
+            "itemsPerPage": 20
+          }
+        }
+      }
+      """.data(using: .utf8)!
+
+      let decoded = try JSONDecoder().decode(APIResponse<[APITask]>.self, from: json)
+      XCTAssertTrue(decoded.success)
+      XCTAssertEqual(decoded.meta?.pagination.currentPage, 2)
+      XCTAssertEqual(decoded.meta?.pagination.totalItems, 100)
+      XCTAssertEqual(decoded.meta?.pagination.itemsPerPage, 20)
+  }
         """.data(using: .utf8)!
 
         let decoded = try JSONDecoder().decode(APIResponse<[APIReward]>.self, from: json)
