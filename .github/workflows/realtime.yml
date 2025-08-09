@@ -46,14 +46,18 @@ jobs:
           name: backend-build-log
           path: roomies-backend/build.log
 
-      - name: Start server
+      - name: Start server (sqlite test mode)
+        env:
+          NODE_ENV: test
+          DB_TYPE: sqlite
+          PORT: 3000
         run: node dist/server.js &
 
       - name: Wait for server to be ready
         run: |
-          for i in {1..20}; do
+          for i in {1..40}; do
             if curl -sSf http://localhost:3000/health >/dev/null; then
-              echo "Server is up"; exit 0; fi; sleep 1; done; exit 1
+              echo "Server is up"; exit 0; fi; sleep 1; done; echo "Server did not become ready"; curl -sS http://localhost:3000/health || true; exit 1
 
       - name: Run realtime E2E test
         run: npm run test:realtime
