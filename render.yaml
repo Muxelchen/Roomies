@@ -16,10 +16,12 @@ services:
         value: production
       - key: JWT_SECRET
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: roomies-postgres
-          property: connectionString
+      # Provide DATABASE_URL from an external free Postgres (e.g., Neon/Supabase) in the Render Dashboard after creating the service.
+      # Example Neon URL: postgres://user:password@host/db?sslmode=require
+      # - key: DATABASE_URL
+      #   value: <set-in-dashboard>
+      - key: DATABASE_SSL
+        value: "true"
 
       # First deploy: let TypeORM create tables automatically
       - key: DB_SYNCHRONIZE
@@ -45,8 +47,5 @@ services:
       - key: APP_BUNDLE_ID
         value: de.roomies.HouseholdApp
 
-databases:
-  - name: roomies-postgres
-    databaseName: roomies_prod
-    user: roomies_user
-    plan: basic-256mb
+# Note: No managed Postgres defined here to avoid monthly cost.
+# Use a free external Postgres (Neon/Supabase/ElephantSQL) and set DATABASE_URL in the service Environment.
