@@ -134,9 +134,10 @@ HouseholdApp/
 
 Available documentation:
 
-- **[UI/UX Guidelines](docs/UI_UX_GUIDELINES.md)** - Complete design system and guidelines
-- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
-- **[Security](docs/SECURITY.md)** - Security guidelines and practices
+- **[UI/UX Guidelines](UI_UX_GUIDELINES.md)** - Complete design system and guidelines
+- **[iOS Guidelines](ios-guidelines/README.md)** - iOS-specific design and UX guidance
+- **[Backend Reports](backend-reports/)** - Status and audit reports for the backend
+- **[Audits](audits/)** - Comprehensive UX/UI and integration audits
 - **[TODO.md](TODO.md)** - Current bugs, features, and development roadmap
 
 ## 🐛 Bug Reports & Issues

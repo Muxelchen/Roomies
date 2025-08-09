@@ -40,8 +40,10 @@ open HouseholdApp.xcodeproj
 ## 📚 Documentation
 
 - [Backend MVP Plan](roomies-backend/MVP_PLAN.md)
-- [iOS Documentation](documentation/README.md)
+- [iOS Documentation](roomies-ios/documentation/README.md)
 - [UI/UX Guidelines](documentation/UI_UX_GUIDELINES.md)
+- [Audits](documentation/audits/)
+- [Backend Reports](documentation/backend-reports/)
 - [Current TODOs](documentation/TODO.md)
 
 ## 🛠 Tech Stack
