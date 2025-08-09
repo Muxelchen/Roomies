@@ -150,3 +150,8 @@ roomies-backend/aws-credentials
 .env.production
 *.pem
 aws-credentials
+
+# Xcode derived
+roomies-ios/.derived/
+# Env files
+roomies-backend/.env*
